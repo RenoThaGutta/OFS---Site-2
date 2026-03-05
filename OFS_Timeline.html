@@ -317,6 +317,15 @@
 
   /* ── Navigation handled by header_bar.js ── */
 
+  /* ── FOOTER ─────────────────────────────────────────────────── */
+  .footer-links { display:flex; justify-content:center; gap:6px; flex-wrap:wrap; list-style:none; margin-bottom:18px; }
+  .footer-links a, .footer-links a:visited {
+    font-family:'Cinzel',serif; font-size:.65rem; letter-spacing:.14em; text-transform:uppercase;
+    color:#5a6272; text-decoration:none; padding:4px 10px; transition:color .2s;
+  }
+  .footer-links a.active { color:#c9a84c; }
+  .footer-links a:hover  { color:#c9a84c; }
+
   /* ── DETAIL MODAL ──────────────────────────────────────────── */
   #tl-detail-modal {
     display: none;
@@ -1016,13 +1025,13 @@ document.querySelectorAll('.event').forEach(ev => {
 
 <footer style="position:relative;z-index:1;border-top:1px solid rgba(201,168,76,.28);background:#07070f;padding:44px 40px 30px;text-align:center;margin-top:60px;">
   <div style="font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.22em;text-transform:uppercase;color:#6e5a28;margin-bottom:20px;">Glory to the Fallen Star. Our light endures, unbroken.</div>
-  <ul style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;list-style:none;margin-bottom:18px;">
-    <li><a href="OFS_Home.html"       style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:#5a6272;text-decoration:none;padding:4px 10px;transition:color .2s;" onmouseover="this.style.color='#c9a84c'" onmouseout="this.style.color='#5a6272'">Home</a></li>
-    <li><a href="OFS_Codex.html"      style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:#5a6272;text-decoration:none;padding:4px 10px;transition:color .2s;" onmouseover="this.style.color='#c9a84c'" onmouseout="this.style.color='#5a6272'">Codex</a></li>
-    <li><a href="OFS_Timeline.html"   style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:#c9a84c;text-decoration:none;padding:4px 10px;">Chronicles</a></li>
-    <li><a href="OFS_Roster.html"     style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:#5a6272;text-decoration:none;padding:4px 10px;transition:color .2s;" onmouseover="this.style.color='#c9a84c'" onmouseout="this.style.color='#5a6272'">Roster</a></li>
-    <li><a href="OFS_PlayerSheet.html" style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:#5a6272;text-decoration:none;padding:4px 10px;transition:color .2s;" onmouseover="this.style.color='#c9a84c'" onmouseout="this.style.color='#5a6272'">Player Sheet</a></li>
-    <li><a href="OFS_Admin.html"      style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:#5a6272;text-decoration:none;padding:4px 10px;transition:color .2s;" onmouseover="this.style.color='#c9a84c'" onmouseout="this.style.color='#5a6272'">Admin</a></li>
+  <ul class="footer-links">
+    <li><a href="OFS_Home.html">Home</a></li>
+    <li><a href="OFS_Codex.html">Codex</a></li>
+    <li><a href="OFS_Timeline.html" class="active">Chronicles</a></li>
+    <li><a href="OFS_Roster.html">Roster</a></li>
+    <li><a href="OFS_PlayerSheet.html">Player Sheet</a></li>
+    <li><a href="OFS_Admin.html">Admin</a></li>
   </ul>
   <div style="font-family:'Inter',sans-serif;font-size:.7rem;color:#7a7568;">Order of the Fallen Star &nbsp;·&nbsp; Star Citizen Organization</div>
 </footer>
