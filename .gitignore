@@ -1,0 +1,7 @@
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# Dev/scratch files
+OFS_Dev_Login.html

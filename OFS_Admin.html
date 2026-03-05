@@ -1,0 +1,2534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Order of the Fallen Star</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:         #07070f;
+      --bg-card:    #0e0e1c;
+      --bg-card2:   #13132a;
+      --bg-modal:   #0b0b18;
+      --gold:       #c9a84c;
+      --gold-lt:    #e8ca6a;
+      --gold-dim:   #6e5a28;
+      --silver:     #b0b8c8;
+      --silver-dim: #5a6272;
+      --text:       #ddd8cc;
+      --text-dim:   #7a7568;
+      --b-gold:     rgba(201,168,76,.28);
+      --b-dim:      rgba(201,168,76,.09);
+      --glow:       rgba(201,168,76,.12);
+      --danger:     #c0392b;
+      --danger-dim: rgba(192,57,43,.18);
+      --success:    #27ae60;
+      --success-dim:rgba(39,174,96,.18);
+      --nav-h:      58px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; overflow-x: hidden; }
+
+    /* ── Scrollbars ── */
+    ::-webkit-scrollbar              { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track        { background: var(--bg-card); }
+    ::-webkit-scrollbar-thumb        { background: var(--gold-dim); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover  { background: var(--gold); }
+    ::-webkit-scrollbar-corner       { background: var(--bg-card); }
+    * { scrollbar-width: thin; scrollbar-color: var(--gold-dim) var(--bg-card); }
+
+    /* ── Stars ── */
+    #starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ══════════════════════════════════════════════
+       LOGIN OVERLAY
+    ══════════════════════════════════════════════ */
+    #login-overlay {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(7,7,15,.97);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 4px;
+      padding: 44px 48px;
+      width: 380px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(201,168,76,.08);
+    }
+    .login-box img { height: 72px; margin-bottom: 20px; filter: drop-shadow(0 0 12px rgba(201,168,76,.4)); }
+    .login-box h2 { font-family: 'Cinzel', serif; font-size: 1.1rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+    .login-box p  { font-family: 'Crimson Text', serif; font-style: italic; color: var(--silver-dim); font-size: .9rem; margin-bottom: 28px; }
+    .login-box input {
+      width: 100%; background: var(--bg-card2);
+      border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 11px 14px; color: var(--text); font-size: .9rem;
+      font-family: 'Inter', sans-serif; outline: none;
+      transition: border-color .2s;
+    }
+    .login-box input:focus { border-color: var(--b-gold); }
+    .login-btn {
+      margin-top: 14px; width: 100%;
+      background: transparent; border: 1px solid var(--gold);
+      border-radius: 3px; padding: 11px;
+      font-family: 'Cinzel', serif; font-size: .75rem;
+      letter-spacing: .18em; text-transform: uppercase;
+      color: var(--gold); cursor: pointer;
+      transition: background .2s, box-shadow .2s;
+    }
+    .login-btn:hover { background: rgba(201,168,76,.08); box-shadow: 0 0 18px var(--glow); }
+    .login-err { color: var(--danger); font-size: .75rem; margin-top: 10px; min-height: 18px; }
+
+    /* ══════════════════════════════════════════════
+       TOP NAV
+    ══════════════════════════════════════════════ */
+    #app { position: relative; z-index: 1; display: none; flex-direction: column; min-height: 100vh; }
+    #app.visible { display: flex; }
+
+    .top-nav {
+      position: sticky; top: 0; z-index: 100;
+      height: var(--nav-h);
+      background: rgba(7,7,15,.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--b-gold);
+      display: flex; align-items: center;
+      padding: 0 28px; gap: 0;
+    }
+    .nav-brand { display: flex; align-items: center; gap: 12px; margin-right: 32px; text-decoration: none; }
+    .nav-brand img { height: 32px; filter: drop-shadow(0 0 8px rgba(201,168,76,.4)); }
+    .nav-brand span { font-family: 'Cinzel', serif; font-size: .8rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
+    .nav-tabs { display: flex; gap: 2px; flex: 1; }
+    .nav-tab {
+      padding: 0 20px; height: var(--nav-h);
+      display: flex; align-items: center;
+      font-family: 'Cinzel', serif; font-size: .7rem;
+      letter-spacing: .16em; text-transform: uppercase;
+      color: var(--text-dim); cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color .2s, border-color .2s;
+    }
+    .nav-tab:hover  { color: var(--silver); }
+    .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .nav-logout {
+      margin-left: auto;
+      font-family: 'Cinzel', serif; font-size: .65rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--silver-dim); cursor: pointer;
+      padding: 8px 14px; border: 1px solid var(--b-dim); border-radius: 3px;
+      transition: color .2s, border-color .2s;
+    }
+    .nav-logout:hover { color: var(--danger); border-color: rgba(192,57,43,.4); }
+
+    /* ══════════════════════════════════════════════
+       MAIN CONTENT AREA
+    ══════════════════════════════════════════════ */
+    .main { flex: 1; max-width: 1300px; width: 100%; margin: 0 auto; padding: 36px 28px 72px; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* section header */
+    .sec-head { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+    .sec-head h2 { font-family: 'Cinzel', serif; font-size: .75rem; letter-spacing: .22em; text-transform: uppercase; color: var(--gold); white-space: nowrap; }
+    .sec-line { flex: 1; height: 1px; background: linear-gradient(to right, var(--gold-dim), transparent); }
+
+    /* ── Controls bar ── */
+    .controls { display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap; }
+    .ctrl-input {
+      background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 9px 14px; color: var(--text); font-size: .85rem; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color .2s; min-width: 220px;
+    }
+    .ctrl-input:focus { border-color: var(--b-gold); }
+    .ctrl-select {
+      background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 9px 14px; color: var(--text); font-size: .85rem; font-family: 'Inter', sans-serif;
+      outline: none; cursor: pointer;
+    }
+    .ctrl-btn {
+      background: transparent; border: 1px solid var(--gold); border-radius: 3px;
+      padding: 9px 18px; color: var(--gold); font-family: 'Cinzel', serif;
+      font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+      cursor: pointer; transition: background .2s, box-shadow .2s;
+    }
+    .ctrl-btn:hover { background: rgba(201,168,76,.08); box-shadow: 0 0 14px var(--glow); }
+
+    /* ── Table ── */
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th {
+      font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--gold); text-align: left;
+      padding: 10px 14px; border-bottom: 1px solid var(--b-gold);
+    }
+    .data-table td { padding: 12px 14px; border-bottom: 1px solid var(--b-dim); font-size: .85rem; vertical-align: middle; }
+    .data-table tr:hover td { background: rgba(201,168,76,.03); }
+    .data-table .avatar-sm {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid var(--gold-dim); background: var(--bg-card2);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: 'Cinzel', serif; font-size: .9rem; color: var(--gold);
+    }
+    .badge {
+      display: inline-block; padding: 3px 8px; border-radius: 2px;
+      font-size: .65rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 600;
+    }
+    .badge-gold   { background: rgba(201,168,76,.15); color: var(--gold); border: 1px solid rgba(201,168,76,.3); }
+    .badge-silver { background: rgba(176,184,200,.1);  color: var(--silver); border: 1px solid rgba(176,184,200,.2); }
+    .badge-dim    { background: rgba(255,255,255,.05); color: var(--text-dim); border: 1px solid var(--b-dim); }
+    .edit-btn {
+      background: transparent; border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 5px 12px; color: var(--silver-dim); font-size: .7rem;
+      font-family: 'Cinzel', serif; letter-spacing: .1em; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    .edit-btn:hover { border-color: var(--b-gold); color: var(--gold); }
+
+
+    /* ── Banner population cards ── */
+    .banner-pop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .banner-pop-card {
+      background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 18px 20px 14px; transition: border-color .2s, box-shadow .2s; cursor: pointer;
+      position: relative; overflow: hidden;
+    }
+    .banner-pop-card:hover { border-color: var(--b-gold); box-shadow: 0 0 16px var(--glow); }
+    .banner-pop-card.bp-empty-card { opacity: .55; }
+    .bp-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+    .bp-card-header .bp-name { margin-bottom: 0; }
+    .bp-card-medal { width: 110px; height: 110px; object-fit: contain; flex-shrink: 0; }
+    .bp-card-medal-placeholder { width: 110px; height: 110px; flex-shrink: 0; }
+    .bp-name { font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
+    .bp-count { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 700; color: var(--silver); line-height: 1; }
+    .bp-count-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+    .bp-count-label { font-size: .65rem; color: var(--text-dim); }
+    .bp-totalpts { font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .06em; color: var(--gold-dim); margin-bottom: 6px; }
+    .bp-top { font-size: .68rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 10px; }
+    .bp-top strong { color: var(--silver); }
+    .bp-fill-bg { height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
+    .bp-fill-bar { height: 100%; border-radius: 2px; background: linear-gradient(to right, var(--gold-dim), var(--gold)); }
+
+    /* ── Banner popup ── */
+    #bp-popup-overlay {
+      display: none; position: fixed; inset: 0; z-index: 600;
+      background: rgba(0,0,0,.72); align-items: center; justify-content: center;
+    }
+    #bp-popup-overlay.open { display: flex; }
+    .bp-popup {
+      background: var(--bg-card2); border: 1px solid var(--b-gold); border-radius: 4px;
+      width: 460px; max-height: 75vh; display: flex; flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0,0,0,.7);
+    }
+    .bp-popup-head {
+      padding: 16px 22px; border-bottom: 1px solid var(--b-dim);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .bp-popup-title { font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+    .bp-popup-medal { width: 28px; height: 28px; object-fit: contain; }
+    .bp-popup-close { background: none; border: none; color: var(--silver-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; margin-left: auto; }
+    .bp-popup-close:hover { color: var(--gold); }
+    .bp-stats-bar { display: flex; border-bottom: 1px solid var(--b-dim); }
+    .bp-stat { flex: 1; padding: 10px 0; text-align: center; border-right: 1px solid var(--b-dim); }
+    .bp-stat:last-child { border-right: none; }
+    .bp-stat-val { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700; color: var(--silver); }
+    .bp-stat-lbl { font-size: .6rem; color: var(--text-dim); margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
+    .bp-breakdown { padding: 10px 22px; border-bottom: 1px solid var(--b-dim); display: flex; flex-wrap: wrap; gap: 5px; }
+    .bp-rchip { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .07em; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; border: 1px solid var(--b-dim); color: var(--text-dim); }
+    .bp-rchip.has-n { border-color: var(--b-gold); color: var(--silver); }
+    .bp-rchip strong { color: var(--gold); }
+    .bp-popup-body { overflow-y: auto; flex: 1; }
+    .bp-member {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 22px; border-bottom: 1px solid var(--b-dim);
+      cursor: pointer; transition: background .15s;
+    }
+    .bp-member:hover { background: rgba(201,168,76,.05); }
+    .bp-member:last-child { border-bottom: none; }
+    .bp-medal-icon { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+    .bp-medal-spacer { width: 20px; flex-shrink: 0; }
+    .bp-member-info { flex: 1; min-width: 0; }
+    .bp-member-name { font-size: .78rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bp-member-sub { font-size: .66rem; color: var(--text-dim); margin-top: 1px; }
+    .bp-member-pts { font-family: 'Cinzel', serif; font-size: .75rem; color: var(--gold); flex-shrink: 0; text-align: right; min-width: 44px; }
+    .bp-near { font-size: .6rem; color: #6dbf67; white-space: nowrap; flex-shrink: 0; }
+    .bp-empty { font-size: .78rem; color: var(--text-dim); font-style: italic; padding: 20px 22px; }
+
+    /* ── Audit log ── */
+    .audit-field { font-size: .72rem; color: var(--gold-dim); font-family: 'Inter', sans-serif; font-style: italic; }
+    .audit-old { color: var(--danger); text-decoration: line-through; font-size: .8rem; }
+    .audit-new { color: var(--success); font-size: .8rem; }
+    .audit-ts  { font-size: .72rem; color: var(--silver-dim); white-space: nowrap; }
+
+    /* ══════════════════════════════════════════════
+       EDIT MODAL
+    ══════════════════════════════════════════════ */
+    #modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(7,7,15,.88);
+      display: none; align-items: flex-start; justify-content: center;
+      padding: 32px 16px; overflow-y: auto;
+    }
+    #modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--bg-modal); border: 1px solid var(--b-gold);
+      border-radius: 4px; width: 100%; max-width: 860px;
+      box-shadow: 0 0 60px rgba(201,168,76,.08);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 28px; border-bottom: 1px solid var(--b-dim);
+    }
+    .modal-header h3 { font-family: 'Cinzel', serif; font-size: .85rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold); }
+    .modal-close { background: none; border: none; color: var(--silver-dim); font-size: 1.4rem; cursor: pointer; padding: 4px 8px; transition: color .2s; }
+    .modal-close:hover { color: var(--danger); }
+    .modal-body { padding: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    .modal-section h4 {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .2em;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 16px;
+      padding-bottom: 8px; border-bottom: 1px solid var(--b-dim);
+    }
+    .modal-section.full { grid-column: 1 / -1; }
+    .field-group { display: flex; flex-direction: column; gap: 10px; }
+    .field-row { display: flex; flex-direction: column; gap: 5px; }
+    .field-row label { font-size: .63rem; letter-spacing: .15em; text-transform: uppercase; color: var(--text-dim); }
+    .field-row input, .field-row select {
+      background: var(--bg-card2); border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 8px 12px; color: var(--text); font-size: .85rem; font-family: 'Inter', sans-serif;
+      outline: none; transition: border-color .2s; width: 100%;
+    }
+    .field-row input:focus, .field-row select:focus { border-color: var(--b-gold); }
+    .banner-edit-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .banner-edit-item {
+      background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 3px; padding: 12px;
+    }
+    .bei-name { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px; }
+    .bei-row { display: flex; gap: 8px; align-items: center; }
+    .bei-pts { flex: 1; }
+    .bei-pts input { width: 100%; background: var(--bg-card2); border: 1px solid var(--b-dim); border-radius: 3px; padding: 6px 8px; color: var(--text); font-size: .8rem; font-family: 'Inter', sans-serif; outline: none; }
+    .bei-pts input:focus { border-color: var(--b-gold); }
+    .medal-toggle {
+      display: flex; align-items: center; gap: 6px;
+      font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-dim);
+      cursor: pointer; user-select: none;
+    }
+    .medal-toggle input[type=checkbox] { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+    .wallet-row { display: flex; gap: 10px; }
+    .wallet-row .field-row { flex: 1; }
+    .wallet-row .field-row label { display: block; }
+    .modal-footer {
+      padding: 18px 28px; border-top: 1px solid var(--b-dim);
+      display: flex; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .save-btn {
+      background: rgba(201,168,76,.1); border: 1px solid var(--gold); border-radius: 3px;
+      padding: 10px 28px; color: var(--gold); font-family: 'Cinzel', serif;
+      font-size: .72rem; letter-spacing: .16em; text-transform: uppercase;
+      cursor: pointer; transition: background .2s, box-shadow .2s;
+    }
+    .save-btn:hover { background: rgba(201,168,76,.18); box-shadow: 0 0 18px var(--glow); }
+    .cancel-btn {
+      background: none; border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 10px 22px; color: var(--silver-dim); font-family: 'Cinzel', serif;
+      font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    .cancel-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* player history inside modal */
+    .history-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+    .history-row { display: flex; gap: 12px; font-size: .75rem; padding: 6px 10px; background: var(--bg-card); border-radius: 2px; }
+    .history-ts   { color: var(--silver-dim); white-space: nowrap; flex-shrink: 0; }
+    .history-admin{ color: var(--gold-dim); flex-shrink: 0; }
+    .history-detail { color: var(--text-dim); flex: 1; }
+
+    /* ── Pages Editor ─────────────────────────────────── */
+    .pages-layout {
+      display: grid;
+      grid-template-columns: 270px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .pages-sub-nav { display: flex; gap: 4px; flex-wrap: wrap; }
+    .pages-sub-tab {
+      padding: 6px 14px; border: 1px solid var(--b-dim); border-radius: 3px;
+      font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+      color: var(--text-dim); cursor: pointer; transition: all .2s;
+    }
+    .pages-sub-tab:hover  { border-color: var(--b-gold); color: var(--silver); }
+    .pages-sub-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.06); }
+    .section-list { border: 1px solid var(--b-dim); border-radius: 3px; overflow-y: auto; max-height: 640px; }
+    .section-item {
+      padding: 11px 14px; border-bottom: 1px solid var(--b-dim);
+      cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-item:last-child { border-bottom: none; }
+    .section-item:hover  { background: rgba(201,168,76,.04); }
+    .section-item.active { background: rgba(201,168,76,.09); border-left: 2px solid var(--gold); padding-left: 12px; }
+    .si-num   { font-family: 'Cinzel', serif; font-size: .62rem; color: var(--gold-dim); width: 22px; flex-shrink: 0; }
+    .si-title { font-size: .78rem; color: var(--text); flex: 1; line-height: 1.3; }
+    .si-type  { font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--silver-dim); flex-shrink: 0; }
+    .pages-editor { display: flex; flex-direction: column; gap: 14px; }
+    .editor-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 480px; border: 1px dashed var(--b-dim); border-radius: 3px;
+      color: var(--text-dim); font-size: .85rem; gap: 10px;
+    }
+    .editor-empty span { font-size: 1.8rem; opacity: .3; }
+    .editor-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-bottom: 14px; border-bottom: 1px solid var(--b-dim); gap: 12px;
+    }
+    .editor-meta-label { font-size: .6rem; letter-spacing: .16em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 3px; }
+    .editor-meta-title { font-family: 'Cinzel', serif; font-size: .95rem; color: var(--gold); }
+    .editor-action-row { display: flex; gap: 8px; }
+    .del-btn {
+      background: none; border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 7px 14px; color: var(--silver-dim); font-family: 'Cinzel', serif;
+      font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    .del-btn:hover { border-color: var(--danger); color: var(--danger); }
+    .editor-fields { display: flex; flex-direction: column; gap: 12px; }
+    .editor-textarea {
+      width: 100%; background: var(--bg-card2); border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 14px; color: var(--text);
+      font-size: .875rem; font-family: 'Crimson Text', serif;
+      line-height: 1.75; resize: vertical; min-height: 380px;
+      outline: none; transition: border-color .2s;
+    }
+    .editor-textarea:focus { border-color: var(--b-gold); }
+    .editor-footer { display: flex; align-items: center; justify-content: space-between; }
+    .char-count { font-size: .67rem; color: var(--text-dim); }
+    .new-entry-btn {
+      margin-top: 8px; width: 100%; background: transparent;
+      border: 1px dashed var(--b-dim); border-radius: 3px;
+      padding: 10px; color: var(--text-dim); font-family: 'Cinzel', serif;
+      font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+      cursor: pointer; transition: all .2s;
+    }
+    .new-entry-btn:hover { border-color: var(--gold); color: var(--gold); }
+    /* Pages registry */
+    .pages-registry { display: flex; flex-direction: column; gap: 10px; }
+    .page-reg-row {
+      display: flex; align-items: center; gap: 16px;
+      background: var(--bg-card); border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 16px 20px; transition: border-color .2s;
+    }
+    .page-reg-row:hover { border-color: var(--b-gold); }
+    .prr-name { font-family: 'Cinzel', serif; font-size: .9rem; color: var(--silver); flex: 1; }
+    .prr-url  { font-family: monospace; font-size: .72rem; color: var(--text-dim); }
+    .prr-count{ font-size: .75rem; color: var(--text-dim); }
+    .prr-badge{ padding: 3px 10px; border-radius: 2px; font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; }
+    .badge-live{ background: var(--success-dim); color: var(--success); border: 1px solid rgba(39,174,96,.3); }
+    .add-page-stub {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--bg-card); border: 1px dashed var(--b-dim);
+      border-radius: 3px; padding: 16px 20px;
+      cursor: pointer; transition: all .2s;
+    }
+    .add-page-stub:hover { border-color: var(--gold); background: rgba(201,168,76,.03); }
+    .add-page-stub p { font-size: .8rem; color: var(--text-dim); }
+    .add-page-stub p strong { color: var(--gold); }
+
+    /* ── Page manager master split ── */
+    .pages-master-split {
+      display: grid;
+      grid-template-columns: 1fr 440px;
+      gap: 20px;
+      align-items: start;
+    }
+    .pages-edit-region {
+      overflow-y: auto;
+      max-height: 620px;
+      padding-right: 10px;
+    }
+    .edit-sub-panel { display: flex; flex-direction: column; gap: 12px; }
+    .edit-sub-panel .editor-empty { height: 240px; }
+    .edit-sub-panel .section-list { max-height: 200px; }
+    .preview-panel {
+      position: sticky;
+      top: 20px;
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      overflow: hidden;
+      background: var(--bg-card2);
+    }
+    .preview-label {
+      padding: 8px 14px;
+      font-size: .6rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      border-bottom: 1px solid var(--b-dim);
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .site-preview-frame {
+      width: 100%;
+      height: 560px;
+      border: none;
+      display: block;
+    }
+    .home-form { display: flex; flex-direction: column; gap: 14px; }
+    .hf-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hf-label {
+      font-size: .6rem; letter-spacing: .13em; text-transform: uppercase;
+      color: var(--gold-dim); margin-bottom: 3px;
+    }
+    .hf-input {
+      width: 100%; background: var(--bg-card2); border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 8px 12px; color: var(--text);
+      font-size: .85rem; font-family: 'Crimson Text', serif;
+      outline: none; transition: border-color .2s; box-sizing: border-box;
+    }
+    .hf-input:focus { border-color: var(--b-gold); }
+    .seg-block {
+      border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 14px; display: flex; flex-direction: column; gap: 10px;
+      background: rgba(201,168,76,.02);
+    }
+    .seg-label {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--gold-dim); margin-bottom: 2px;
+    }
+    .seg-label-row { display: flex; justify-content: space-between; align-items: center; }
+    .remove-btn {
+      background: none; border: 1px solid rgba(180,60,60,.35); color: rgba(210,90,90,.65);
+      border-radius: 3px; padding: 2px 10px; font-size: .65rem; cursor: pointer;
+      font-family: 'Cinzel', serif; letter-spacing: .08em; text-transform: uppercase;
+      transition: border-color .2s, color .2s;
+    }
+    .remove-btn:hover { border-color: rgba(220,80,80,.8); color: rgba(255,120,120,1); }
+    .reorder-btns { display:flex; flex-direction:column; gap:2px; flex-shrink:0; margin-right:6px; }
+    .order-btn {
+      background: none; border: 1px solid var(--b-dim); border-radius: 2px;
+      color: var(--text-dim); font-size: .6rem; line-height:1; padding: 1px 4px;
+      cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    .order-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+    .hf-textarea {
+      width: 100%; background: var(--bg-card2); border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 10px 12px; color: var(--text);
+      font-size: .85rem; font-family: 'Crimson Text', serif;
+      line-height: 1.65; resize: vertical; outline: none;
+      transition: border-color .2s; box-sizing: border-box; min-height: 80px;
+    }
+    .hf-textarea:focus { border-color: var(--b-gold); }
+    .hf-save-row { display: flex; justify-content: flex-end; }
+    .hf-section-head {
+      font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--gold); padding-bottom: 8px;
+      border-bottom: 1px solid var(--b-dim); margin-bottom: 4px;
+    }
+    .hf-input.field-highlight, .hf-textarea.field-highlight {
+      border-color: var(--gold);
+      animation: fieldPulse .7s ease forwards;
+    }
+    @keyframes fieldPulse {
+      0%   { box-shadow: 0 0 0 0   rgba(201,168,76,.5); }
+      100% { box-shadow: 0 0 0 10px rgba(201,168,76,.0); }
+    }
+    .edit-mode-bar {
+      background: rgba(201,168,76,.06); border-bottom: 1px solid var(--b-gold);
+      padding: 6px 14px; font-size: .58rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--gold-dim); text-align: center;
+    }
+    /* ── Timeline request template ── */
+    .tl-notice {
+      border: 1px solid rgba(201,168,76,.3); border-radius: 3px;
+      background: rgba(201,168,76,.04); padding: 14px 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .tl-notice-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+    .tl-notice-text { font-size: .8rem; color: var(--text-dim); line-height: 1.6; }
+    .tl-notice-text strong { color: var(--gold); font-family: 'Cinzel', serif; font-size: .72rem; letter-spacing: .08em; }
+    .tl-template { display: flex; flex-direction: column; gap: 12px; }
+    .tl-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tl-copy-row { display: flex; justify-content: flex-end; gap: 10px; align-items: center; }
+    .tl-copied-msg { font-size: .72rem; color: var(--success); opacity: 0; transition: opacity .3s; }
+    .tl-copied-msg.show { opacity: 1; }
+    .tl-num-hint { font-size: .58rem; color: var(--silver-dim); font-family: monospace; letter-spacing: 0; text-transform: none; }
+
+    /* ── Add member btn ── */
+    .add-btn {
+      margin-left: auto;
+      background: rgba(201,168,76,.08); border: 1px solid var(--gold); border-radius: 3px;
+      padding: 9px 18px; color: var(--gold); font-family: 'Cinzel', serif;
+      font-size: .65rem; letter-spacing: .14em; text-transform: uppercase;
+      cursor: pointer; transition: background .2s, box-shadow .2s;
+    }
+    .add-btn:hover { background: rgba(201,168,76,.16); box-shadow: 0 0 14px var(--glow); }
+
+    /* responsive */
+    @media (max-width: 860px) {
+      .modal-body { grid-template-columns: 1fr; }
+      .banner-pop-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .banner-pop-grid { grid-template-columns: 1fr 1fr; }
+      .banner-edit-grid { grid-template-columns: 1fr 1fr; }
+      .lb-bar-bg { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<!-- ── Login ── -->
+<div id="login-overlay">
+  <div class="login-box">
+    <img src="ofs_logo.png" alt="OFS" onerror="this.style.display='none'">
+    <h2>Admin Portal</h2>
+    <p>Order of the Fallen Star</p>
+    <input type="password" id="pw-input" placeholder="Enter admin password" autocomplete="off">
+    <button class="login-btn" onclick="tryLogin()">Enter</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ── App ── -->
+<div id="app">
+
+  <!-- Nav -->
+  <nav class="top-nav">
+    <a class="nav-brand" href="OFS_Home.html" title="Return to site">
+      <img src="ofs_logo.png" alt="OFS" onerror="this.style.display='none'">
+      <span>Admin</span>
+    </a>
+    <div class="nav-tabs">
+      <div class="nav-tab active" data-tab="roster">Roster</div>
+      <div class="nav-tab"        data-tab="banners">Banners</div>
+      <div class="nav-tab"        data-tab="audit">Audit Log</div>
+      <div class="nav-tab"        data-tab="pages">Pages</div>
+    </div>
+    <a href="OFS_Home.html" style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--silver-dim);text-decoration:none;padding:8px 14px;border:1px solid var(--b-dim);border-radius:3px;margin-right:8px;transition:color .2s,border-color .2s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--b-gold)'" onmouseout="this.style.color='var(--silver-dim)';this.style.borderColor='var(--b-dim)'">← Site</a>
+    <div class="nav-logout" onclick="logout()">Logout</div>
+  </nav>
+
+  <!-- Content -->
+  <div class="main">
+
+    <!-- ── Roster ── -->
+    <div class="tab-panel active" id="tab-roster">
+      <div class="sec-head"><h2>Member Roster</h2><div class="sec-line"></div></div>
+      <div class="controls">
+        <input  class="ctrl-input"  id="roster-search" placeholder="Search by username…" oninput="renderRoster()">
+        <select class="ctrl-select" id="roster-filter" onchange="renderRoster()">
+          <option value="">All Ranks</option>
+          <option>Serf</option><option>Commoner</option><option>Page</option>
+          <option>Squire</option><option>Knight</option><option>Templar</option>
+          <option>Praetorian</option><option>Commander</option><option>Lord</option>
+          <option>Lord Commander</option><option>Chapter Master</option>
+        </select>
+        <button class="add-btn" onclick="openModal(null)">+ Add Member</button>
+      </div>
+      <table class="data-table" id="roster-table">
+        <thead><tr>
+          <th></th>
+          <th>Username</th>
+          <th>Rank</th>
+          <th>Rep Level</th>
+          <th>Total XP</th>
+          <th>Active Banner</th>
+          <th>Total Banner Pts</th>
+          <th>Wallet</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="roster-tbody"></tbody>
+      </table>
+    </div>
+
+
+    <!-- ── Banners ── -->
+    <div class="tab-panel" id="tab-banners">
+      <div class="sec-head"><h2>Banner Population</h2><div class="sec-line"></div></div>
+      <div class="banner-pop-grid" id="banner-pop-grid"></div>
+    </div>
+
+    <!-- ── Audit Log ── -->
+    <div class="tab-panel" id="tab-audit">
+      <div class="sec-head"><h2>Audit Log</h2><div class="sec-line"></div></div>
+      <div class="controls">
+        <input class="ctrl-input" id="audit-search" placeholder="Filter by player or admin…" oninput="renderAudit()">
+        <button class="ctrl-btn" style="margin-left:auto; border-color:var(--danger); color:var(--danger)" onclick="clearAudit()">Clear Log</button>
+      </div>
+      <table class="data-table" id="audit-table">
+        <thead><tr>
+          <th>Timestamp</th>
+          <th>Admin</th>
+          <th>Player</th>
+          <th>Field</th>
+          <th>Old Value</th>
+          <th>New Value</th>
+        </tr></thead>
+        <tbody id="audit-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- ── Pages ── -->
+    <div class="tab-panel" id="tab-pages">
+      <div class="sec-head"><h2>Page Manager</h2><div class="sec-line"></div></div>
+
+      <!-- Master split: persistent iframe left + swappable edit panel right -->
+      <div class="pages-master-split">
+
+        <!-- Left: persistent live preview -->
+        <div class="preview-panel">
+          <div class="preview-label">
+            <span>Live Preview — <span id="preview-page-label">Home Page</span></span>
+            <div class="pages-sub-nav" id="pages-sub-nav">
+              <div class="pages-sub-tab active" data-page="home">Home</div>
+              <div class="pages-sub-tab"        data-page="codex">Codex</div>
+              <div class="pages-sub-tab"        data-page="timeline">Timeline</div>
+            </div>
+          </div>
+          <div class="edit-mode-bar" id="edit-mode-bar" style="display:none">Click any element to jump to its field</div>
+          <iframe id="pages-preview-frame" class="site-preview-frame" src="OFS_Home.html"></iframe>
+        </div>
+
+        <!-- Right: swappable edit panels -->
+        <div class="pages-edit-region">
+
+          <!-- Home edit panel -->
+          <div id="edit-home" class="home-form">
+
+            <!-- HERO -->
+            <div class="hf-section-head">Hero</div>
+            <div>
+              <div class="hf-label">Organization Type (above title)</div>
+              <input id="hf-hero-subtitle" class="hf-input" type="text" placeholder="e.g. Star Citizen Organization">
+            </div>
+            <div>
+              <div class="hf-label">Hero Title (new line = line break)</div>
+              <textarea id="hf-hero-title" class="hf-textarea" rows="2" placeholder="Order of the&#10;Fallen Star"></textarea>
+            </div>
+            <div>
+              <div class="hf-label">Hero Motto (new line = line break)</div>
+              <textarea id="hf-hero-motto" class="hf-textarea" rows="3" placeholder='"From betrayal, we were forged...'></textarea>
+            </div>
+            <div>
+              <div class="hf-label">Logo Image Path</div>
+              <input id="hf-hero-logo" class="hf-input" type="text" placeholder="ofs_logo.png">
+            </div>
+            <div class="hf-save-row">
+              <button class="save-btn" onclick="saveHomeContentForm()">Save Hero</button>
+            </div>
+
+            <!-- ABOUT -->
+            <div class="hf-section-head" style="margin-top:8px">About</div>
+            <div class="hf-meta">
+              <div>
+                <div class="hf-label">Section Label (small caps)</div>
+                <input id="hf-about-label" class="hf-input" type="text" placeholder="Who We Are">
+              </div>
+              <div>
+                <div class="hf-label">Section Heading</div>
+                <input id="hf-about-heading" class="hf-input" type="text" placeholder="Forged from the Void">
+              </div>
+            </div>
+            <div>
+              <div class="hf-label">Body Text (blank line = paragraph break)</div>
+              <textarea id="hf-about-body" class="hf-textarea" rows="7"></textarea>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Pillar 1</div>
+              <div><div class="hf-label">Title</div><input id="hf-pillar-0-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Text</div><textarea id="hf-pillar-0-text" class="hf-textarea" rows="2"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Pillar 2</div>
+              <div><div class="hf-label">Title</div><input id="hf-pillar-1-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Text</div><textarea id="hf-pillar-1-text" class="hf-textarea" rows="2"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Pillar 3</div>
+              <div><div class="hf-label">Title</div><input id="hf-pillar-2-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Text</div><textarea id="hf-pillar-2-text" class="hf-textarea" rows="2"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Pillar 4</div>
+              <div><div class="hf-label">Title</div><input id="hf-pillar-3-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Text</div><textarea id="hf-pillar-3-text" class="hf-textarea" rows="2"></textarea></div>
+            </div>
+            <div class="hf-save-row">
+              <button class="save-btn" onclick="saveHomeContentForm()">Save About</button>
+            </div>
+
+            <!-- TRIUMVIRATE -->
+            <div class="hf-section-head" style="margin-top:8px">Triumvirate</div>
+            <div class="hf-meta">
+              <div>
+                <div class="hf-label">Section Label (small caps)</div>
+                <input id="hf-triv-label" class="hf-input" type="text" placeholder="Leadership">
+              </div>
+              <div>
+                <div class="hf-label">Section Heading</div>
+                <input id="hf-triv-heading" class="hf-input" type="text" placeholder="The Triumvirate">
+              </div>
+            </div>
+            <div id="hf-triv-list"></div>
+            <div class="hf-save-row" style="justify-content:space-between">
+              <button class="new-entry-btn" onclick="addTrivBlock()">+ Add Member</button>
+              <button class="save-btn" onclick="saveHomeContentForm()">Save Triumvirate</button>
+            </div>
+
+            <!-- CHRONICLE -->
+            <div class="hf-section-head" style="margin-top:8px">Latest Chronicle</div>
+            <div class="hf-meta">
+              <div>
+                <div class="hf-label">Section Label (small caps)</div>
+                <input id="hf-chronicle-label" class="hf-input" type="text" placeholder="War Chronicle">
+              </div>
+              <div>
+                <div class="hf-label">Section Heading</div>
+                <input id="hf-chronicle-heading" class="hf-input" type="text" placeholder="Latest Chronicle">
+              </div>
+              <div>
+                <div class="hf-label">Chronicle Tag</div>
+                <input id="hf-tag" class="hf-input" type="text" placeholder="e.g. Chronicle V">
+              </div>
+              <div style="grid-column:1/-1">
+                <div class="hf-label">Title</div>
+                <input id="hf-title" class="hf-input" type="text" placeholder="Chronicle title">
+              </div>
+              <div style="grid-column:1/-1">
+                <div class="hf-label">Subtitle</div>
+                <input id="hf-subtitle" class="hf-input" type="text" placeholder="Subtitle / era note">
+              </div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Segment 1</div>
+              <div><div class="hf-label">Heading</div><input id="hf-s1-heading" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Body (blank line = paragraph break)</div><textarea id="hf-s1-body" class="hf-textarea" rows="5"></textarea></div>
+              <div><div class="hf-label">Quote (optional)</div><textarea id="hf-s1-quote" class="hf-textarea" rows="3"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Segment 2</div>
+              <div><div class="hf-label">Heading</div><input id="hf-s2-heading" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Body</div><textarea id="hf-s2-body" class="hf-textarea" rows="5"></textarea></div>
+              <div><div class="hf-label">Quote (optional)</div><textarea id="hf-s2-quote" class="hf-textarea" rows="3"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Segment 3</div>
+              <div><div class="hf-label">Heading</div><input id="hf-s3-heading" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Body</div><textarea id="hf-s3-body" class="hf-textarea" rows="5"></textarea></div>
+              <div><div class="hf-label">Quote (optional)</div><textarea id="hf-s3-quote" class="hf-textarea" rows="3"></textarea></div>
+            </div>
+            <div>
+              <div class="hf-label">Closing Decree</div>
+              <input id="hf-decree" class="hf-input" type="text" placeholder="Thus is the chronicle entered...">
+            </div>
+            <div class="hf-save-row">
+              <button class="save-btn" onclick="saveHomeChronicleForm()">Save Chronicle</button>
+            </div>
+
+            <!-- BANNERS -->
+            <div class="hf-section-head" style="margin-top:8px">Paths of Service</div>
+            <div>
+              <div class="hf-label">Section Label (small caps above heading)</div>
+              <input id="hf-banners-label" class="hf-input" type="text" placeholder="The Eleven Banners">
+            </div>
+            <div>
+              <div class="hf-label">Section Heading</div>
+              <input id="hf-banners-heading" class="hf-input" type="text" placeholder="Paths of Service">
+            </div>
+            <div>
+              <div class="hf-label">Intro Paragraph</div>
+              <textarea id="hf-banners-intro" class="hf-textarea" rows="3"></textarea>
+            </div>
+            <div id="hf-banners-list"></div>
+            <div class="hf-save-row" style="justify-content:space-between">
+              <button class="new-entry-btn" onclick="addBannerBlock()">+ Add Banner</button>
+              <button class="save-btn" onclick="saveHomeBannersForm()">Save Banners</button>
+            </div>
+
+            <!-- PAGES NAV -->
+            <div class="hf-section-head" style="margin-top:8px">Pages Navigator</div>
+            <div>
+              <div class="hf-label">Section Label</div>
+              <input id="hf-pages-label" class="hf-input" type="text" placeholder="Navigate the Order">
+            </div>
+            <div>
+              <div class="hf-label">Section Heading</div>
+              <input id="hf-pages-heading" class="hf-input" type="text" placeholder="Pages &amp; Records">
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Card 1</div>
+              <div class="hf-meta">
+                <div><div class="hf-label">Icon</div><input id="hf-page-0-icon" class="hf-input" type="text" style="max-width:80px"></div>
+                <div><div class="hf-label">Title</div><input id="hf-page-0-title" class="hf-input" type="text"></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Description</div><textarea id="hf-page-0-desc" class="hf-textarea" rows="2"></textarea></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Link (href)</div><input id="hf-page-0-href" class="hf-input" type="text"></div>
+              </div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Card 2</div>
+              <div class="hf-meta">
+                <div><div class="hf-label">Icon</div><input id="hf-page-1-icon" class="hf-input" type="text" style="max-width:80px"></div>
+                <div><div class="hf-label">Title</div><input id="hf-page-1-title" class="hf-input" type="text"></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Description</div><textarea id="hf-page-1-desc" class="hf-textarea" rows="2"></textarea></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Link (href)</div><input id="hf-page-1-href" class="hf-input" type="text"></div>
+              </div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Card 3</div>
+              <div class="hf-meta">
+                <div><div class="hf-label">Icon</div><input id="hf-page-2-icon" class="hf-input" type="text" style="max-width:80px"></div>
+                <div><div class="hf-label">Title</div><input id="hf-page-2-title" class="hf-input" type="text"></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Description</div><textarea id="hf-page-2-desc" class="hf-textarea" rows="2"></textarea></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Link (href)</div><input id="hf-page-2-href" class="hf-input" type="text"></div>
+              </div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Card 4</div>
+              <div class="hf-meta">
+                <div><div class="hf-label">Icon</div><input id="hf-page-3-icon" class="hf-input" type="text" style="max-width:80px"></div>
+                <div><div class="hf-label">Title</div><input id="hf-page-3-title" class="hf-input" type="text"></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Description</div><textarea id="hf-page-3-desc" class="hf-textarea" rows="2"></textarea></div>
+                <div style="grid-column:1/-1"><div class="hf-label">Link (href)</div><input id="hf-page-3-href" class="hf-input" type="text"></div>
+              </div>
+            </div>
+            <div class="hf-save-row">
+              <button class="save-btn" onclick="saveHomePagesForm()">Save Pages Nav</button>
+            </div>
+
+          </div>
+
+          <!-- Codex edit panel -->
+          <div id="edit-codex" class="edit-sub-panel" style="display:none">
+            <div class="section-list" id="codex-list"></div>
+            <button class="new-entry-btn" onclick="newCodexEntry()">+ New Section</button>
+            <div class="pages-editor" id="codex-editor">
+              <div class="editor-empty"><span>☰</span>Select a section to edit</div>
+            </div>
+          </div>
+
+          <!-- Timeline edit panel -->
+          <div id="edit-timeline" class="edit-sub-panel" style="display:none">
+            <div class="section-list" id="timeline-list"></div>
+            <div class="pages-editor" id="timeline-editor">
+              <div class="editor-empty"><span>📜</span>Select an entry to edit</div>
+            </div>
+
+            <!-- Block edit request (populated when user clicks a block in iframe) -->
+            <div id="tl-block-editor" style="display:none;border-top:1px solid var(--b-dim);margin-top:16px;padding:16px 0 0;">
+              <div class="editor-meta-label" style="margin-bottom:10px;">Block Editor</div>
+              <div class="tl-template" id="tl-block-form">
+                <div>
+                  <div class="hf-label">Block Identifier <span style="color:var(--text-dim);font-size:.7rem">(read-only — used to find the block)</span></div>
+                  <input id="tlb-id" class="hf-input" type="text" readonly style="opacity:.6">
+                </div>
+                <div id="tl-block-card-fields">
+                  <div class="tl-row-2" style="margin-top:0">
+                    <div>
+                      <div class="hf-label">Card Tag Label</div>
+                      <input id="tlb-tag" class="hf-input" type="text" placeholder="e.g. War Event">
+                    </div>
+                    <div>
+                      <div class="hf-label">Category Color</div>
+                      <select id="tlb-tag-color" class="hf-input" style="max-width:160px">
+                        <option value="#e86060">War &amp; Battle</option>
+                        <option value="#6aaae8">Political</option>
+                        <option value="#50d090">Exploration</option>
+                        <option value="#e8a040">Founding</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="hf-label">Card Title</div>
+                    <input id="tlb-title" class="hf-input" type="text">
+                  </div>
+                  <div>
+                    <div class="hf-label">Card Body <span style="color:var(--text-dim);font-size:.7rem">(HTML — use &lt;em&gt; for italic, &lt;p&gt; for paragraphs)</span></div>
+                    <textarea id="tlb-body" class="hf-textarea" rows="7"></textarea>
+                  </div>
+                </div>
+                <div id="tl-block-age-fields" style="display:none">
+                  <div>
+                    <div class="hf-label">Age Label</div>
+                    <input id="tlb-age-label" class="hf-input" type="text" placeholder="e.g. Age I · The Age of Severance">
+                  </div>
+                  <div>
+                    <div class="hf-label">Label Color</div>
+                    <input id="tlb-age-color" class="hf-input" type="text" placeholder="e.g. #9b5a5a" style="max-width:140px">
+                  </div>
+                </div>
+                <div class="tl-copy-row">
+                  <span class="tl-copied-msg" id="tlb-saved">Saved!</span>
+                  <button class="save-btn" onclick="saveBlockEdit()">Save Block Edit</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- New entry request template -->
+            <div style="border-top:1px solid var(--b-dim);margin-top:16px;padding:16px 0 0;">
+              <div class="tl-notice">
+                <div class="tl-notice-icon">📜</div>
+                <div class="tl-notice-text">
+                  <strong>Timeline adds go through Reno.</strong><br>
+                  Fill out the template below, copy the request, and send it to Reno. He will work with the lorekeeper to add the entry with proper styling and placement.
+                </div>
+              </div>
+              <div class="tl-template">
+                <div class="tl-row-2">
+                  <div>
+                    <div class="hf-label">Entry Type</div>
+                    <select id="tl-type" class="hf-input" onchange="updateTlNumHint()">
+                      <option value="Chronicle">Chronicle</option>
+                      <option value="Age">Age</option>
+                      <option value="Prologue">Prologue</option>
+                      <option value="Epilogue">Epilogue</option>
+                      <option value="Interlude">Interlude</option>
+                      <option value="Proclamation">Proclamation</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div class="hf-label">Number <span id="tl-num-hint" class="tl-num-hint"></span></div>
+                    <input id="tl-num" class="hf-input" type="text" placeholder="e.g. VI">
+                  </div>
+                </div>
+                <div>
+                  <div class="hf-label">Title</div>
+                  <input id="tl-title" class="hf-input" type="text" placeholder="e.g. Chronicle VI">
+                </div>
+                <div>
+                  <div class="hf-label">Subtitle</div>
+                  <input id="tl-subtitle" class="hf-input" type="text" placeholder="e.g. The Age of Ascendance">
+                </div>
+                <div>
+                  <div class="hf-label">What happened (blank line = paragraph break)</div>
+                  <textarea id="tl-body" class="hf-textarea" rows="6" placeholder="Describe the events of this period..."></textarea>
+                </div>
+                <div>
+                  <div class="hf-label">Key figures involved</div>
+                  <textarea id="tl-figures" class="hf-textarea" rows="3" placeholder="e.g. Primarch Vanderan, Captain Blacklung..."></textarea>
+                </div>
+                <div>
+                  <div class="hf-label">Notable actions / battles</div>
+                  <textarea id="tl-actions" class="hf-textarea" rows="3" placeholder="e.g. Strike above MicroTech, interdiction of..."></textarea>
+                </div>
+                <div>
+                  <div class="hf-label">Outcome / significance</div>
+                  <textarea id="tl-outcome" class="hf-textarea" rows="3" placeholder="What was the result or lasting impact?"></textarea>
+                </div>
+                <div class="tl-copy-row">
+                  <span class="tl-copied-msg" id="tl-copied">Copied to clipboard</span>
+                  <button class="save-btn" onclick="copyTimelineRequest()">Copy Request for Reno</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+
+          <!-- No-editor notice (shown when iframe navigates to a page with no edit panel) -->
+          <div id="no-editor-notice" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--text-dim);font-family:'Cinzel',serif;font-size:.8rem;letter-spacing:.08em;">
+            <span style="font-size:1.6rem;opacity:.3">⚙</span>
+            No editor set up for this Page
+          </div>
+
+        </div><!-- /pages-edit-region -->
+      </div><!-- /pages-master-split -->
+
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ── Banner Popup ── -->
+<div id="bp-popup-overlay">
+  <div class="bp-popup">
+    <div class="bp-popup-head">
+      <img class="bp-popup-medal" id="bp-popup-medal" src="" alt="">
+      <div class="bp-popup-title" id="bp-popup-title"></div>
+      <button class="bp-popup-close" onclick="document.getElementById('bp-popup-overlay').classList.remove('open')">&#x2715;</button>
+    </div>
+    <div class="bp-stats-bar" id="bp-stats-bar"></div>
+    <div class="bp-breakdown" id="bp-breakdown"></div>
+    <div class="bp-popup-body" id="bp-popup-body"></div>
+  </div>
+</div>
+
+<!-- ── Edit Modal ── -->
+<div id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Edit Member</h3>
+      <button class="modal-close" onclick="closeModal()">&#x2715;</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <!-- Populated by JS -->
+    </div>
+    <div class="modal-footer">
+      <div style="font-size:.7rem;color:var(--text-dim)" id="modal-note">All changes are logged to the audit trail.</div>
+      <div style="display:flex;gap:10px">
+        <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+        <button class="save-btn"   onclick="saveModal()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="ofs-data.js"></script>
+<script src="ofs-sheets.js"></script>
+<script src="ofs-lore.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   STAR FIELD
+══════════════════════════════════════════════════════════ */
+(function(){
+  const cv=document.getElementById('starfield'), cx=cv.getContext('2d'); let st=[];
+  function resize(){cv.width=window.innerWidth;cv.height=window.innerHeight;st=[];const n=Math.floor(cv.width*cv.height/4200);for(let i=0;i<n;i++)st.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1.0+.2,a:Math.random()*.5+.1,s:Math.random()*.0004+.0001});}
+  function draw(t){cx.clearRect(0,0,cv.width,cv.height);for(const s of st){const p=Math.sin(t*s.s*900+s.x*.01)*.18+.82;cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(190,210,255,${(s.a*p).toFixed(3)})`;cx.fill();}requestAnimationFrame(draw);}
+  resize();window.addEventListener('resize',resize);requestAnimationFrame(draw);
+})();
+
+/* ══════════════════════════════════════════════════════════
+   AUTH — Discord session OR fallback password
+══════════════════════════════════════════════════════════ */
+const ADMIN_PASSWORD  = 'Admin1234';
+const SESSION_KEY     = 'ofs_discord_session';
+let currentAdmin = '';
+
+function grantAccess(name) {
+  currentAdmin = name || 'Admin';
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('roster-tbody').innerHTML =
+    '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:24px">Loading roster…</td></tr>';
+  OFSSheets.load()
+    .then(() => renderAll())
+    .catch(() => renderAll()); // fall back to cached/default data on error
+}
+
+// On load: check for a Discord session and auto-grant if present
+(function checkSession() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    if (s && s.id && s.token) {
+      grantAccess(s.username || 'Admin');
+    }
+  } catch (e) { /* ignore */ }
+}());
+
+function tryLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    grantAccess('Admin');
+  } else {
+    document.getElementById('login-err').textContent = 'Incorrect password.';
+  }
+}
+document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  currentAdmin = '';
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('pw-input').value = '';
+  document.getElementById('login-err').textContent = '';
+}
+
+/* ══════════════════════════════════════════════════════════
+   DATA
+══════════════════════════════════════════════════════════ */
+const BANNER_NAMES = [
+  'The Artificer','The Astraeus','The Engineer','The Explorer','The Fang',
+  'The Forager','The Guardian','The Healer','The Merchant','The Privateer','The Talon'
+];
+
+const BANNER_RANKS = {
+  'The Artificer' :['Apprentice','Tinkerer',  'Artisan',   'Craftsman'   ],
+  'The Astraeus'  :['Apprentice','Helion',    'Archon',    'Strategos'   ],
+  'The Engineer'  :['Apprentice','Technician','Fabricator','Mechanic'    ],
+  'The Explorer'  :['Apprentice','Seeker',    'Wayfarer',  'Pathfinder'  ],
+  'The Fang'      :['Apprentice','Hound',     'Stalker',   'Wolf'        ],
+  'The Forager'   :['Apprentice','Scavenger', 'Harvester', 'Prospector'  ],
+  'The Guardian'  :['Apprentice','Vanguard',  'Bulwark',   'Sentinel'    ],
+  'The Healer'    :['Apprentice','Apothecary','Physician', 'Chirurgeon'  ],
+  'The Merchant'  :['Apprentice','Provisioner','Steward',  'Quartermaster'],
+  'The Privateer' :['Apprentice','Wayman',    'Freeblade', 'Marauder'    ],
+  'The Talon'     :['Apprentice','Sparrow',   'Falcon',    'Raven'       ]
+};
+
+const ORG_RANKS = [
+  'Serf','Commoner','Page','Squire','Knight','Templar',
+  'Praetorian','Commander','Lord','Lord Commander','Chapter Master',
+  'Primarch of Conquest','Primarch of Harmony','Primarch of Justice'
+];
+
+// ── Sample roster — replace with live data when wiring backend ──
+let PLAYERS = [
+  { id:'1', username:'Vanderan',          rank:'Primarch of Conquest', faction:'Iron Reavers',      activeBanner:'The Fang',
+    stats:{PatrolCount:47,TotalLength:312,FPS_Kills_Total:1840,Ship_Kills_Total:623,Crusades_Total:18,Turret_Kills_Total:294,Quest_Total:112,Led_Completed_Quests:56,Led_Completed_Crusades:12},
+    banners:{'The Artificer':{p:8,m:false},'The Astraeus':{p:22,m:true},'The Engineer':{p:15,m:false},'The Explorer':{p:38,m:true},'The Fang':{p:67,m:true},'The Forager':{p:12,m:false},'The Guardian':{p:30,m:false},'The Healer':{p:19,m:true},'The Merchant':{p:60,m:true},'The Privateer':{p:5,m:false},'The Talon':{p:44,m:false}},
+    wallet:{gold:12,silver:34,copper:88}, avatarUrl:'' },
+
+  { id:'2', username:'Kraz',              rank:'Primarch of Harmony',  faction:'Iron Reavers',      activeBanner:'The Merchant',
+    stats:{PatrolCount:38,TotalLength:244,FPS_Kills_Total:920,Ship_Kills_Total:411,Crusades_Total:15,Turret_Kills_Total:180,Quest_Total:94,Led_Completed_Quests:44,Led_Completed_Crusades:10},
+    banners:{'The Artificer':{p:5,m:false},'The Astraeus':{p:14,m:false},'The Engineer':{p:20,m:false},'The Explorer':{p:28,m:true},'The Fang':{p:31,m:true},'The Forager':{p:9,m:false},'The Guardian':{p:22,m:false},'The Healer':{p:11,m:false},'The Merchant':{p:55,m:true},'The Privateer':{p:3,m:false},'The Talon':{p:19,m:false}},
+    wallet:{gold:8,silver:60,copper:22}, avatarUrl:'' },
+
+  { id:'3', username:'U-Gen-X',           rank:'Primarch of Justice',  faction:'Iron Reavers',      activeBanner:'The Guardian',
+    stats:{PatrolCount:52,TotalLength:390,FPS_Kills_Total:2100,Ship_Kills_Total:780,Crusades_Total:22,Turret_Kills_Total:410,Quest_Total:130,Led_Completed_Quests:68,Led_Completed_Crusades:15},
+    banners:{'The Artificer':{p:3,m:false},'The Astraeus':{p:18,m:true},'The Engineer':{p:12,m:false},'The Explorer':{p:45,m:true},'The Fang':{p:72,m:true},'The Forager':{p:6,m:false},'The Guardian':{p:62,m:true},'The Healer':{p:14,m:false},'The Merchant':{p:40,m:false},'The Privateer':{p:22,m:true},'The Talon':{p:55,m:true}},
+    wallet:{gold:20,silver:10,copper:55}, avatarUrl:'' },
+
+  { id:'4', username:'Cerulean Nightshade',rank:'Chapter Master',       faction:'Iron Reavers',      activeBanner:'The Talon',
+    stats:{PatrolCount:31,TotalLength:210,FPS_Kills_Total:1100,Ship_Kills_Total:890,Crusades_Total:14,Turret_Kills_Total:220,Quest_Total:78,Led_Completed_Quests:32,Led_Completed_Crusades:8},
+    banners:{'The Artificer':{p:7,m:false},'The Astraeus':{p:30,m:true},'The Engineer':{p:8,m:false},'The Explorer':{p:22,m:false},'The Fang':{p:48,m:true},'The Forager':{p:4,m:false},'The Guardian':{p:16,m:false},'The Healer':{p:9,m:false},'The Merchant':{p:24,m:false},'The Privateer':{p:18,m:false},'The Talon':{p:61,m:true}},
+    wallet:{gold:5,silver:22,copper:40}, avatarUrl:'' },
+
+  { id:'5', username:'CiberKing',          rank:'Knight',               faction:'Second Cohort',     activeBanner:'The Fang',
+    stats:{PatrolCount:14,TotalLength:88,FPS_Kills_Total:540,Ship_Kills_Total:120,Crusades_Total:6,Turret_Kills_Total:60,Quest_Total:34,Led_Completed_Quests:8,Led_Completed_Crusades:2},
+    banners:{'The Artificer':{p:2,m:false},'The Astraeus':{p:4,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:8,m:false},'The Fang':{p:28,m:false},'The Forager':{p:1,m:false},'The Guardian':{p:6,m:false},'The Healer':{p:0,m:false},'The Merchant':{p:3,m:false},'The Privateer':{p:5,m:false},'The Talon':{p:10,m:false}},
+    wallet:{gold:0,silver:8,copper:15}, avatarUrl:'' },
+
+  { id:'6', username:'Nukeman',            rank:'Knight',               faction:'Second Cohort',     activeBanner:'The Guardian',
+    stats:{PatrolCount:12,TotalLength:0,FPS_Kills_Total:19,Ship_Kills_Total:5,Crusades_Total:5,Turret_Kills_Total:0,Quest_Total:7,Led_Completed_Quests:2,Led_Completed_Crusades:1},
+    banners:{'The Artificer':{p:0,m:false},'The Astraeus':{p:0,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:0,m:false},'The Fang':{p:0,m:false},'The Forager':{p:3,m:false},'The Guardian':{p:11,m:false},'The Healer':{p:0,m:false},'The Merchant':{p:0,m:false},'The Privateer':{p:0,m:false},'The Talon':{p:0,m:false}},
+    wallet:{gold:0,silver:0,copper:0}, avatarUrl:'' },
+
+  { id:'7', username:'Lyria Voss',         rank:'Templar',              faction:'Arditi Cohort',     activeBanner:'The Healer',
+    stats:{PatrolCount:22,TotalLength:160,FPS_Kills_Total:310,Ship_Kills_Total:88,Crusades_Total:9,Turret_Kills_Total:44,Quest_Total:55,Led_Completed_Quests:18,Led_Completed_Crusades:4},
+    banners:{'The Artificer':{p:1,m:false},'The Astraeus':{p:10,m:false},'The Engineer':{p:5,m:false},'The Explorer':{p:14,m:false},'The Fang':{p:8,m:false},'The Forager':{p:6,m:false},'The Guardian':{p:20,m:false},'The Healer':{p:42,m:true},'The Merchant':{p:15,m:false},'The Privateer':{p:2,m:false},'The Talon':{p:7,m:false}},
+    wallet:{gold:2,silver:14,copper:30}, avatarUrl:'' },
+
+  { id:'8', username:'Rook Ashveil',       rank:'Squire',               faction:'Arditi Cohort',     activeBanner:'The Explorer',
+    stats:{PatrolCount:6,TotalLength:42,FPS_Kills_Total:88,Ship_Kills_Total:22,Crusades_Total:3,Turret_Kills_Total:10,Quest_Total:14,Led_Completed_Quests:0,Led_Completed_Crusades:0},
+    banners:{'The Artificer':{p:0,m:false},'The Astraeus':{p:2,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:15,m:false},'The Fang':{p:4,m:false},'The Forager':{p:0,m:false},'The Guardian':{p:3,m:false},'The Healer':{p:1,m:false},'The Merchant':{p:0,m:false},'The Privateer':{p:0,m:false},'The Talon':{p:5,m:false}},
+    wallet:{gold:0,silver:2,copper:8}, avatarUrl:'' }
+];
+
+PLAYERS = window.OFSData.getPlayers();
+
+// Audit log (localStorage-backed for demo)
+let AUDIT_LOG = JSON.parse(localStorage.getItem('ofs_audit') || '[]');
+
+function saveAudit() { localStorage.setItem('ofs_audit', JSON.stringify(AUDIT_LOG)); }
+
+function logChange(player, field, oldVal, newVal) {
+  AUDIT_LOG.unshift({
+    ts: new Date().toLocaleString(),
+    admin: currentAdmin,
+    player: player,
+    field,
+    oldVal: String(oldVal),
+    newVal: String(newVal)
+  });
+  saveAudit();
+}
+
+/* ══════════════════════════════════════════════════════════
+   XP / REP
+══════════════════════════════════════════════════════════ */
+const XP_PER_QUEST = 100, XP_PER_CRUSADE = 300, MAX_LVL = 100, XP_MIN = 100, XP_MAX = 1_000_000;
+const LEVEL_XP = Array.from({length:MAX_LVL},(_,i)=>i===0?XP_MIN:Math.floor(XP_MIN*Math.pow(XP_MAX/XP_MIN,i/(MAX_LVL-1))));
+
+function calcRep(xp){
+  xp = xp || 0;
+  let lvl=1;
+  for(let i=0;i<MAX_LVL;i++){if(xp>=LEVEL_XP[i])lvl=i+1;else break;}
+  return {lvl:Math.min(lvl,MAX_LVL), xp};
+}
+
+function totalBannerPts(p){ return Object.values(p.banners).reduce((s,b)=>s+b.p,0); }
+
+/* ══════════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════════ */
+document.querySelectorAll('.nav-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='banners')      renderBannerPop();
+    if(t.dataset.tab==='audit')        renderAudit();
+  });
+});
+
+
+function renderAll(){ renderRoster(); }
+
+/* ══════════════════════════════════════════════════════════
+   ROSTER
+══════════════════════════════════════════════════════════ */
+function renderRoster(){
+  PLAYERS = window.OFSData.getPlayers();
+  const q=(document.getElementById('roster-search').value||'').toLowerCase();
+  const f=(document.getElementById('roster-filter').value||'').toLowerCase();
+  const rows=PLAYERS.filter(p=>{
+    if(q && !p.username.toLowerCase().includes(q)) return false;
+    if(f && !p.rank.toLowerCase().includes(f)) return false;
+    return true;
+  });
+  const tb=document.getElementById('roster-tbody');
+  tb.innerHTML='';
+  rows.forEach(p=>{
+    const rep=calcRep(p.reputationXP||0);
+    const tbp=totalBannerPts(p);
+    const init=p.username.charAt(0).toUpperCase();
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="avatar-sm">${init}</div></td>
+      <td><strong>${p.username}</strong></td>
+      <td><span class="badge badge-dim">${p.rank}</span></td>
+      <td><span class="badge badge-gold">Lvl ${rep.lvl}</span></td>
+      <td style="color:var(--silver-dim);font-size:.8rem">${rep.xp.toLocaleString()} XP</td>
+      <td style="font-size:.8rem;color:var(--silver-dim)">${p.activeBanner}</td>
+      <td style="font-family:'Cinzel',serif;color:var(--silver)">${tbp}</td>
+      <td style="font-size:.75rem;color:var(--text-dim)">
+        <span style="color:#ffd700">⬛ ${p.wallet.gold}g</span>
+        <span style="color:#c0c0c0;margin-left:6px">⬛ ${p.wallet.silver}s</span>
+        <span style="color:#cd7f32;margin-left:6px">⬛ ${p.wallet.copper}c</span>
+      </td>
+      <td><button class="edit-btn" onclick="openModal('${p.id}')">Edit</button></td>`;
+    tb.appendChild(tr);
+  });
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   BANNER POPULATION
+══════════════════════════════════════════════════════════ */
+const MEDAL_IMGS = window.OFSData ? window.OFSData.MEDAL_IMGS : {};
+
+function getBannerRankIdx(pts, medal){
+  if(medal && pts>=60) return 3;
+  if(pts>=30) return 2;
+  if(pts>=15) return 1;
+  return 0;
+}
+
+function nearPromoLabel(pts, medal){
+  if(pts>=57 && pts<60) return medal ? '★ Near Master' : '★ Needs medal';
+  if(pts>=27 && pts<30) return '↑ Near Sub 2';
+  if(pts>=12 && pts<15) return '↑ Near Sub 1';
+  return '';
+}
+
+function renderBannerPop(){
+  const grid=document.getElementById('banner-pop-grid');
+  grid.innerHTML='';
+  const maxCount = Math.max(1, ...BANNER_NAMES.map(bn=>PLAYERS.filter(p=>p.activeBanner===bn).length));
+
+  BANNER_NAMES.forEach(bn=>{
+    const members=PLAYERS.filter(p=>p.activeBanner===bn);
+    const totalPts=members.reduce((s,p)=>{
+      const bd=p.banners&&p.banners[bn];
+      return s+(bd?bd.p:0);
+    },0);
+    const topMember=members.length ? members.reduce((best,p)=>{
+      const bp=(p.banners&&p.banners[bn])?p.banners[bn].p:0;
+      const bb=(best.banners&&best.banners[bn])?best.banners[bn].p:0;
+      return bp>bb?p:best;
+    }) : null;
+    const pct=Math.round((members.length/maxCount)*100);
+    const medalSrc=MEDAL_IMGS[bn]||'';
+
+    const card=document.createElement('div');
+    card.className='banner-pop-card'+(members.length===0?' bp-empty-card':'');
+    card.innerHTML=`
+      <div class="bp-card-header">
+        <div class="bp-name">${bn}</div>
+        ${medalSrc?`<img class="bp-card-medal" src="${medalSrc}" alt="${bn} Medal" title="${bn} Medal">`:`<div class="bp-card-medal-placeholder"></div>`}
+      </div>
+      <div class="bp-count-row">
+        <div class="bp-count">${members.length}</div>
+        <div class="bp-count-label">${members.length===1?'member':'members'}</div>
+      </div>
+      <div class="bp-totalpts">${totalPts} total pts</div>
+      <div class="bp-top">${topMember?`Top: <strong>${topMember.username}</strong>`:'&nbsp;'}</div>
+      <div class="bp-fill-bg"><div class="bp-fill-bar" style="width:${pct}%"></div></div>`;
+    card.addEventListener('click', ()=> openBannerPopup(bn, members));
+    grid.appendChild(card);
+  });
+}
+
+function openBannerPopup(bn, members){
+  const medalSrc=MEDAL_IMGS[bn]||'';
+  const ranks=BANNER_RANKS[bn]||['Apprentice','Sub 1','Sub 2','Master'];
+
+  // Header
+  document.getElementById('bp-popup-title').textContent=bn;
+  const medalEl=document.getElementById('bp-popup-medal');
+  if(medalSrc){ medalEl.src=medalSrc; medalEl.style.display=''; }
+  else medalEl.style.display='none';
+
+  // Stats bar
+  const totalPts=members.reduce((s,p)=>s+((p.banners&&p.banners[bn])?p.banners[bn].p:0),0);
+  const medalHolders=members.filter(p=>p.banners&&p.banners[bn]&&p.banners[bn].m).length;
+  document.getElementById('bp-stats-bar').innerHTML=`
+    <div class="bp-stat"><div class="bp-stat-val">${members.length}</div><div class="bp-stat-lbl">Members</div></div>
+    <div class="bp-stat"><div class="bp-stat-val">${totalPts}</div><div class="bp-stat-lbl">Total Pts</div></div>
+    <div class="bp-stat"><div class="bp-stat-val">${medalHolders}</div><div class="bp-stat-lbl">Medal Holders</div></div>`;
+
+  // Rank breakdown
+  const rankCounts=[0,0,0,0];
+  members.forEach(p=>{
+    const bd=p.banners&&p.banners[bn];
+    rankCounts[getBannerRankIdx(bd?bd.p:0, bd?bd.m:false)]++;
+  });
+  document.getElementById('bp-breakdown').innerHTML=ranks.map((r,i)=>
+    `<div class="bp-rchip${rankCounts[i]?' has-n':''}">${r}: <strong>${rankCounts[i]}</strong></div>`
+  ).join('');
+
+  // Member list sorted by pts desc
+  const body=document.getElementById('bp-popup-body');
+  if(!members.length){ body.innerHTML=`<div class="bp-empty">No active members</div>`; }
+  else {
+    const sorted=[...members].sort((a,b)=>{
+      const ap=(a.banners&&a.banners[bn])?a.banners[bn].p:0;
+      const bp=(b.banners&&b.banners[bn])?b.banners[bn].p:0;
+      return bp-ap;
+    });
+    body.innerHTML='';
+    sorted.forEach(p=>{
+      const bd=p.banners&&p.banners[bn]?p.banners[bn]:{p:0,m:false};
+      const near=nearPromoLabel(bd.p, bd.m);
+      const bannerRank=ranks[getBannerRankIdx(bd.p,bd.m)];
+      const row=document.createElement('div');
+      row.className='bp-member';
+      row.innerHTML=`
+        ${bd.m&&medalSrc?`<img class="bp-medal-icon" src="${medalSrc}" title="Medal holder">`:
+          `<div class="bp-medal-spacer"></div>`}
+        <div class="bp-member-info">
+          <div class="bp-member-name">${p.username}</div>
+          <div class="bp-member-sub">${p.rank} · ${bannerRank}</div>
+        </div>
+        <div class="bp-member-pts">${bd.p} pts</div>
+        ${near?`<div class="bp-near">${near}</div>`:''}`;
+      row.addEventListener('click', ()=>{
+        document.getElementById('bp-popup-overlay').classList.remove('open');
+        openModal(p.id);
+      });
+      body.appendChild(row);
+    });
+  }
+  document.getElementById('bp-popup-overlay').classList.add('open');
+}
+
+document.getElementById('bp-popup-overlay').addEventListener('click', function(e){
+  if(e.target===this) this.classList.remove('open');
+});
+
+/* ══════════════════════════════════════════════════════════
+   AUDIT LOG
+══════════════════════════════════════════════════════════ */
+function renderAudit(){
+  const q=(document.getElementById('audit-search').value||'').toLowerCase();
+  const tb=document.getElementById('audit-tbody');
+  tb.innerHTML='';
+  const filtered=AUDIT_LOG.filter(e=>!q||e.player.toLowerCase().includes(q)||e.admin.toLowerCase().includes(q));
+  if(!filtered.length){
+    tb.innerHTML='<tr><td colspan="6" style="color:var(--text-dim);text-align:center;padding:24px;font-style:italic">No entries yet.</td></tr>';
+    return;
+  }
+  filtered.forEach(e=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="audit-ts">${e.ts}</td>
+      <td style="font-size:.8rem;color:var(--gold-dim)">${e.admin}</td>
+      <td style="font-size:.8rem;font-weight:500">${e.player}</td>
+      <td class="audit-field">${e.field}</td>
+      <td class="audit-old">${e.oldVal}</td>
+      <td class="audit-new">${e.newVal}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function clearAudit(){
+  if(confirm('Clear all audit log entries?')){ AUDIT_LOG=[]; saveAudit(); renderAudit(); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   EDIT MODAL
+══════════════════════════════════════════════════════════ */
+let editingId = null;
+
+function openModal(id){
+  editingId = id;
+  const p = id ? PLAYERS.find(x=>x.id===id) : null;
+  document.getElementById('modal-title').textContent = p ? `Edit — ${p.username}` : 'Add Member';
+
+  const playerLog = id ? AUDIT_LOG.filter(e=>e.player===p.username).slice(0,8) : [];
+  const historyHTML = playerLog.length
+    ? playerLog.map(e=>`<div class="history-row"><span class="history-ts">${e.ts}</span><span class="history-admin">${e.admin}</span><span class="history-detail">${e.field}: ${e.oldVal} → ${e.newVal}</span></div>`).join('')
+    : `<div style="color:var(--text-dim);font-size:.75rem;font-style:italic;padding:8px">No changes recorded yet.</div>`;
+
+  const bannerEditHTML = BANNER_NAMES.map(bn=>{
+    const b = p ? p.banners[bn] : {p:0,m:false};
+    return `<div class="banner-edit-item">
+      <div class="bei-name">${bn}</div>
+      <div class="bei-row">
+        <div class="bei-pts"><input type="number" min="0" id="bp-${bn.replace(/ /g,'_')}" value="${b.p}" placeholder="pts"></div>
+        <label class="medal-toggle"><input type="checkbox" id="bm-${bn.replace(/ /g,'_')}" ${b.m?'checked':''}> Medal</label>
+      </div>
+    </div>`;
+  }).join('');
+
+  const activeBannerOpts = BANNER_NAMES.map(bn=>`<option ${p&&p.activeBanner===bn?'selected':''}>${bn}</option>`).join('');
+  const rankOpts = ORG_RANKS.map(r=>`<option ${p&&p.rank===r?'selected':''}>${r}</option>`).join('');
+
+  document.getElementById('modal-body').innerHTML = `
+    <!-- Identity -->
+    <div class="modal-section">
+      <h4>Identity</h4>
+      <div class="field-group">
+        <div class="field-row"><label>Username</label><input id="f-username" value="${p?p.username:''}"></div>
+        <div class="field-row"><label>Org Rank</label><select id="f-rank">${rankOpts}</select></div>
+        <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}"></div>
+        <div class="field-row"><label>Active Banner</label><select id="f-activeBanner">${activeBannerOpts}</select></div>
+        <div class="field-row"><label>Avatar URL</label><input id="f-avatar" value="${p?p.avatarUrl:''}" placeholder="https://…"></div>
+      </div>
+    </div>
+    <!-- Stats -->
+    <div class="modal-section">
+      <h4>Combat &amp; Activity Stats</h4>
+      <div class="field-group">
+        <div class="field-row"><label>Patrol Count</label><input type="number" id="f-PatrolCount" value="${p?p.stats.PatrolCount:0}"></div>
+        <div class="field-row"><label>Total Patrol Length</label><input type="number" id="f-TotalLength" value="${p?p.stats.TotalLength:0}"></div>
+        <div class="field-row"><label>FPS Kills</label><input type="number" id="f-FPS_Kills_Total" value="${p?p.stats.FPS_Kills_Total:0}"></div>
+        <div class="field-row"><label>Ship Kills</label><input type="number" id="f-Ship_Kills_Total" value="${p?p.stats.Ship_Kills_Total:0}"></div>
+        <div class="field-row"><label>Crusades</label><input type="number" id="f-Crusades_Total" value="${p?p.stats.Crusades_Total:0}"></div>
+        <div class="field-row"><label>Turret Kills</label><input type="number" id="f-Turret_Kills_Total" value="${p?p.stats.Turret_Kills_Total:0}"></div>
+        <div class="field-row"><label>Quests Completed</label><input type="number" id="f-Quest_Total" value="${p?p.stats.Quest_Total:0}"></div>
+        <div class="field-row"><label>Quests Led</label><input type="number" id="f-Led_Completed_Quests" value="${p?p.stats.Led_Completed_Quests:0}"></div>
+        <div class="field-row"><label>Crusades Led</label><input type="number" id="f-Led_Completed_Crusades" value="${p?p.stats.Led_Completed_Crusades:0}"></div>
+      </div>
+    </div>
+    <!-- Wallet -->
+    <div class="modal-section">
+      <h4>Wallet</h4>
+      <div class="wallet-row">
+        <div class="field-row"><label>Gold</label><input type="number" id="f-gold" value="${p?p.wallet.gold:0}"></div>
+        <div class="field-row"><label>Silver</label><input type="number" id="f-silver" value="${p?p.wallet.silver:0}"></div>
+        <div class="field-row"><label>Copper</label><input type="number" id="f-copper" value="${p?p.wallet.copper:0}"></div>
+      </div>
+    </div>
+    <!-- Change History -->
+    <div class="modal-section">
+      <h4>Change History</h4>
+      <div class="history-list">${historyHTML}</div>
+    </div>
+    <!-- Banners -->
+    <div class="modal-section full">
+      <h4>Banner Points &amp; Medals</h4>
+      <div class="banner-edit-grid">${bannerEditHTML}</div>
+    </div>`;
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); editingId=null; }
+
+function saveModal(){
+  PLAYERS = window.OFSData.getPlayers();
+  const username = document.getElementById('f-username').value.trim();
+  if(!username){ alert('Username is required.'); return; }
+
+  const isNew = !editingId;
+  const existing = isNew ? null : PLAYERS.find(x=>x.id===editingId);
+
+  function diff(field, oldVal, newVal){
+    if(String(oldVal)!==String(newVal)) logChange(username, field, oldVal, newVal);
+  }
+
+  const newStats = {
+    PatrolCount:           +document.getElementById('f-PatrolCount').value||0,
+    TotalLength:           +document.getElementById('f-TotalLength').value||0,
+    FPS_Kills_Total:       +document.getElementById('f-FPS_Kills_Total').value||0,
+    Ship_Kills_Total:      +document.getElementById('f-Ship_Kills_Total').value||0,
+    Crusades_Total:        +document.getElementById('f-Crusades_Total').value||0,
+    Turret_Kills_Total:    +document.getElementById('f-Turret_Kills_Total').value||0,
+    Quest_Total:           +document.getElementById('f-Quest_Total').value||0,
+    Led_Completed_Quests:  +document.getElementById('f-Led_Completed_Quests').value||0,
+    Led_Completed_Crusades:+document.getElementById('f-Led_Completed_Crusades').value||0
+  };
+  const newBanners = {};
+  BANNER_NAMES.forEach(bn=>{
+    const key=bn.replace(/ /g,'_');
+    newBanners[bn]={ p:+document.getElementById('bp-'+key).value||0, m:document.getElementById('bm-'+key).checked };
+  });
+  const newWallet = { gold:+document.getElementById('f-gold').value||0, silver:+document.getElementById('f-silver').value||0, copper:+document.getElementById('f-copper').value||0 };
+
+  if(existing){
+    // Log diffs
+    diff('Username',   existing.username,     username);
+    diff('Rank',       existing.rank,          document.getElementById('f-rank').value);
+    diff('Faction',    existing.faction,       document.getElementById('f-faction').value);
+    diff('Active Banner',existing.activeBanner,document.getElementById('f-activeBanner').value);
+    Object.keys(newStats).forEach(k=>diff(k, existing.stats[k], newStats[k]));
+    BANNER_NAMES.forEach(bn=>{
+      diff(`${bn} Points`, existing.banners[bn].p, newBanners[bn].p);
+      if(existing.banners[bn].m!==newBanners[bn].m) diff(`${bn} Medal`, existing.banners[bn].m?'Awarded':'Not awarded', newBanners[bn].m?'Awarded':'Not awarded');
+    });
+    diff('Gold',   existing.wallet.gold,   newWallet.gold);
+    diff('Silver', existing.wallet.silver, newWallet.silver);
+    diff('Copper', existing.wallet.copper, newWallet.copper);
+    // Apply
+    Object.assign(existing, {
+      username, rank:document.getElementById('f-rank').value,
+      faction:document.getElementById('f-faction').value,
+      activeBanner:document.getElementById('f-activeBanner').value,
+      avatarUrl:document.getElementById('f-avatar').value,
+      stats:newStats, banners:newBanners, wallet:newWallet
+    });
+  } else {
+    PLAYERS.push({ id: Date.now().toString(), username,
+      rank:document.getElementById('f-rank').value,
+      faction:document.getElementById('f-faction').value,
+      activeBanner:document.getElementById('f-activeBanner').value,
+      avatarUrl:document.getElementById('f-avatar').value,
+      stats:newStats, banners:newBanners, wallet:newWallet });
+    logChange(username,'Member','—','Added to roster');
+  }
+
+  PLAYERS = window.OFSData.savePlayers(PLAYERS);
+  closeModal();
+  renderRoster();
+  renderAudit();
+}
+
+// Close modal on overlay click
+document.getElementById('modal-overlay').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+/* ══════════════════════════════════════════════════════════
+   PAGES — DATA
+══════════════════════════════════════════════════════════ */
+const STORAGE_CODEX          = 'ofs_codex_data';
+const STORAGE_TIMELINE       = 'ofs_timeline_data';
+const STORAGE_TIMELINE_BLOCKS = 'ofs_timeline_blocks';
+
+const _CODEX_DEFAULTS = [
+  { id:'intro',   type:'Preamble', num:'—',    title:'Preamble',
+    subtitle:'Introduction', content:'This Codex reflects the will of the Fallen Star and governs all who serve beneath its light. The Primarchs\' decree stands above all other law. What is written here is not suggestion — it is the foundation upon which the Order endures.' },
+  { id:'banners', type:'Preamble', num:'—',    title:'Banners of the Order',
+    subtitle:'Organizational Structure', content:'Banners are the operational and specialized sub-units within Chapters. Each Banner represents a distinct role, profession, or calling within the Order. Members align with a Banner that reflects their skills, playstyle, and purpose in service to the Fallen Star.\n\nThe Artificer — Crafting, engineering & item creation\nThe Astraeus — Navigation, exploration & deep-space ops\nThe Engineer — Ship & base maintenance, technical operations\nThe Explorer — Scouting, pathfinding & discovery\nThe Fang — Close-quarters combat & strike operations\nThe Forager — Resource gathering, salvage & supply\nThe Guardian — Defense, protection & escort duties\nThe Healer — Medical support & crew recovery\nThe Merchant — Trade, logistics & economic operations\nThe Privateer — Bounty hunting, interdiction & privateering\nThe Talon — Air superiority, dogfighting & fighter ops' },
+  { id:'art1',  type:'Article',  num:'I',    title:'Loyalty to the Order Above All',
+    subtitle:'', content:'The Order stands above self, coin, and clan. All personal alliances, factions, and pursuits are secondary to the will and interests of the Order. Betrayal of the Order is the gravest offense and is judged by the Council of Ascension or the Primarch.' },
+  { id:'art2',  type:'Article',  num:'II',   title:'Authority, Command, and the Chain of Obedience',
+    subtitle:'', content:'Authority flows downward through the chain of command. Responsibility and accountability flow upward. The Council of Ascension interprets the will of the Primarch and resolves disputes of authority. Bypassing the chain of command without just cause invites censure.' },
+  { id:'art3',  type:'Article',  num:'III',  title:'The Duty of Mentorship and Training',
+    subtitle:'', content:'Each Knight may take up to two Pages under their guidance and prepare them for service as Squires and eventual Knighthood. Those entrusted with mentorship are expected to lead, train, and uphold standards. Failure to fulfill these duties may result in reassignment or the loss of mentorship privileges.' },
+  { id:'art4',  type:'Article',  num:'IV',   title:'The Keeping of Records and Deeds',
+    subtitle:'', content:'All sanctioned operations — whether conducted as Quests or Crusades as defined in Appendix I — must be recorded in full, including participants, objectives, outcomes, spoils, and individual contributions. Records exist to ensure fairness, accountability, and the proper recognition of service. Knowingly falsifying records is a severe offense and is investigated by Justicars and judged by the Council.' },
+  { id:'art5',  type:'Article',  num:'V',    title:'Conduct, Discipline, and Honor',
+    subtitle:'', content:'Members of the Order are expected to act with discipline, restraint, and respect for the Codex. Unjust harm toward non-combatants, allies, or neutral parties is forbidden unless explicitly sanctioned. Disputes within the Order are to be addressed through proper channels and not aired publicly.' },
+  { id:'art6',  type:'Article',  num:'VI',   title:'Relics, Seals, and Property of the Order',
+    subtitle:'', content:'All relics, banners, seals, and artifacts are the property of the Order. No such item may be claimed, sold, removed, or defiled without formal decree. Violations of this article are judged before the Council.' },
+  { id:'art7',  type:'Article',  num:'VII',  title:'Judgment, Trials, and Enforcement of the Codex',
+    subtitle:'Violation Tiers', content:'Justicars serve as investigators and enforcers of the Codex, gathering evidence and carrying out judgments. The Council of Ascension rules on major violations and matters of high consequence. The Primarch holds final authority and may issue binding decrees.\n\nMinor violations — May be resolved by presiding officers.\nIntermediate breaches — Reviewed by a Justicar and escalated when required.\nHigh crimes (treason, falsification of records, relic theft) — Judged by the Council, subject to Primarch authority.' },
+  { id:'art8',  type:'Article',  num:'VIII', title:'Spoils, Tithes, and Contribution',
+    subtitle:'', content:'All spoils gained through sanctioned operations must be recorded in the appropriate quest or crusade record. Distribution of spoils and rewards is determined by documented contribution and service to the Order.\n\nThe Order recognizes an internal currency of copper, silver, and gold as a measure of service, time, and contribution. A tithe of ten percent is claimed by the Order prior to distribution. Misrepresentation, concealment, or manipulation of spoils or currency is considered a serious violation of the Codex.' },
+  { id:'art9',  type:'Article',  num:'IX',   title:'Secrecy, Knowledge, and Classified Matters',
+    subtitle:'', content:'Operational plans, relic locations, and Council decrees are considered restricted unless formally authorized. The careless or deliberate disclosure of protected information is a major violation and is reviewed by the Council.' },
+  { id:'art10', type:'Article',  num:'X',    title:'Emergency Authority in Times of Crisis',
+    subtitle:'', content:'During moments of grave threat, Knights and those above them may act beyond normal permissions to preserve life, relics, or operational integrity. This authority may apply to both Quests and Crusades when circumstances demand immediate action. All such actions must be recorded and are subject to review once the crisis has passed.' },
+  { id:'art11', type:'Article',  num:'XI',   title:'Advancement, Merit, and Worthiness',
+    subtitle:'', content:'Advancement within the Order is earned through documented contribution, demonstrated merit, and proven capability. Trials of skill, leadership, doctrine, or service may be required. Advancement granted without merit is corruption and is punishable by demotion.\n\nMinimum time-in-service requirements represent the standard progression path. Demonstrated merit through active participation may offset time-based requirements, measured through documented Quests and Crusades, reputation, and sustained contribution.' },
+  { id:'art12', type:'Article',  num:'XII',  title:'Authority of the Codex and the Enduring Star',
+    subtitle:'', content:'This Codex reflects the will of the Fallen Star and governs all who serve beneath its light. The Primarchs\' decree stands above all other law. Amendments to the Codex require the approval of the Primarch or the unanimous consent of the Council of Ascension.' },
+  { id:'appendix1', type:'Appendix', num:'I',    title:'Quests and Crusades',
+    subtitle:'Distinction Between Sanctioned Operations', content:'A Quest is an operational action undertaken in response to immediate needs, opportunities, or circumstances. Quests are typically impromptu or lightly planned and involve a small to moderate number of members. Quests may be initiated by Knights or higher authority.\n\nA Crusade is a large-scale, deliberate operation undertaken in pursuit of a major objective aligned with the long-term interests of the Order. Crusades are planned in advance and formally sanctioned, involving a broad assembly of members across multiple ranks, Paths, or Chapters.\n\nQuests address immediate needs and routine operations. Crusades advance the long-term vision and strategic objectives of the Order.' },
+  { id:'oath1', type:'Oath',     num:'—',    title:'The Sacred Oath of the Imperium',
+    subtitle:'Sworn upon elevation to Commander', content:'"Kneel, Commander of the Order. You stand at the threshold of stewardship and rule."\n\n"I kneel before the Oathswearer, the Council, and the Order I serve."\n\n"Do you swear to place the Order above ambition, to govern with restraint, and to wield authority as a trust, not a privilege?"\n\n"I swear."\n\n"Then rise as a Lord of the Order. You are no longer only a blade, but a steward of law and legacy. Rule with wisdom, stand with resolve, and let your authority serve the Fallen Star."' },
+  { id:'oath2', type:'Oath',     num:'—',    title:'The Sacred Oath of Ascension',
+    subtitle:'Sworn upon elevation to Chapter Master', content:'"Kneel, Lord of the Order. You stand before elevation to Chapter Master."\n\n"I kneel, bearing the weight of those I have led and the trust placed upon me by the Order."\n\n"Do you swear to place the Order and your Chapter above self, to guard their future, and to serve the will entrusted to you by the community?"\n\n"I swear."\n\n"Then rise as a Chapter Master. You are entrusted with the stewardship of your Chapter and the legacy of the Fallen Star. Lead with judgment, guard with resolve, and govern in service to the Order."' },
+  { id:'ranks',   type:'Rank',     num:'—',    title:'Rank Overview',
+    subtitle:'Ranks of the Order', content:'VIII — Chapter Master — Supreme Chapter authority; Crusade approval; Council representation\nVII — Lord Commander — Senior steward; coordinate large-scale operations across Banners\nVI — Lord — Governance authority; oversee Commanders; Council participation\nV — Commander — Command groups up to 16; establish Banners; coordinate operations\nIV — Templar / Praetorian — Elite leaders and honor guard; lead Crusades or serve as enforcement\nIII — Knight — Command groups up to 4; mentor up to 2 Squires\nII — Squire — Assist Knights; co-lead Quests when authorized\nI, I-C, 0 — Page, Commoner, Serf — Entry ranks and observer status' },
+  { id:'r8',      type:'Rank',     num:'VIII', title:'Chapter Master',
+    subtitle:'', content:'Chapter Masters hold supreme authority within their Chapter, subject to the Codex, the Council, and the Primarchs. They oversee Lords, Lord Commanders, Commanders, and all subordinate ranks; approve major Crusades; appoint or remove Banner leadership; and represent the Chapter before the Council.\n\nEligibility: Must have served as a Lord Commander in good standing. In rare circumstances, a Lord may be elevated directly. Candidates must demonstrate exceptional leadership, stewardship, and adherence to the Codex.\n\nSelection: Elected by community vote. A minimum of four members must formally join the Chapter before a vote may be held. Must swear the Sacred Oath of Ascension.\n\nInactivity: Thirty consecutive days triggers a formal warning and an additional thirty days to resume. Failure results in Chapter closure, Banner dissolution, and reversion to the rank of Lord.' },
+  { id:'r7',      type:'Rank',     num:'VII',  title:'Lord Commander',
+    subtitle:'', content:'Lord Commanders serve as senior stewards and Chapter representatives, exercising authority over multiple Banners and coordinating large-scale operations under the Chapter Master\'s direction.\n\nEligibility: Must be a current Lord in good standing with formal Chapter Master approval. Must demonstrate sound judgment and faithfully represent the Chapter.\n\nSelection: Chapter-wide vote following Chapter Master nomination. Must have sworn the Sacred Oath of Ascension.' },
+  { id:'r6',      type:'Rank',     num:'VI',   title:'Lord',
+    subtitle:'', content:'Lords mark entry into royal authority and stewardship. They govern beyond battlefield command — responsible for the people, law, and resources entrusted to them. Lords oversee Commanders and may contribute to Council deliberations.\n\nRequirements: Advancement from Commander following Council review. Must swear the Sacred Oath of Royalty. Proven command experience and mastery of the Codex required.' },
+  { id:'r5',      type:'Rank',     num:'V',    title:'Commander',
+    subtitle:'', content:'Commanders hold operational leadership and Chapter-level coordination. They may command groups of up to sixteen members, establish new Banners with leadership approval, and coordinate Quests while supporting Crusades when delegated authority is granted.\n\nRequirements: Standard sixty days time-in-service (subject to merit review), at least fifteen led Quests, and at least five led Crusades.' },
+  { id:'r4t',     type:'Rank',     num:'IV',   title:'Templar',
+    subtitle:'', content:'Templars serve as elite leaders and defenders of Codex standards. They may command groups of up to eight members, initiate and lead Crusades, and are responsible for safeguarding the fair distribution of spoils and currency.\n\nRequirements: Minimum time-in-service (subject to merit review), at least ten led Quests and one supervised Crusade, demonstrated Codex mastery, and completion of at least one Profession Path.' },
+  { id:'r4p',     type:'Rank',     num:'IV',   title:'Praetorian',
+    subtitle:'', content:'Praetorians serve as the honor guard of the Order — protection of Chapter leadership and enforcement of doctrine when required. They act as a visible symbol of loyalty, discipline, and resolve. Praetorians do not command by rank alone, but by the trust placed in them through proven service.\n\nEligibility: The Iron Vigil Medal is required for consideration — signifying verified service in defense of the Chapter during moments of consequence. Completion of at least one Profession Path is required.\n\nSelection: Identified and selected solely by the Chapter Master. Praetorians are chosen, not volunteered. Induction signifies acceptance of duty, not elevation of status.' },
+  { id:'r3',      type:'Rank',     num:'III',  title:'Knight',
+    subtitle:'', content:'Knights are full sworn members of the Order and form the foundation of its leadership. They may command groups of up to four members, mentor up to two Squires, and initiate Quests in accordance with the Codex.\n\nRequirements: Minimum fifteen days as a Squire (subject to merit review), at least three supervised led Quests, formal endorsement from the Knight under whom they served, and the Sacred Oath of Knighthood.' },
+  { id:'r2',      type:'Rank',     num:'II',   title:'Squire',
+    subtitle:'', content:'Squires serve under direct mentorship in preparation for Knighthood. They assist Knights during Quests and Crusades and may co-lead Quests when explicitly authorized.\n\nEligibility: Selected directly by a Knight. Must have participated in at least three Quests or Crusades. Must demonstrate reliability, discipline, and willingness to learn.' },
+  { id:'r1',      type:'Rank',     num:'I',    title:'Page, Commoner & Serf',
+    subtitle:'', content:'Page (Rank I): Inducted members beginning their path within the Order. Granted limited access to Paths and internal currency systems and may participate in Quests and Crusades under supervision.\n\nCommoner (Rank I-C): Recognized community members who do not participate in the rank structure. Access to social and community spaces with limited or no access to Path and currency systems. No command authority.\n\nSerf (Rank 0): Observers not yet inducted into the Order. Access limited to public or introductory spaces only.' }
+];
+
+let CODEX_DATA = JSON.parse(localStorage.getItem(STORAGE_CODEX) || 'null') || JSON.parse(JSON.stringify(_CODEX_DEFAULTS));
+
+// Migrate: ensure any sections added after initial release are present in saved data
+// Also rename legacy 'app1' id to 'appendix1' to match the Codex page section id
+(function(){
+  var patched = false;
+  // Rename app1 → appendix1 if present
+  var old = CODEX_DATA.find(function(x){ return x.id === 'app1'; });
+  if(old){ old.id = 'appendix1'; patched = true; }
+  // Add any entries missing entirely
+  _CODEX_DEFAULTS.forEach(function(e){
+    if(!CODEX_DATA.find(function(x){ return x.id === e.id; })){
+      CODEX_DATA.push(e);
+      patched = true;
+    }
+  });
+  if(patched) localStorage.setItem(STORAGE_CODEX, JSON.stringify(CODEX_DATA));
+})();
+
+let TIMELINE_DATA = JSON.parse(localStorage.getItem(STORAGE_TIMELINE) || 'null') || [
+  { id:'prologue', type:'Prologue',  num:'—',  title:'Prologue',         subtitle:'The Star That Would Not Dim',
+    content:'Before banners were raised and before titles were spoken, there was a fracture. From that fracture emerged a will unbroken by defeat and unbowed by false authority. The Order of the Fallen Star was not born of ambition alone, but of necessity. It arose in direct opposition to the stagnation, control, and imposed hierarchy of The Galactic Order.' },
+  { id:'age1',     type:'Age',       num:'I',   title:'The First Age',    subtitle:'The Age of Severance',
+    content:'This was the age of departure. The Order of the Fallen Star formally broke from The Galactic Order and stood as an independent force. The separation was neither quiet nor forgiven. War followed swiftly — marking the beginning of the First War between the two powers.\n\nIt was a war fought not for territory or resources, but for identity and autonomy. Outnumbered, underestimated, and newly formed, the Order endured — not because it held greater numbers, but because it possessed unity of purpose. The First War concluded without the destruction of the Fallen Star. Survival itself marked the first victory.' },
+  { id:'age2',     type:'Age',       num:'II',  title:'The Second Age',   subtitle:'The Age of Embers',
+    content:'From survival came consolidation and growth. Veterans of the First War carried forward lessons learned through direct conflict. Houses were established. Paths were defined. Authority became something earned through action rather than inherited through rank.\n\nThe Order achieved its first decisive victory over TGO. The Fallen Star was no longer provisional. It was permanent.' },
+  { id:'age3',     type:'Age',       num:'III', title:'The Third Age',    subtitle:'The Age of Fracture and Reflection',
+    content:'As strength grew, so too did difference. Within the Order, opposing ideas emerged over structure, authority, expansion, and purpose. Not all conflicts ended in agreement. Some members departed. Some paths diverged.\n\nYet the Order did not fracture. Instead, it listened. Through reflection and debate, the Order chose inward refinement over rigid uniformity. New paths were allowed to flourish. Identity became intentional rather than reactive.' },
+  { id:'age4',     type:'Age',       num:'IV',  title:'The Fourth Age',   subtitle:'The Age of Betrayal Rekindled',
+    content:'Peace with The Galactic Order proved temporary. Agreements fractured. Commitments were broken. Actions taken by TGO demonstrated clear intent to undermine, suppress, or reassert control over the Order.\n\nWar reignited. This time, the Order faced TGO as a disciplined and self-aware war structure. Operations were coordinated. Intelligence was leveraged. Leadership acted with unity and clarity. The Order of the Fallen Star dictated the tempo of war.' },
+  { id:'age5',     type:'Age',       num:'V',   title:'The Fifth Age',    subtitle:'The Age of Reckoning',
+    content:'This was the decisive age. After months of preparation, intelligence gathering, and unified command planning, the Order launched a massive and coordinated strike against The Galactic Order. This operation shattered TGO\'s remaining operational capacity.\n\nThe Galactic Order collapsed. Leadership fractured. Command structures failed. TGO entered disbandment and dissolution as a direct consequence of defeat.' },
+  { id:'age6',     type:'Age',       num:'VI',  title:'The Sixth Age',    subtitle:'The Age of Ascendance',
+    content:'With The Galactic Order defeated and dissolving, the Order of the Fallen Star entered a new era — not defined by war, but by purpose.\n\nAn age of rebuilding informed by loss. An age of growth shaped by reflection. An age of expansion guided by identity rather than reaction.\n\nThe Order of the Fallen Star no longer exists in opposition to The Galactic Order. It exists as itself.' },
+  { id:'epilogue', type:'Epilogue',  num:'—',   title:'Epilogue',         subtitle:'What Endures',
+    content:'The Galactic Order has fallen. The Order of the Fallen Star remains. Members were lost. Conflicts were faced. Identity was forged inward before it was proven outward.\n\nGlory to the Fallen Star. Our light endures, unbroken.' },
+  { id:'chron1',   type:'Chronicle', num:'I',   title:'Chronicle I',      subtitle:'The First War — Battle at the Heart of Pyro',
+    content:'Tensions began with shadowed threats sent to the Primarchs. Provocations grew into open hostility when TGO operatives struck at the Dupree Facility on Hurston.\n\nUnder Emergency Code Aurora-Prime, elite pilots intercepted and drove attackers back. Under the personal command of Primarch Vanderan, the retaliatory strike was surgical — crippling Blacklung\'s forces and scattering their command across the void.\n\nAt 0300 hours Galactic Standard, the fleets converged at the Pyro nexus. The Order struck like a celestial storm. Captain Blacklung\'s flagship was crippled and burning within minutes. High Admiral Crazy was forced to retreat. TGO\'s armada was shattered.' },
+  { id:'chron2',   type:'Chronicle', num:'II',  title:'Chronicle II',     subtitle:'The Hunt of the Twin Snakes',
+    content:'Reconnaissance uncovered encrypted transmissions pointing to anomalous energy readings beneath the derelict ASD Facility. Investigation revealed a cavern system concealing the Yormandi — twin serpentine horrors that had slumbered since the earliest terraform cycles.\n\nUnder Primarch Vanderan\'s command, the Knights descended into the deep. The first Yormandi fell after a calculated strike to its thoracic coil. The second was undone — its head severed by a coordinated assault.\n\nThe twin skulls of the Yormandi were mounted in the Hall of Triumph.' },
+  { id:'chron3',   type:'Chronicle', num:'III', title:'Chronicle III',    subtitle:'The War of the Shattered Oath',
+    content:'The flames of conflict have subsided. Through unbroken unity, strategic mastery, and the valor of every Knight and Paladin, the Order made its strength and conviction known across the void.\n\nThe Galactic Order sued for peace. After careful deliberation, The Order of the Fallen Star agreed, declaring a resounding victory in the First War.\n\n"We welcome the chance for understanding and rebuilding among the stars, but let none forget: we chose peace because we have already won."' },
+  { id:'chron4',   type:'Chronicle', num:'IV',  title:'Chronicle IV',     subtitle:'The Homecoming of Nyx',
+    content:'The Triumvirate issued the unified decree that the Order would begin its sacred journey home to the Nyx Star System. The Order rallied at New Babbage Spaceport. Chapter Master Cerulean Nightshade — The Iron Duke — was appointed commander of the entire Crusade.\n\nUpon arrival, a rogue Vanduul squadron struck. The Order shattered them and drove them into the void. An abandoned station harboring a black-market faction was located and purged.\n\nLevski now stands as the first bastion of the Order in Nyx.' },
+  { id:'chron5',   type:'Chronicle', num:'V',   title:'Chronicle V',      subtitle:'The Chronicle of the Broken Mask',
+    content:'War did not return by chance, but by transgression. An agent of the Galactic Order impersonated Knight Ciberking — a valued and proven member — as a tool of manipulation and mockery.\n\nThe Primarch did not issue warning. The first strike fell above MicroTech, where former Captain Blacklung commanded a vessel bearing a full squad under TGO colors. The ship never made planetfall. There were no survivors.\n\n"The Order of the Fallen Star does not tolerate deception. It does not forgive the theft of its names. And it does not forget."' }
+];
+
+
+function savePageData(){
+  localStorage.setItem(STORAGE_CODEX,    JSON.stringify(CODEX_DATA));
+  localStorage.setItem(STORAGE_TIMELINE, JSON.stringify(TIMELINE_DATA));
+}
+
+/* ══════════════════════════════════════════════════════════
+   PAGES — SUB-NAV SWITCHING
+══════════════════════════════════════════════════════════ */
+const PAGE_PREVIEW_SRCS = {
+  home:     'OFS_Home.html',
+  codex:    'OFS_Codex.html',
+  timeline: 'OFS_Timeline.html'
+};
+const PAGE_PREVIEW_LABELS = {
+  home:     'Home Page',
+  codex:    'Codex',
+  timeline: 'Chronicles'
+};
+/* Reverse map: filename → tab key */
+const PAGE_FILENAME_MAP = {
+  'OFS_Home.html':     'home',
+  'OFS_Codex.html':    'codex',
+  'OFS_Timeline.html': 'timeline'
+};
+
+/* Shared tab-activation logic (does NOT update iframe src) */
+function activatePageTab(pageKey){
+  const editablePages = ['home','codex','timeline'];
+  // Tabs
+  document.querySelectorAll('.pages-sub-tab').forEach(x=>x.classList.remove('active'));
+  const matchTab = document.querySelector(`.pages-sub-tab[data-page="${pageKey}"]`);
+  if(matchTab) matchTab.classList.add('active');
+  // Panels
+  editablePages.forEach(id=>{
+    document.getElementById('edit-'+id).style.display = 'none';
+  });
+  const noEditorNotice = document.getElementById('no-editor-notice');
+  const panel = pageKey ? document.getElementById('edit-'+pageKey) : null;
+  if(panel){
+    panel.style.display = 'flex';
+    noEditorNotice.style.display = 'none';
+  } else {
+    noEditorNotice.style.display = 'flex';
+  }
+  // Preview label
+  document.getElementById('preview-page-label').textContent =
+    PAGE_PREVIEW_LABELS[pageKey] || '';
+  // Edit mode bar + page-specific init
+  if(pageKey === 'home'){
+    loadHomeEditor();
+    _editModeBar.style.display = 'block';
+  } else if(pageKey === 'codex' || pageKey === 'timeline'){
+    _editModeBar.style.display = 'block';
+  } else {
+    _editModeBar.style.display = 'none';
+  }
+}
+
+document.querySelectorAll('.pages-sub-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    activatePageTab(t.dataset.page);
+    // Update iframe
+    const frame = document.getElementById('pages-preview-frame');
+    frame.src = PAGE_PREVIEW_SRCS[t.dataset.page] || 'OFS_Home.html';
+  });
+});
+
+/* ══════════════════════════════════════════════════════════
+   HOME CHRONICLE EDITOR
+══════════════════════════════════════════════════════════ */
+function val(id){ return document.getElementById(id).value; }
+function setVal(id, v){ document.getElementById(id).value = v || ''; }
+
+/* key → field ID map for click-to-select */
+const EDIT_KEY_MAP = {
+  'hero-subtitle':  'hf-hero-subtitle',
+  'hero-title':     'hf-hero-title',
+  'hero-motto':     'hf-hero-motto',
+  'hero-logo':      'hf-hero-logo',
+  'about-label':    'hf-about-label',
+  'about-heading':  'hf-about-heading',
+  'about-body':     'hf-about-body',
+  'pillar-0':       'hf-pillar-0-title',
+  'pillar-1':       'hf-pillar-1-title',
+  'pillar-2':       'hf-pillar-2-title',
+  'pillar-3':       'hf-pillar-3-title',
+  'triv-label':     'hf-triv-label',
+  'triv-heading':   'hf-triv-heading',
+  'chronicle-label':    'hf-chronicle-label',
+  'chronicle-heading':  'hf-chronicle-heading',
+  'chronicle':          'hf-tag',
+  'banners-label':  'hf-banners-label',
+  'banners-heading':'hf-banners-heading',
+  'banners-intro':  'hf-banners-intro',
+  'pages-label':    'hf-pages-label',
+  'pages-heading':  'hf-pages-heading',
+  'page-card-0':    'hf-page-0-title',
+  'page-card-1':    'hf-page-1-title',
+  'page-card-2':    'hf-page-2-title',
+  'page-card-3':    'hf-page-3-title'
+};
+
+function _scrollAndHighlight(field){
+  const region = document.querySelector('.pages-edit-region');
+  if(region){
+    const rRect = region.getBoundingClientRect();
+    const fRect = field.getBoundingClientRect();
+    region.scrollTo({ top: region.scrollTop + (fRect.top - rRect.top) - 24, behavior:'smooth' });
+  }
+  setTimeout(()=>{
+    field.focus();
+    field.classList.add('field-highlight');
+    setTimeout(()=> field.classList.remove('field-highlight'), 800);
+  }, 350);
+}
+
+function scrollToField(key){
+  // Dynamic banner blocks
+  const bm = key.match(/^banner-(\d+)$/);
+  if(bm){
+    const block = document.querySelectorAll('#hf-banners-list .banner-block')[parseInt(bm[1])];
+    if(block) _scrollAndHighlight(block.querySelector('.bb-name'));
+    return;
+  }
+  // Dynamic triumvirate members
+  const tm = key.match(/^triumvir-(\d+)$/);
+  if(tm){
+    const block = document.querySelectorAll('#hf-triv-list .triv-block')[parseInt(tm[1])];
+    if(block) _scrollAndHighlight(block.querySelector('.tb-name'));
+    return;
+  }
+  const fieldId = EDIT_KEY_MAP[key] || ('hf-' + key);
+  const field = document.getElementById(fieldId);
+  if(field) _scrollAndHighlight(field);
+}
+
+/* Receive click-to-select messages from the iframe */
+window.addEventListener('message', function(e){
+  if(e.data && e.data.type === 'ofs-page-load'){
+    const pageKey = ['home','codex','timeline'].includes(e.data.page) ? e.data.page : null;
+    const current = document.querySelector('.pages-sub-tab.active')?.dataset.page || null;
+    if(pageKey !== current) activatePageTab(pageKey);
+  }
+  if(e.data && e.data.type === 'ofs-edit')                scrollToField(e.data.key);
+  if(e.data && e.data.type === 'ofs-codex-edit')          openCodexEditorFromIframe(e.data.id);
+  if(e.data && e.data.type === 'ofs-timeline-edit')       openTimelineEditorFromIframe(e.data.id);
+  if(e.data && e.data.type === 'ofs-timeline-block-edit') openTimelineBlockEditor(e.data);
+});
+
+/* ── Dynamic Banner Blocks ─────────────────────────────── */
+function renderBannerBlocks(tiles){
+  const list = document.getElementById('hf-banners-list');
+  if(!list) return;
+  list.innerHTML = '';
+  (tiles || []).forEach(t => addBannerBlock(t));
+}
+
+function addBannerBlock(data){
+  const list = document.getElementById('hf-banners-list');
+  const idx = list.querySelectorAll('.banner-block').length;
+  const block = document.createElement('div');
+  block.className = 'seg-block banner-block';
+  block.innerHTML =
+    '<div class="seg-label-row">' +
+      '<span class="seg-label">Banner ' + (idx + 1) + '</span>' +
+      '<button class="remove-btn" onclick="this.closest(\'.banner-block\').remove();renumberBannerBlocks()">Remove</button>' +
+    '</div>' +
+    '<div class="hf-meta">' +
+      '<div><div class="hf-label">Icon</div><input class="hf-input bb-icon" type="text" style="max-width:80px"></div>' +
+      '<div><div class="hf-label">Name</div><input class="hf-input bb-name" type="text"></div>' +
+      '<div style="grid-column:1/-1"><div class="hf-label">Focus</div><input class="hf-input bb-focus" type="text"></div>' +
+    '</div>';
+  list.appendChild(block);
+  block.querySelector('.bb-icon').value  = (data && data.icon)  || '';
+  block.querySelector('.bb-name').value  = (data && data.name)  || '';
+  block.querySelector('.bb-focus').value = (data && data.focus) || '';
+}
+
+function renumberBannerBlocks(){
+  document.querySelectorAll('#hf-banners-list .banner-block').forEach((b, i) => {
+    b.querySelector('.seg-label').textContent = 'Banner ' + (i + 1);
+  });
+}
+
+/* ── Dynamic Triumvirate Blocks ────────────────────────── */
+function renderTrivBlocks(members){
+  const list = document.getElementById('hf-triv-list');
+  if(!list) return;
+  list.innerHTML = '';
+  (members || []).forEach(m => addTrivBlock(m));
+}
+
+function addTrivBlock(data){
+  const list = document.getElementById('hf-triv-list');
+  const idx = list.querySelectorAll('.triv-block').length;
+  const block = document.createElement('div');
+  block.className = 'seg-block triv-block';
+  block.innerHTML =
+    '<div class="seg-label-row">' +
+      '<span class="seg-label">Member ' + (idx + 1) + '</span>' +
+      '<button class="remove-btn" onclick="this.closest(\'.triv-block\').remove();renumberTrivBlocks()">Remove</button>' +
+    '</div>' +
+    '<div><div class="hf-label">Domain / Title</div><input class="hf-input tb-domain" type="text" placeholder="Primarch of Conquest"></div>' +
+    '<div><div class="hf-label">Name</div><input class="hf-input tb-name" type="text"></div>' +
+    '<div><div class="hf-label">Role</div><input class="hf-input tb-role" type="text"></div>';
+  list.appendChild(block);
+  block.querySelector('.tb-domain').value = (data && data.domain) || '';
+  block.querySelector('.tb-name').value   = (data && data.name)   || '';
+  block.querySelector('.tb-role').value   = (data && data.role)   || '';
+}
+
+function renumberTrivBlocks(){
+  document.querySelectorAll('#hf-triv-list .triv-block').forEach((b, i) => {
+    b.querySelector('.seg-label').textContent = 'Member ' + (i + 1);
+  });
+}
+
+function loadHomeEditor(){
+  // Chronicle data
+  const d = window.OFSLore.getHomeChronicle();
+  setVal('hf-tag',      d.tag);
+  setVal('hf-title',    d.title);
+  setVal('hf-subtitle', d.subtitle);
+  setVal('hf-decree',   d.decree);
+  const segs = d.segments || [];
+  [1,2,3].forEach(n=>{
+    const s = segs[n-1] || {};
+    setVal('hf-s'+n+'-heading', s.heading);
+    setVal('hf-s'+n+'-body',    s.body);
+    setVal('hf-s'+n+'-quote',   s.quote);
+  });
+  // Content data (hero, about, triumvirate)
+  const c = window.OFSLore.getHomeContent();
+  setVal('hf-hero-subtitle', c.hero.subtitle);
+  setVal('hf-hero-title',    c.hero.title);
+  setVal('hf-hero-motto',    c.hero.motto);
+  setVal('hf-hero-logo',     c.hero.logo);
+  const as = c.aboutSection || {};
+  setVal('hf-about-label',   as.label);
+  setVal('hf-about-heading', as.heading);
+  setVal('hf-about-body',    c.about.body);
+  (c.about.pillars || []).forEach((p,i)=>{
+    setVal('hf-pillar-'+i+'-title', p.title);
+    setVal('hf-pillar-'+i+'-text',  p.text);
+  });
+  const ts = c.trivSection || {};
+  setVal('hf-triv-label',   ts.label);
+  setVal('hf-triv-heading', ts.heading);
+  renderTrivBlocks(c.triumvirate);
+  const cs2 = c.chronicleSection || {};
+  setVal('hf-chronicle-label',   cs2.label);
+  setVal('hf-chronicle-heading', cs2.heading);
+  // Banners
+  const bn = c.banners || {};
+  setVal('hf-banners-label',   bn.label);
+  setVal('hf-banners-heading', bn.heading);
+  setVal('hf-banners-intro',   bn.intro);
+  renderBannerBlocks(bn.tiles);
+  // Pages navigator
+  const pg = c.pages || {};
+  setVal('hf-pages-label',   pg.label);
+  setVal('hf-pages-heading', pg.heading);
+  (pg.cards || []).forEach((card,i)=>{
+    setVal('hf-page-'+i+'-icon',  card.icon);
+    setVal('hf-page-'+i+'-title', card.title);
+    setVal('hf-page-'+i+'-desc',  card.desc);
+    setVal('hf-page-'+i+'-href',  card.href);
+  });
+}
+
+function saveHomeContentForm(){
+  const c = window.OFSLore.getHomeContent(); // read first to preserve other sections
+  c.hero = {
+    subtitle: val('hf-hero-subtitle'),
+    title:    val('hf-hero-title'),
+    motto:    val('hf-hero-motto'),
+    logo:     val('hf-hero-logo') || 'ofs_logo.png'
+  };
+  c.aboutSection = {
+    label:   val('hf-about-label'),
+    heading: val('hf-about-heading')
+  };
+  c.about = {
+    body: val('hf-about-body'),
+    pillars: [0,1,2,3].map(i=>({
+      title: val('hf-pillar-'+i+'-title'),
+      text:  val('hf-pillar-'+i+'-text')
+    }))
+  };
+  c.trivSection = {
+    label:   val('hf-triv-label'),
+    heading: val('hf-triv-heading')
+  };
+  c.triumvirate = Array.from(document.querySelectorAll('#hf-triv-list .triv-block')).map(b=>({
+    domain: b.querySelector('.tb-domain').value,
+    name:   b.querySelector('.tb-name').value,
+    role:   b.querySelector('.tb-role').value
+  }));
+  c.chronicleSection = {
+    label:   val('hf-chronicle-label'),
+    heading: val('hf-chronicle-heading')
+  };
+  window.OFSLore.saveHomeContent(c);
+  const frame = document.getElementById('pages-preview-frame');
+  frame.src = frame.src;
+  showToast('Home content saved.');
+}
+
+function saveHomeBannersForm(){
+  const c = window.OFSLore.getHomeContent();
+  c.banners = {
+    label:   val('hf-banners-label'),
+    heading: val('hf-banners-heading'),
+    intro:   val('hf-banners-intro'),
+    tiles: Array.from(document.querySelectorAll('#hf-banners-list .banner-block')).map(b=>({
+      icon:  b.querySelector('.bb-icon').value,
+      name:  b.querySelector('.bb-name').value,
+      focus: b.querySelector('.bb-focus').value
+    }))
+  };
+  window.OFSLore.saveHomeContent(c);
+  const frame = document.getElementById('pages-preview-frame');
+  frame.src = frame.src;
+  showToast('Banners saved.');
+}
+
+function saveHomePagesForm(){
+  const c = window.OFSLore.getHomeContent();
+  c.pages = {
+    label:   val('hf-pages-label'),
+    heading: val('hf-pages-heading'),
+    cards: [0,1,2,3].map(i=>({
+      icon:  val('hf-page-'+i+'-icon'),
+      title: val('hf-page-'+i+'-title'),
+      desc:  val('hf-page-'+i+'-desc'),
+      href:  val('hf-page-'+i+'-href')
+    }))
+  };
+  window.OFSLore.saveHomeContent(c);
+  const frame = document.getElementById('pages-preview-frame');
+  frame.src = frame.src;
+  showToast('Pages navigator saved.');
+}
+
+function saveHomeChronicleForm(){
+  const data = {
+    tag:      val('hf-tag'),
+    title:    val('hf-title'),
+    subtitle: val('hf-subtitle'),
+    decree:   val('hf-decree'),
+    segments: [1,2,3].map(n=>({
+      heading: val('hf-s'+n+'-heading'),
+      body:    val('hf-s'+n+'-body'),
+      quote:   val('hf-s'+n+'-quote')
+    }))
+  };
+  window.OFSLore.saveHomeChronicle(data);
+  const frame = document.getElementById('pages-preview-frame');
+  frame.src = frame.src;   // reload iframe
+  showToast('Home chronicle saved.');
+}
+
+// Populate form on initial load
+loadHomeEditor();
+
+// Iframe click-to-select
+const _previewFrame = document.getElementById('pages-preview-frame');
+const _editModeBar  = document.getElementById('edit-mode-bar');
+
+_previewFrame.addEventListener('load', function(){
+  try {
+    const href     = this.contentWindow.location.href;
+    const filename = href.split('/').pop().split('?')[0].split('#')[0];
+    const pageKey  = PAGE_FILENAME_MAP[filename] || null;
+    const current  = document.querySelector('.pages-sub-tab.active')?.dataset.page || null;
+    // Only switch if the loaded page differs from the active tab
+    if(pageKey !== current){
+      activatePageTab(pageKey);
+    }
+  } catch(e){
+    // cross-origin safety — ignore
+  }
+});
+
+/* ══════════════════════════════════════════════════════════
+   TIMELINE — REQUEST TEMPLATE
+══════════════════════════════════════════════════════════ */
+function updateTlNumHint(){
+  const type = val('tl-type');
+  const hint = document.getElementById('tl-num-hint');
+  if(type === 'Prologue' || type === 'Epilogue'){
+    hint.textContent = '— use —';
+    document.getElementById('tl-num').value = '—';
+    return;
+  }
+  const existing = TIMELINE_DATA
+    .filter(e => e.type === type && e.num && e.num !== '—')
+    .map(e => e.num);
+  if(existing.length){
+    hint.textContent = '— existing: ' + existing.join(', ');
+  } else {
+    hint.textContent = '— none yet';
+  }
+}
+
+function copyTimelineRequest(){
+  const type     = val('tl-type');
+  const num      = val('tl-num') || '—';
+  const title    = val('tl-title')    || '(untitled)';
+  const subtitle = val('tl-subtitle') || '';
+  const body     = val('tl-body')     || '';
+  const figures  = val('tl-figures')  || '';
+  const actions  = val('tl-actions')  || '';
+  const outcome  = val('tl-outcome')  || '';
+
+  const lines = [
+    '═══════════════════════════════════════',
+    '  OFS TIMELINE — NEW ENTRY REQUEST',
+    '═══════════════════════════════════════',
+    '',
+    `Type:     ${type}`,
+    `Number:   ${num}`,
+    `Title:    ${title}`,
+    subtitle ? `Subtitle: ${subtitle}` : '',
+    '',
+    '── WHAT HAPPENED ───────────────────────',
+    body,
+    '',
+    '── KEY FIGURES ─────────────────────────',
+    figures || '(not specified)',
+    '',
+    '── NOTABLE ACTIONS / BATTLES ───────────',
+    actions || '(not specified)',
+    '',
+    '── OUTCOME / SIGNIFICANCE ──────────────',
+    outcome || '(not specified)',
+    '',
+    '═══════════════════════════════════════',
+  ].filter(l => l !== null).join('\n');
+
+  navigator.clipboard.writeText(lines).then(()=>{
+    const msg = document.getElementById('tl-copied');
+    msg.classList.add('show');
+    setTimeout(()=> msg.classList.remove('show'), 2500);
+  }).catch(()=>{
+    // fallback for non-secure context
+    const ta = document.createElement('textarea');
+    ta.value = lines;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const msg = document.getElementById('tl-copied');
+    msg.classList.add('show');
+    setTimeout(()=> msg.classList.remove('show'), 2500);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   CODEX EDITOR
+══════════════════════════════════════════════════════════ */
+let activeCodexId = null;
+
+function openCodexEditorFromIframe(id){
+  if(!CODEX_DATA.find(e => e.id === id)) return;
+  openCodexEditor(id);
+  // Scroll codex-list to show the newly active item (editor scroll is handled by openCodexEditor)
+  setTimeout(()=>{
+    const active = document.querySelector('#codex-list .section-item.active');
+    if(active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 60);
+}
+
+function renderCodexList(){
+  const list = document.getElementById('codex-list');
+  list.innerHTML = '';
+  CODEX_DATA.forEach(entry=>{
+    const div = document.createElement('div');
+    div.className = 'section-item' + (entry.id===activeCodexId?' active':'');
+    div.innerHTML = `<span class="si-num">${entry.num}</span><span class="si-title">${entry.title}</span><span class="si-type">${entry.type}</span>`;
+    div.addEventListener('click',()=>openCodexEditor(entry.id));
+    list.appendChild(div);
+  });
+}
+
+function openCodexEditor(id){
+  activeCodexId = id;
+  renderCodexList();
+  const entry = CODEX_DATA.find(e=>e.id===id);
+  const ed = document.getElementById('codex-editor');
+  ed.innerHTML = `
+    <div class="editor-topbar">
+      <div>
+        <div class="editor-meta-label">${entry.type} ${entry.num !== '—' ? entry.num : ''}</div>
+        <div class="editor-meta-title" id="ce-live-title">${entry.title}</div>
+      </div>
+      <div class="editor-action-row">
+        <button class="del-btn" onclick="deleteCodexEntry('${id}')">Delete</button>
+        <button class="save-btn" onclick="saveCodexEntry('${id}')">Save</button>
+      </div>
+    </div>
+    <div class="editor-fields">
+      <div class="field-row"><label>Title</label><input id="ce-title" value="${escHtml(entry.title)}" oninput="document.getElementById('ce-live-title').textContent=this.value"></div>
+      <div class="field-row"><label>Subtitle / Tagline</label><input id="ce-subtitle" value="${escHtml(entry.subtitle||'')}"></div>
+      <div class="field-row"><label>Type</label>
+        <select id="ce-type">
+          ${['Article','Appendix','Oath','Rank','Preamble','Section'].map(t=>`<option ${entry.type===t?'selected':''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field-row">
+        <label>Content</label>
+        <textarea class="editor-textarea" id="ce-content" oninput="updateCharCount('ce-count','ce-content')">${escHtml(entry.content)}</textarea>
+      </div>
+    </div>
+    <div class="editor-footer">
+      <span class="char-count" id="ce-count">${entry.content.length} characters</span>
+    </div>`;
+  // Scroll the right panel so the editor fields are visible
+  setTimeout(()=>{
+    const region = document.querySelector('.pages-edit-region');
+    if(region && ed){
+      const rRect = region.getBoundingClientRect();
+      const eRect = ed.getBoundingClientRect();
+      region.scrollTo({ top: region.scrollTop + (eRect.top - rRect.top), behavior: 'smooth' });
+    }
+  }, 30);
+}
+
+function saveCodexEntry(id){
+  const entry = CODEX_DATA.find(e=>e.id===id);
+  const oldTitle = entry.title;
+  entry.title    = document.getElementById('ce-title').value.trim();
+  entry.subtitle = document.getElementById('ce-subtitle').value.trim();
+  entry.type     = document.getElementById('ce-type').value;
+  entry.content  = document.getElementById('ce-content').value;
+  savePageData();
+  logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
+  renderCodexList();
+  showToast('Section saved.');
+}
+
+function deleteCodexEntry(id){
+  const entry = CODEX_DATA.find(e=>e.id===id);
+  if(!confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
+  logChange('—', `Codex: ${entry.title}`, entry.title, 'DELETED');
+  CODEX_DATA = CODEX_DATA.filter(e=>e.id!==id);
+  activeCodexId = null;
+  savePageData();
+  renderCodexList();
+  document.getElementById('codex-editor').innerHTML = '<div class="editor-empty"><span>☰</span>Select a section to edit</div>';
+}
+
+function newCodexEntry(){
+  const id = 'codex_'+Date.now();
+  CODEX_DATA.push({ id, type:'Section', num:'—', title:'New Section', subtitle:'', content:'' });
+  savePageData();
+  renderCodexList();
+  openCodexEditor(id);
+}
+
+/* ══════════════════════════════════════════════════════════
+   TIMELINE EDITOR
+══════════════════════════════════════════════════════════ */
+let activeTimelineId = null;
+const ENTRY_TYPES = ['Prologue','Age','Interlude','Chronicle','Proclamation','Epilogue','Other'];
+
+function renderTimelineList(){
+  const list = document.getElementById('timeline-list');
+  list.innerHTML = '';
+  TIMELINE_DATA.forEach((entry, idx)=>{
+    const div = document.createElement('div');
+    div.className = 'section-item' + (entry.id===activeTimelineId?' active':'');
+    div.innerHTML = `
+      <div class="reorder-btns">
+        <button class="order-btn" title="Move up"   onclick="event.stopPropagation();moveTimelineEntry('${entry.id}',-1)">▲</button>
+        <button class="order-btn" title="Move down" onclick="event.stopPropagation();moveTimelineEntry('${entry.id}',1)">▼</button>
+      </div>
+      <span class="si-num">${entry.num}</span>
+      <span class="si-title">${entry.title}<br><small style="color:var(--text-dim);font-size:.68rem">${entry.subtitle}</small></span>
+      <span class="si-type">${entry.type}</span>`;
+    div.addEventListener('click',()=>openTimelineEditor(entry.id));
+    list.appendChild(div);
+  });
+}
+
+function renumberTimelineEntries(){
+  const ROMAN = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII','XIII','XIV','XV'];
+  const counters = {};
+  const autoTypes = ['Age','Chronicle'];
+  TIMELINE_DATA.forEach(e => {
+    if(autoTypes.includes(e.type)){
+      counters[e.type] = (counters[e.type] || 0) + 1;
+      const n = counters[e.type];
+      e.num = n <= ROMAN.length ? ROMAN[n - 1] : String(n);
+    } else {
+      e.num = '—';
+    }
+  });
+}
+
+function moveTimelineEntry(id, dir){
+  const idx = TIMELINE_DATA.findIndex(e=>e.id===id);
+  const newIdx = idx + dir;
+  if(newIdx < 0 || newIdx >= TIMELINE_DATA.length) return;
+  const tmp = TIMELINE_DATA[idx];
+  TIMELINE_DATA[idx] = TIMELINE_DATA[newIdx];
+  TIMELINE_DATA[newIdx] = tmp;
+  renumberTimelineEntries();
+  savePageData();
+  renderTimelineList();
+  openTimelineEditor(id);
+}
+
+function openTimelineEditorFromIframe(id){
+  if(!TIMELINE_DATA.find(e => e.id === id)) return;
+  openTimelineEditor(id);
+  setTimeout(()=>{
+    const active = document.querySelector('#timeline-list .section-item.active');
+    if(active) active.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }, 60);
+}
+
+/* Map of known category colors to their closest select option values */
+const TL_COLOR_MAP = {
+  '#e86060': '#e86060', 'rgb(232, 96, 96)':   '#e86060',
+  '#6aaae8': '#6aaae8', 'rgb(106, 170, 232)': '#6aaae8',
+  '#50d090': '#50d090', 'rgb(80, 208, 144)':  '#50d090',
+  '#e8a040': '#e8a040', 'rgb(232, 160, 64)':  '#e8a040'
+};
+
+function openTimelineBlockEditor(data){
+  const panel  = document.getElementById('tl-block-editor');
+  const cardF  = document.getElementById('tl-block-card-fields');
+  const ageF   = document.getElementById('tl-block-age-fields');
+  if(!panel) return;
+  panel.style.display = '';
+  // Store which block is being edited (for save)
+  panel.dataset.blockId   = (data.kind !== 'age') ? (data.title || data.tlId || '') : '';
+  panel.dataset.blockKind = data.kind || 'card';
+  panel.dataset.blockTlId = data.tlId || '';
+
+  if(data.kind === 'age'){
+    cardF.style.display = 'none';
+    ageF.style.display  = '';
+    document.getElementById('tlb-id').value        = data.tlId || '';
+    document.getElementById('tlb-age-label').value = data.ageLabel || '';
+    document.getElementById('tlb-age-color').value = data.ageColor || '';
+  } else {
+    cardF.style.display = '';
+    ageF.style.display  = 'none';
+    document.getElementById('tlb-id').value   = data.title || data.tlId || '';
+    document.getElementById('tlb-tag').value  = data.tag   || '';
+    // Normalise color to a known option value; fall back to first option
+    const sel = document.getElementById('tlb-tag-color');
+    sel.value = TL_COLOR_MAP[data.tagColor] || '#e86060';
+    document.getElementById('tlb-title').value = data.title || '';
+    document.getElementById('tlb-body').value  = data.body  || '';
+  }
+
+  // Scroll the right panel down to the block editor
+  setTimeout(()=>{
+    const region = document.querySelector('.pages-edit-region');
+    if(region && panel){
+      const rRect = region.getBoundingClientRect();
+      const pRect = panel.getBoundingClientRect();
+      region.scrollTo({ top: region.scrollTop + (pRect.top - rRect.top) - 16, behavior:'smooth' });
+    }
+  }, 30);
+}
+
+function saveBlockEdit(){
+  const panel  = document.getElementById('tl-block-editor');
+  const isAge  = panel.dataset.blockKind === 'age';
+  const iframe = document.querySelector('#pages-preview-frame');
+
+  let msg, storageKey, storageVal;
+
+  if(isAge){
+    const tlId  = panel.dataset.blockTlId;
+    const label = document.getElementById('tlb-age-label').value.trim();
+    const color = document.getElementById('tlb-age-color').value.trim();
+    msg = { type:'ofs-timeline-block-update', kind:'age', tlId, ageLabel:label, ageColor:color };
+    storageKey = tlId;
+    storageVal = { kind:'age', tlId, ageLabel:label, ageColor:color };
+  } else {
+    const blockId  = panel.dataset.blockId;
+    const tag      = document.getElementById('tlb-tag').value.trim();
+    const tagColor = document.getElementById('tlb-tag-color').value;
+    const title    = document.getElementById('tlb-title').value.trim();
+    const body     = document.getElementById('tlb-body').value;
+    msg = { type:'ofs-timeline-block-update', kind:'card', blockId, tag, tagColor, title, body };
+    storageKey = blockId;
+    storageVal = { kind:'card', tag, tagColor, title, body };
+    // Update panel identifier if title was changed
+    panel.dataset.blockId = title || blockId;
+    document.getElementById('tlb-id').value = title || blockId;
+  }
+
+  // Send live update to iframe
+  if(iframe && iframe.contentWindow) iframe.contentWindow.postMessage(msg, '*');
+
+  // Persist to localStorage
+  const blocks = JSON.parse(localStorage.getItem(STORAGE_TIMELINE_BLOCKS) || '{}');
+  blocks[storageKey] = storageVal;
+  localStorage.setItem(STORAGE_TIMELINE_BLOCKS, JSON.stringify(blocks));
+
+  // Flash "Saved!"
+  const indicator = document.getElementById('tlb-saved');
+  indicator.style.opacity = '1';
+  setTimeout(()=>{ indicator.style.opacity = '0'; }, 2000);
+  showToast('Block saved.');
+}
+
+function openTimelineEditor(id){
+  activeTimelineId = id;
+  renderTimelineList();
+  const entry = TIMELINE_DATA.find(e=>e.id===id);
+  const ed = document.getElementById('timeline-editor');
+  ed.innerHTML = `
+    <div class="editor-topbar">
+      <div>
+        <div class="editor-meta-label">${entry.type} ${entry.num !== '—' ? entry.num : ''}</div>
+        <div class="editor-meta-title" id="te-live-title">${entry.title} — ${entry.subtitle}</div>
+      </div>
+      <div class="editor-action-row">
+        <button class="del-btn" onclick="deleteTimelineEntry('${id}')">Delete</button>
+        <button class="save-btn" onclick="saveTimelineEntry('${id}')">Save</button>
+      </div>
+    </div>
+    <div class="editor-fields">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field-row"><label>Title</label><input id="te-title" value="${escHtml(entry.title)}" oninput="document.getElementById('te-live-title').textContent=this.value+' — '+document.getElementById('te-subtitle').value"></div>
+        <div class="field-row"><label>Subtitle</label><input id="te-subtitle" value="${escHtml(entry.subtitle)}" oninput="document.getElementById('te-live-title').textContent=document.getElementById('te-title').value+' — '+this.value"></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field-row"><label>Type</label>
+          <select id="te-type">${ENTRY_TYPES.map(t=>`<option ${entry.type===t?'selected':''}>${t}</option>`).join('')}</select>
+        </div>
+        <div class="field-row"><label>Number / Label</label><input id="te-num" value="${escHtml(entry.num)}" placeholder="I, II, III or —"></div>
+      </div>
+      <div class="field-row">
+        <label>Content</label>
+        <textarea class="editor-textarea" id="te-content" oninput="updateCharCount('te-count','te-content')">${escHtml(entry.content)}</textarea>
+      </div>
+    </div>
+    <div class="editor-footer">
+      <span class="char-count" id="te-count">${entry.content.length} characters</span>
+    </div>`;
+  // Scroll right panel to show editor fields
+  setTimeout(()=>{
+    const region = document.querySelector('.pages-edit-region');
+    if(region && ed){
+      const rRect = region.getBoundingClientRect();
+      const eRect = ed.getBoundingClientRect();
+      region.scrollTo({ top: region.scrollTop + (eRect.top - rRect.top), behavior:'smooth' });
+    }
+  }, 30);
+}
+
+function saveTimelineEntry(id){
+  const entry = TIMELINE_DATA.find(e=>e.id===id);
+  const oldTitle = entry.title;
+  entry.title    = document.getElementById('te-title').value.trim();
+  entry.subtitle = document.getElementById('te-subtitle').value.trim();
+  entry.type     = document.getElementById('te-type').value;
+  entry.num      = document.getElementById('te-num').value.trim();
+  entry.content  = document.getElementById('te-content').value;
+  savePageData();
+  logChange('—', `Timeline: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
+  renderTimelineList();
+  showToast('Entry saved.');
+}
+
+function deleteTimelineEntry(id){
+  const entry = TIMELINE_DATA.find(e=>e.id===id);
+  if(!confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
+  logChange('—', `Timeline: ${entry.title}`, entry.title, 'DELETED');
+  TIMELINE_DATA = TIMELINE_DATA.filter(e=>e.id!==id);
+  activeTimelineId = null;
+  savePageData();
+  renderTimelineList();
+  document.getElementById('timeline-editor').innerHTML = '<div class="editor-empty"><span>📜</span>Select an entry to edit</div>';
+}
+
+
+
+/* ══════════════════════════════════════════════════════════
+   REGISTRY
+══════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════
+   UTILITIES
+══════════════════════════════════════════════════════════ */
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function updateCharCount(countId, textareaId){ document.getElementById(countId).textContent = document.getElementById(textareaId).value.length + ' characters'; }
+
+function showToast(msg){
+  let t = document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:28px;right:28px;z-index:9999;background:var(--bg-card);border:1px solid var(--gold);border-radius:3px;padding:12px 20px;font-family:Cinzel,serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);box-shadow:0 0 20px rgba(201,168,76,.2);transition:opacity .4s;'; document.body.appendChild(t); }
+  t.textContent = msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0', 2200);
+}
+
+// Init pages on tab open
+document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
+  renderCodexList();
+  renderTimelineList();
+});
+
+window.addEventListener('storage', event => {
+  if (event.key === window.OFSData.STORAGE_PLAYERS) {
+    PLAYERS = window.OFSData.getPlayers();
+    renderAll();
+  }
+});
+</script>
+</body>
+</html>

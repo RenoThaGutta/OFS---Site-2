@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roster — Order of the Fallen Star</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #07070f;
+      --bg-card:   #0e0e1c;
+      --bg-card2:  #13132a;
+      --gold:      #c9a84c;
+      --gold-lt:   #e8ca6a;
+      --gold-dim:  #6e5a28;
+      --silver:    #b0b8c8;
+      --silver-dim:#5a6272;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7568;
+      --b-gold:    rgba(201,168,76,.28);
+      --b-dim:     rgba(201,168,76,.09);
+      --glow:      rgba(201,168,76,.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    #starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* ── Navigation handled by header_bar.js ── */
+    #main-nav.solid { background: rgba(7,7,15,.96); }
+
+    /* ── Page wrapper ─────────────────────────────────────── */
+    .page {
+      position: relative; z-index: 1;
+      padding-top: 62px;
+    }
+
+    /* ── Page Header ──────────────────────────────────────── */
+    .page-header {
+      padding: 60px 40px 52px;
+      border-bottom: 1px solid var(--b-dim);
+      max-width: 1300px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: flex-start;
+    }
+    .page-header-left { flex: 1; }
+    .page-view-toggle {
+      display: flex; gap: 0; border: 1px solid var(--b-gold); border-radius: 3px;
+      overflow: hidden; flex-shrink: 0; margin-top: 6px;
+    }
+    .pvt-btn {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .12em; text-transform: uppercase;
+      padding: 10px 20px; background: transparent; border: none; color: var(--silver-dim);
+      cursor: pointer; transition: color .2s, background .2s; white-space: nowrap;
+    }
+    .pvt-btn + .pvt-btn { border-left: 1px solid var(--b-gold); }
+    .pvt-btn.active { color: var(--gold); background: rgba(201,168,76,.08); }
+    .header-label {
+      font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .3em;
+      text-transform: uppercase; color: var(--gold-dim); margin-bottom: 10px;
+    }
+    .header-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+      font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--gold); text-shadow: 0 0 28px rgba(201,168,76,.2);
+      margin-bottom: 12px;
+    }
+    .header-sub {
+      font-family: 'Crimson Text', serif; font-style: italic;
+      color: var(--silver-dim); font-size: 1.05rem;
+      margin-bottom: 0;
+    }
+    .header-count {
+      display: inline-block; margin-top: 14px;
+      font-family: 'Cinzel', serif; font-size: .7rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .header-count span { color: var(--gold); }
+
+    /* ── Controls bar ─────────────────────────────────────── */
+    .controls-bar {
+      position: sticky; top: 62px; z-index: 50;
+      background: rgba(7,7,15,.92);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--b-dim);
+      padding: 14px 40px;
+    }
+    .controls-inner {
+      max-width: 1300px; margin: 0 auto;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    }
+    .ctrl-search {
+      flex: 1; min-width: 180px;
+      background: var(--bg-card); border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 9px 14px;
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: .82rem;
+      outline: none; transition: border-color .2s;
+    }
+    .ctrl-search:focus { border-color: var(--b-gold); }
+    .ctrl-search::placeholder { color: var(--text-dim); }
+    .ctrl-select {
+      background: var(--bg-card); border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 9px 12px;
+      color: var(--text); font-family: 'Inter', sans-serif; font-size: .8rem;
+      outline: none; cursor: pointer; transition: border-color .2s;
+    }
+    .ctrl-select:focus { border-color: var(--b-gold); }
+    .ctrl-select option { background: var(--bg-card2); }
+    .controls-right {
+      display: flex; gap: 8px; align-items: center; margin-left: auto;
+    }
+    .view-btn {
+      background: transparent; border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 8px 12px; color: var(--text-dim); cursor: pointer;
+      font-size: .75rem; transition: color .2s, border-color .2s;
+    }
+    .view-btn.active, .view-btn:hover { color: var(--gold); border-color: var(--b-gold); }
+    .result-count {
+      font-family: 'Cinzel', serif; font-size: .65rem;
+      letter-spacing: .12em; color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .result-count span { color: var(--gold); }
+
+    /* ── Roster content ───────────────────────────────────── */
+    .roster-content {
+      max-width: 1300px; margin: 0 auto;
+      padding: 32px 40px 80px;
+    }
+
+    /* ── Card grid ────────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .player-card {
+      background: var(--bg-card);
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color .22s, box-shadow .22s, transform .22s;
+      text-decoration: none; color: inherit;
+      display: block;
+    }
+    .player-card:hover {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 36px rgba(201,168,76,.09);
+      transform: translateY(-3px);
+    }
+
+    /* card top stripe */
+    .card-top {
+      height: 4px;
+      background: linear-gradient(to right, var(--gold-dim), var(--gold), var(--gold-dim));
+      opacity: .5;
+    }
+
+    /* identity row */
+    .card-identity {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 20px 14px;
+    }
+    .card-avatar {
+      flex-shrink: 0;
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 2px solid var(--gold-dim);
+      background: var(--bg-card2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cinzel', serif; font-size: 1.4rem;
+      color: var(--gold); font-weight: 700;
+      overflow: hidden;
+      box-shadow: 0 0 16px rgba(201,168,76,.15);
+    }
+    .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .card-name-block { flex: 1; min-width: 0; }
+    .card-username {
+      font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700;
+      color: var(--gold-lt); letter-spacing: .06em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 5px;
+    }
+    .card-rank {
+      display: inline-block;
+      font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .12em;
+      text-transform: uppercase; color: var(--text-dim);
+      background: var(--bg-card2); border: 1px solid var(--b-dim);
+      border-radius: 2px; padding: 2px 8px;
+    }
+
+    /* rep bar */
+    .card-rep {
+      padding: 0 20px 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .rep-label {
+      font-family: 'Cinzel', serif; font-size: .62rem;
+      letter-spacing: .1em; color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .rep-bar-bg {
+      flex: 1; height: 4px; background: var(--bg-card2);
+      border-radius: 2px; overflow: hidden;
+    }
+    .rep-bar-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(to right, var(--gold-dim), var(--gold));
+      transition: width .4s ease;
+    }
+    .rep-level {
+      font-family: 'Cinzel', serif; font-size: .75rem; font-weight: 700;
+      color: var(--gold); white-space: nowrap;
+    }
+
+    /* divider */
+    .card-divider { height: 1px; background: var(--b-dim); margin: 0 20px; }
+
+    /* banner pill */
+    .card-banner {
+      padding: 12px 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .banner-pill {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--silver);
+      background: rgba(176,184,200,.08); border: 1px solid rgba(176,184,200,.15);
+      border-radius: 2px; padding: 3px 10px;
+    }
+    .banner-rank-title {
+      font-family: 'Crimson Text', serif; font-style: italic;
+      font-size: .82rem; color: var(--text-dim);
+    }
+
+    /* stat row */
+    .card-stats {
+      padding: 0 20px 18px;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    }
+    .stat-item { text-align: center; }
+    .stat-val {
+      font-family: 'Cinzel', serif; font-size: .78rem; font-weight: 600;
+      color: var(--silver);
+    }
+    .stat-lbl {
+      font-family: 'Inter', sans-serif; font-size: .58rem;
+      color: var(--text-dim); margin-top: 2px; line-height: 1.2;
+    }
+
+    /* role path tag at bottom */
+    .card-footer {
+      background: rgba(201,168,76,.03);
+      border-top: 1px solid var(--b-dim);
+      padding: 9px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px;
+    }
+    .role-path-tag {
+      font-family: 'Inter', sans-serif; font-size: .7rem;
+      color: var(--text-dim);
+    }
+    .role-path-tag span { color: var(--silver-dim); }
+    .banner-pts-tag {
+      font-family: 'Cinzel', serif; font-size: .65rem;
+      letter-spacing: .08em; color: var(--gold-dim);
+    }
+    .banner-pts-tag strong { color: var(--gold); }
+
+    /* ── Table view ───────────────────────────────────────── */
+    .roster-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+    }
+    .roster-table {
+      width: 100%; border-collapse: collapse;
+      font-size: .82rem;
+    }
+    .roster-table thead th {
+      font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--text-dim);
+      padding: 12px 16px; text-align: left;
+      background: var(--bg-card2);
+      border-bottom: 1px solid var(--b-gold);
+      white-space: nowrap;
+    }
+    .roster-table thead th.sortable { cursor: pointer; user-select: none; }
+    .roster-table thead th.sortable:hover { color: var(--gold); }
+    .roster-table thead th.sort-active { color: var(--gold); }
+    .sort-arrow { margin-left: 4px; opacity: .7; }
+    .roster-table tbody tr {
+      border-bottom: 1px solid var(--b-dim);
+      transition: background .18s;
+      cursor: pointer;
+    }
+    .roster-table tbody tr:hover { background: rgba(201,168,76,.03); }
+    .roster-table tbody tr:last-child { border-bottom: none; }
+    .roster-table tbody td { padding: 11px 16px; color: var(--text); }
+    .tbl-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--bg-card2); border: 1px solid var(--gold-dim);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cinzel', serif; font-size: .9rem;
+      color: var(--gold); font-weight: 700;
+      overflow: hidden;
+    }
+    .tbl-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .tbl-username { font-family: 'Cinzel', serif; font-size: .82rem; color: var(--gold-lt); }
+    .badge {
+      font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .1em;
+      text-transform: uppercase; border-radius: 2px;
+      padding: 2px 8px; display: inline-block;
+    }
+    .badge-gold { background: rgba(201,168,76,.12); border: 1px solid var(--b-gold); color: var(--gold); }
+    .badge-dim  { background: var(--bg-card2); border: 1px solid var(--b-dim); color: var(--text-dim); }
+    .tbl-num { font-family: 'Cinzel', serif; color: var(--silver); }
+    .tbl-dim { color: var(--text-dim); font-size: .78rem; }
+
+    /* ── Empty state ──────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 80px 20px;
+      font-family: 'Crimson Text', serif; font-style: italic;
+      color: var(--text-dim); font-size: 1.1rem;
+    }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--b-gold);
+      background: var(--bg); padding: 44px 40px 30px;
+      text-align: center;
+    }
+    .footer-glory {
+      font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .22em;
+      text-transform: uppercase; color: var(--gold-dim); margin-bottom: 20px;
+    }
+    .footer-links {
+      display: flex; justify-content: center; gap: 6px;
+      flex-wrap: wrap; list-style: none; margin-bottom: 18px;
+    }
+    .footer-links a {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--silver-dim);
+      text-decoration: none; padding: 4px 10px; transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy { font-family: 'Inter', sans-serif; font-size: .7rem; color: var(--text-dim); }
+    .footer-sc { margin-top: 20px; opacity: .35; transition: opacity .2s; }
+    .footer-sc:hover { opacity: .55; }
+    .footer-sc img { height: 48px; display: block; margin: 0 auto; }
+
+    /* ── Leaderboard ──────────────────────────────────────── */
+    .lb-tabs { display: flex; gap: 4px; margin-bottom: 22px; flex-wrap: wrap; }
+    .lb-tab {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .1em; text-transform: uppercase;
+      padding: 7px 16px; border: 1px solid var(--b-dim); border-radius: 2px;
+      color: var(--text-dim); cursor: pointer; transition: color .2s, border-color .2s, background .2s;
+    }
+    .lb-tab:hover  { border-color: var(--b-gold); color: var(--silver); }
+    .lb-tab.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.06); }
+    .lb-list { display: flex; flex-direction: column; gap: 8px; }
+    .lb-row {
+      position: relative; height: 68px;
+      background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 3px;
+      perspective: 900px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .lb-row:hover { border-color: var(--b-gold); box-shadow: 0 0 14px rgba(201,168,76,.08); }
+    .lb-flip-inner {
+      width: 100%; height: 100%; position: relative;
+      transform-style: preserve-3d;
+      transition: transform .5s cubic-bezier(.4,0,.2,1);
+    }
+    .lb-row:hover .lb-flip-inner { transform: rotateX(180deg); }
+    .lb-flip-front, .lb-flip-back {
+      position: absolute; inset: 0;
+      backface-visibility: hidden; -webkit-backface-visibility: hidden;
+      display: flex; align-items: center; gap: 14px; padding: 0 18px;
+    }
+    .lb-flip-back {
+      transform: rotateX(180deg);
+      background: rgba(201,168,76,.04); border-radius: 3px;
+      text-decoration: none; color: inherit;
+    }
+    .lb-rank { font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: 700; color: var(--text-dim); width: 36px; text-align: center; flex-shrink: 0; }
+    .lb-rank.r1 { color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,.4); }
+    .lb-rank.r2 { color: #c0c0c0; }
+    .lb-rank.r3 { color: #cd7f32; }
+    .lb-name { font-weight: 500; color: var(--text); }
+    .lb-sub  { font-size: .75rem; color: var(--text-dim); }
+    .lb-val  { font-family: 'Cinzel', serif; font-size: 1.1rem; color: var(--gold); text-align: right; flex-shrink: 0; }
+    .lb-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,.05); border-radius: 2px; overflow: hidden; max-width: 200px; margin-left: auto; }
+    .lb-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(to right, var(--gold-dim), var(--gold)); }
+    /* back face elements */
+    .lb-back-avatar { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--b-gold); object-fit: cover; flex-shrink: 0; background: var(--bg-card2); }
+    .lb-back-name { font-family: 'Cinzel', serif; font-size: .82rem; letter-spacing: .06em; color: var(--gold); white-space: nowrap; }
+    .lb-back-rank { font-size: .72rem; color: var(--text-dim); white-space: nowrap; }
+    .lb-back-mid { flex: 1; min-width: 0; }
+    .lb-back-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .lb-back-banner { font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .06em; color: var(--silver); white-space: nowrap; }
+    .lb-back-joined { font-size: .68rem; color: var(--text-dim); white-space: nowrap; margin-top: 3px; }
+
+    /* ── Responsive ───────────────────────────────────────── */
+    @media (max-width: 860px) {
+      .page-header, .roster-content { padding-left: 20px; padding-right: 20px; }
+      .controls-bar { padding: 12px 20px; }
+      .card-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 540px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .controls-inner { gap: 8px; }
+      .ctrl-select { font-size: .74rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<!-- ── Nav ──────────────────────────────────────────────────── -->
+<nav id="main-nav"></nav>
+
+<div class="page">
+
+  <!-- ── Page Header ──────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="header-label">Order of the Fallen Star</div>
+      <h1 class="header-title" id="header-title">Member Roster</h1>
+      <div class="header-sub" id="header-sub">All active Knights, Templars, and officers of the Order</div>
+      <div class="header-count" id="header-count">Showing <span id="shown-count">—</span> of <span id="total-count">—</span> members</div>
+    </div>
+    <div class="page-view-toggle">
+      <button class="pvt-btn active" id="pvt-roster">Member Roster</button>
+      <button class="pvt-btn" id="pvt-leaderboard">Leaderboard</button>
+    </div>
+  </div>
+
+  <!-- ── Controls ─────────────────────────────────────────── -->
+  <div class="controls-bar">
+    <div class="controls-inner">
+      <input class="ctrl-search" id="ctrl-search" placeholder="Search by username…">
+      <select class="ctrl-select" id="ctrl-rank">
+        <option value="">All Ranks</option>
+        <option>Serf</option><option>Commoner</option><option>Page</option>
+        <option>Squire</option><option>Knight</option><option>Templar</option>
+        <option>Praetorian</option><option>Commander</option><option>Lord</option>
+        <option>Lord Commander</option><option>Chapter Master</option>
+        <option>Primarch of Conquest</option><option>Primarch of Harmony</option><option>Primarch of Justice</option>
+      </select>
+      <select class="ctrl-select" id="ctrl-banner">
+        <option value="">All Banners</option>
+        <option>The Artificer</option><option>The Astraeus</option><option>The Engineer</option>
+        <option>The Explorer</option><option>The Fang</option><option>The Forager</option>
+        <option>The Guardian</option><option>The Healer</option><option>The Merchant</option>
+        <option>The Privateer</option><option>The Talon</option>
+      </select>
+      <select class="ctrl-select" id="ctrl-faction">
+        <option value="">All Factions</option>
+      </select>
+      <select class="ctrl-select" id="ctrl-sort">
+        <option value="rep">Sort: Rep Level</option>
+        <option value="name">Sort: Name (A–Z)</option>
+        <option value="bannerpts">Sort: Banner Points</option>
+        <option value="fps">Sort: FPS Kills</option>
+        <option value="ship">Sort: Ship Kills</option>
+        <option value="quests">Sort: Quests Led</option>
+      </select>
+      <div class="controls-right">
+        <button class="view-btn active" id="view-cards" title="Card view">⊞</button>
+        <button class="view-btn" id="view-table" title="Table view">☰</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Roster content ───────────────────────────────────── -->
+  <div class="roster-content">
+    <div id="cards-view" class="card-grid"></div>
+    <div id="table-view" style="display:none">
+      <div class="roster-table-wrap">
+        <table class="roster-table" id="main-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="sortable sort-active" data-col="name">Username <span class="sort-arrow" id="arrow-name">↑</span></th>
+              <th class="sortable" data-col="rank">Rank</th>
+              <th class="sortable" data-col="rep">Rep Lvl <span class="sort-arrow" id="arrow-rep"></span></th>
+              <th class="sortable" data-col="banner">Active Banner</th>
+              <th class="sortable" data-col="bannerpts">Banner Pts <span class="sort-arrow" id="arrow-bannerpts"></span></th>
+              <th class="sortable" data-col="fps">FPS Kills <span class="sort-arrow" id="arrow-fps"></span></th>
+              <th class="sortable" data-col="ship">Ship Kills <span class="sort-arrow" id="arrow-ship"></span></th>
+              <th class="sortable" data-col="quests">Quests Led <span class="sort-arrow" id="arrow-quests"></span></th>
+              <th>Faction</th>
+            </tr>
+          </thead>
+          <tbody id="table-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="empty-state" class="empty-state" style="display:none">
+      No members match your current filters.
+    </div>
+    <div id="leaderboard-view" style="display:none">
+      <div class="lb-tabs" id="lb-tabs">
+        <div class="lb-tab active" data-lb="rep">Rep Level</div>
+        <div class="lb-tab" data-lb="fps">FPS Kills</div>
+        <div class="lb-tab" data-lb="ship">Ship Kills</div>
+        <div class="lb-tab" data-lb="quests">Quests Led</div>
+        <div class="lb-tab" data-lb="crusades">Crusades Led</div>
+        <div class="lb-tab" data-lb="bannerpts">Banner Points</div>
+      </div>
+      <div class="lb-list" id="lb-list"></div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ── Footer ───────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-glory">Glory to the Fallen Star. Our light endures, unbroken.</div>
+  <ul class="footer-links">
+    <li><a href="OFS_Home.html">Home</a></li>
+    <li><a href="OFS_Codex.html">Codex</a></li>
+    <li><a href="OFS_Timeline.html">Chronicles</a></li>
+    <li><a href="OFS_Roster.html">Roster</a></li>
+    <li><a href="OFS_PlayerSheet.html">Player Sheet</a></li>
+    <li><a href="OFS_Admin.html">Admin</a></li>
+  </ul>
+  <div class="footer-copy">Order of the Fallen Star &nbsp;·&nbsp; Star Citizen Organization</div>
+  <div class="footer-sc">
+    <img src="Star-Citizen-Logo-white.png" alt="Star Citizen">
+  </div>
+</footer>
+
+<script src="header_bar.js"></script>
+<script src="ofs-data.js"></script>
+<script src="ofs-sheets.js"></script>
+<script src="ofs-nav.js"></script>
+<script>
+/* ── Star field ─────────────────────────────────────────────── */
+(function(){
+  const cv=document.getElementById('starfield'), ctx=cv.getContext('2d');
+  let W,H,stars;
+  function resize(){
+    W=cv.width=window.innerWidth; H=cv.height=window.innerHeight;
+  }
+  function makeStars(n){
+    return Array.from({length:n},()=>({
+      x:Math.random()*W, y:Math.random()*H,
+      r:Math.random()*1.2+.2, a:Math.random(),
+      da:(Math.random()*.003+.0005)*(Math.random()<.5?1:-1),
+      dx:(Math.random()-.5)*.06, dy:(Math.random()-.5)*.06
+    }));
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(const s of stars){
+      s.a+=s.da; if(s.a>1)s.da=-Math.abs(s.da); if(s.a<0)s.da=Math.abs(s.da);
+      s.x+=s.dx; s.y+=s.dy;
+      if(s.x<0)s.x=W; if(s.x>W)s.x=0;
+      if(s.y<0)s.y=H; if(s.y>H)s.y=0;
+      ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(220,215,200,${s.a*.7})`; ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  window.addEventListener('resize',()=>{resize();stars=makeStars(240);});
+  resize(); stars=makeStars(240); draw();
+})();
+
+/* ── Nav scroll ──────────────────────────────────────────────── */
+(function(){
+  const nav=document.getElementById('main-nav');
+  window.addEventListener('scroll',()=>{
+    nav.classList.toggle('solid', window.scrollY>40);
+  },{passive:true});
+})();
+
+/* ═══════════════════════════════════════════════════════
+   DATA — replace PLAYERS with live fetch when wiring backend
+═══════════════════════════════════════════════════════ */
+const BANNER_RANKS = {
+  'The Artificer' :['Apprentice','Tinkerer',  'Artisan',   'Craftsman'   ],
+  'The Astraeus'  :['Apprentice','Helion',    'Archon',    'Strategos'   ],
+  'The Engineer'  :['Apprentice','Technician','Fabricator','Mechanic'    ],
+  'The Explorer'  :['Apprentice','Seeker',    'Wayfarer',  'Pathfinder'  ],
+  'The Fang'      :['Apprentice','Hound',     'Stalker',   'Wolf'        ],
+  'The Forager'   :['Apprentice','Scavenger', 'Harvester', 'Prospector'  ],
+  'The Guardian'  :['Apprentice','Vanguard',  'Bulwark',   'Sentinel'    ],
+  'The Healer'    :['Apprentice','Apothecary','Physician', 'Chirurgeon'  ],
+  'The Merchant'  :['Apprentice','Provisioner','Steward',  'Quartermaster'],
+  'The Privateer' :['Apprentice','Wayman',    'Freeblade', 'Marauder'    ],
+  'The Talon'     :['Apprentice','Sparrow',   'Falcon',    'Raven'       ]
+};
+
+// Reputation thresholds loaded from Reputation sheet via ofs-sheets.js
+let LEVEL_XP = (function(){
+  try { const v=JSON.parse(localStorage.getItem('ofs_level_xp')||'null'); if(Array.isArray(v)&&v.length) return v; } catch(e){}
+  // Fallback: exponential curve
+  const MIN=100,MAX=1_000_000,N=100;
+  return Array.from({length:N},(_,i)=>i===0?MIN:Math.floor(MIN*Math.pow(MAX/MIN,i/(N-1))));
+}());
+const MAX_LVL = LEVEL_XP.length;
+
+function calcRep(xp){
+  let lvl=1;
+  for(let i=0;i<LEVEL_XP.length;i++){if(xp>=LEVEL_XP[i])lvl=i+1;else break;}
+  return {lvl:Math.min(lvl,LEVEL_XP.length), xp};
+}
+
+function totalBannerPts(p){ return Object.values(p.banners).reduce((s,b)=>s+b.p,0); }
+
+function bannerRankTitle(bannerName, pts, medal){
+  const r=BANNER_RANKS[bannerName];
+  if(!r) return '';
+  let idx;
+  if(pts>=60&&medal) idx=3;
+  else if(pts>=30)   idx=2;
+  else if(pts>=15)   idx=1;
+  else               idx=0;
+  return r[idx];
+}
+
+// ── Sample roster — replace with live data when wiring backend ──
+let PLAYERS = [
+  { id:'1', username:'Vanderan',           rank:'Primarch of Conquest', faction:'Iron Reavers',  activeBanner:'The Fang',
+    stats:{PatrolCount:47,TotalLength:312,FPS_Kills_Total:1840,Ship_Kills_Total:623,Crusades_Total:18,Turret_Kills_Total:294,Quest_Total:112,Led_Completed_Quests:56,Led_Completed_Crusades:12},
+    banners:{'The Artificer':{p:8,m:false},'The Astraeus':{p:22,m:true},'The Engineer':{p:15,m:false},'The Explorer':{p:38,m:true},'The Fang':{p:67,m:true},'The Forager':{p:12,m:false},'The Guardian':{p:30,m:false},'The Healer':{p:19,m:true},'The Merchant':{p:60,m:true},'The Privateer':{p:5,m:false},'The Talon':{p:44,m:false}},
+    wallet:{gold:12,silver:34,copper:88}, avatarUrl:'' },
+  { id:'2', username:'Kraz',               rank:'Primarch of Harmony',  faction:'Iron Reavers',  activeBanner:'The Merchant',
+    stats:{PatrolCount:38,TotalLength:244,FPS_Kills_Total:920,Ship_Kills_Total:411,Crusades_Total:15,Turret_Kills_Total:180,Quest_Total:94,Led_Completed_Quests:44,Led_Completed_Crusades:10},
+    banners:{'The Artificer':{p:5,m:false},'The Astraeus':{p:14,m:false},'The Engineer':{p:20,m:false},'The Explorer':{p:28,m:true},'The Fang':{p:31,m:true},'The Forager':{p:9,m:false},'The Guardian':{p:22,m:false},'The Healer':{p:11,m:false},'The Merchant':{p:55,m:true},'The Privateer':{p:3,m:false},'The Talon':{p:19,m:false}},
+    wallet:{gold:8,silver:60,copper:22}, avatarUrl:'' },
+  { id:'3', username:'U-Gen-X',            rank:'Primarch of Justice',  faction:'Iron Reavers',  activeBanner:'The Guardian',
+    stats:{PatrolCount:52,TotalLength:390,FPS_Kills_Total:2100,Ship_Kills_Total:780,Crusades_Total:22,Turret_Kills_Total:410,Quest_Total:130,Led_Completed_Quests:68,Led_Completed_Crusades:15},
+    banners:{'The Artificer':{p:3,m:false},'The Astraeus':{p:18,m:true},'The Engineer':{p:12,m:false},'The Explorer':{p:45,m:true},'The Fang':{p:72,m:true},'The Forager':{p:6,m:false},'The Guardian':{p:62,m:true},'The Healer':{p:14,m:false},'The Merchant':{p:40,m:false},'The Privateer':{p:22,m:true},'The Talon':{p:55,m:true}},
+    wallet:{gold:20,silver:10,copper:55}, avatarUrl:'' },
+  { id:'4', username:'Cerulean Nightshade', rank:'Chapter Master',       faction:'Iron Reavers',  activeBanner:'The Talon',
+    stats:{PatrolCount:31,TotalLength:210,FPS_Kills_Total:1100,Ship_Kills_Total:890,Crusades_Total:14,Turret_Kills_Total:220,Quest_Total:78,Led_Completed_Quests:32,Led_Completed_Crusades:8},
+    banners:{'The Artificer':{p:7,m:false},'The Astraeus':{p:30,m:true},'The Engineer':{p:8,m:false},'The Explorer':{p:22,m:false},'The Fang':{p:48,m:true},'The Forager':{p:4,m:false},'The Guardian':{p:16,m:false},'The Healer':{p:9,m:false},'The Merchant':{p:24,m:false},'The Privateer':{p:18,m:false},'The Talon':{p:61,m:true}},
+    wallet:{gold:5,silver:22,copper:40}, avatarUrl:'' },
+  { id:'5', username:'CiberKing',           rank:'Knight',               faction:'Second Cohort', activeBanner:'The Fang',
+    stats:{PatrolCount:14,TotalLength:88,FPS_Kills_Total:540,Ship_Kills_Total:120,Crusades_Total:6,Turret_Kills_Total:60,Quest_Total:34,Led_Completed_Quests:8,Led_Completed_Crusades:2},
+    banners:{'The Artificer':{p:2,m:false},'The Astraeus':{p:4,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:8,m:false},'The Fang':{p:28,m:false},'The Forager':{p:1,m:false},'The Guardian':{p:6,m:false},'The Healer':{p:0,m:false},'The Merchant':{p:3,m:false},'The Privateer':{p:5,m:false},'The Talon':{p:10,m:false}},
+    wallet:{gold:0,silver:8,copper:15}, avatarUrl:'' },
+  { id:'6', username:'Nukeman',             rank:'Knight',               faction:'Second Cohort', activeBanner:'The Guardian',
+    stats:{PatrolCount:12,TotalLength:0,FPS_Kills_Total:19,Ship_Kills_Total:5,Crusades_Total:5,Turret_Kills_Total:0,Quest_Total:7,Led_Completed_Quests:2,Led_Completed_Crusades:1},
+    banners:{'The Artificer':{p:0,m:false},'The Astraeus':{p:0,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:0,m:false},'The Fang':{p:0,m:false},'The Forager':{p:3,m:false},'The Guardian':{p:11,m:false},'The Healer':{p:0,m:false},'The Merchant':{p:0,m:false},'The Privateer':{p:0,m:false},'The Talon':{p:0,m:false}},
+    wallet:{gold:0,silver:0,copper:0}, avatarUrl:'' },
+  { id:'7', username:'Lyria Voss',          rank:'Templar',              faction:'Arditi Cohort', activeBanner:'The Healer',
+    stats:{PatrolCount:22,TotalLength:160,FPS_Kills_Total:310,Ship_Kills_Total:88,Crusades_Total:9,Turret_Kills_Total:44,Quest_Total:55,Led_Completed_Quests:18,Led_Completed_Crusades:4},
+    banners:{'The Artificer':{p:1,m:false},'The Astraeus':{p:10,m:false},'The Engineer':{p:5,m:false},'The Explorer':{p:14,m:false},'The Fang':{p:8,m:false},'The Forager':{p:6,m:false},'The Guardian':{p:20,m:false},'The Healer':{p:42,m:true},'The Merchant':{p:15,m:false},'The Privateer':{p:2,m:false},'The Talon':{p:7,m:false}},
+    wallet:{gold:2,silver:14,copper:30}, avatarUrl:'' },
+  { id:'8', username:'Rook Ashveil',        rank:'Squire',               faction:'Arditi Cohort', activeBanner:'The Explorer',
+    stats:{PatrolCount:6,TotalLength:42,FPS_Kills_Total:88,Ship_Kills_Total:22,Crusades_Total:3,Turret_Kills_Total:10,Quest_Total:14,Led_Completed_Quests:0,Led_Completed_Crusades:0},
+    banners:{'The Artificer':{p:0,m:false},'The Astraeus':{p:2,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:15,m:false},'The Fang':{p:4,m:false},'The Forager':{p:0,m:false},'The Guardian':{p:3,m:false},'The Healer':{p:1,m:false},'The Merchant':{p:0,m:false},'The Privateer':{p:0,m:false},'The Talon':{p:5,m:false}},
+    wallet:{gold:0,silver:2,copper:8}, avatarUrl:'' }
+];
+
+const OFS_SHARED = window.OFSData;
+PLAYERS = OFS_SHARED.getPlayers();
+
+function syncControls(){
+  const ranks = OFS_SHARED.sortRanks([...new Set(PLAYERS.map(player => player.rank))]);
+  const factions = [...new Set(PLAYERS.map(player => player.faction))].sort();
+  const rankSel = document.getElementById('ctrl-rank');
+  const bannerSel = document.getElementById('ctrl-banner');
+  const factionSel = document.getElementById('ctrl-faction');
+
+  rankSel.innerHTML = '<option value="">All Ranks</option>';
+  ranks.forEach(rank => {
+    const opt = document.createElement('option');
+    opt.value = rank;
+    opt.textContent = rank;
+    rankSel.appendChild(opt);
+  });
+
+  bannerSel.innerHTML = '<option value="">All Banners</option>';
+  OFS_SHARED.BANNER_NAMES.forEach(banner => {
+    const opt = document.createElement('option');
+    opt.value = banner;
+    opt.textContent = banner;
+    bannerSel.appendChild(opt);
+  });
+
+  factionSel.innerHTML = '<option value="">All Factions</option>';
+  factions.forEach(faction => {
+    const opt = document.createElement('option');
+    opt.value = faction;
+    opt.textContent = faction;
+    factionSel.appendChild(opt);
+  });
+
+  document.getElementById('total-count').textContent = PLAYERS.length;
+}
+
+/* ═══════════════════════════════════════════════════════
+   VIEW STATE
+═══════════════════════════════════════════════════════ */
+let viewMode = 'cards'; // 'cards' | 'table'
+let sortCol  = 'rep';
+let sortAsc  = false;
+
+syncControls();
+
+/* ── Sort & filter ────────────────────────────────────────── */
+function getFiltered(){
+  PLAYERS = OFS_SHARED.getPlayers();
+  const q    = document.getElementById('ctrl-search').value.trim().toLowerCase();
+  const rank = document.getElementById('ctrl-rank').value;
+  const ban  = document.getElementById('ctrl-banner').value;
+  const fac  = document.getElementById('ctrl-faction').value;
+  const sort = document.getElementById('ctrl-sort').value;
+
+  let list = PLAYERS.filter(p => {
+    if(q   && !p.username.toLowerCase().includes(q)) return false;
+    if(rank && p.rank !== rank) return false;
+    if(ban  && p.activeBanner !== ban) return false;
+    if(fac  && p.faction !== fac) return false;
+    return true;
+  });
+
+  list.sort((a,b)=>{
+    switch(sort){
+      case 'name':      return a.username.localeCompare(b.username);
+      case 'rep':       return calcRep(b.reputationXP).lvl - calcRep(a.reputationXP).lvl;
+      case 'bannerpts': return totalBannerPts(b) - totalBannerPts(a);
+      case 'fps':       return b.stats.FPS_Kills_Total - a.stats.FPS_Kills_Total;
+      case 'ship':      return b.stats.Ship_Kills_Total - a.stats.Ship_Kills_Total;
+      case 'quests':    return b.stats.Led_Completed_Quests - a.stats.Led_Completed_Quests;
+      default:          return 0;
+    }
+  });
+
+  return list;
+}
+
+/* ── Render cards ─────────────────────────────────────────── */
+function renderCards(list){
+  const grid = document.getElementById('cards-view');
+  grid.innerHTML = '';
+  list.forEach(p => {
+    const rep   = calcRep(p.reputationXP);
+    const tbp   = totalBannerPts(p);
+    const bData = p.banners[p.activeBanner] || { p: 0, m: false };
+    const bRank = bannerRankTitle(p.activeBanner, bData.p, bData.m);
+    const init  = p.username.charAt(0).toUpperCase();
+    const lvlPct = Math.round((rep.lvl / MAX_LVL) * 100);
+
+    const card = document.createElement('a');
+    card.className = 'player-card';
+    card.href = `OFS_PlayerSheet.html?player=${encodeURIComponent(p.id)}`;
+
+    card.innerHTML = `
+      <div class="card-top"></div>
+      <div class="card-identity">
+        <div class="card-avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="${p.username}">` : init}</div>
+        <div class="card-name-block">
+          <div class="card-username">${p.username}</div>
+          <span class="card-rank">${p.rank}</span>
+        </div>
+      </div>
+      <div class="card-rep">
+        <div class="rep-label">Rep</div>
+        <div class="rep-bar-bg"><div class="rep-bar-fill" style="width:${lvlPct}%"></div></div>
+        <div class="rep-level">Lvl ${rep.lvl}</div>
+      </div>
+      <div class="card-divider"></div>
+      <div class="card-banner">
+        <span class="banner-pill">${p.activeBanner}</span>
+        <span class="banner-rank-title">${bRank}</span>
+      </div>
+      <div class="card-stats">
+        <div class="stat-item"><div class="stat-val">${p.stats.FPS_Kills_Total.toLocaleString()}</div><div class="stat-lbl">FPS Kills</div></div>
+        <div class="stat-item"><div class="stat-val">${p.stats.Ship_Kills_Total.toLocaleString()}</div><div class="stat-lbl">Ship Kills</div></div>
+        <div class="stat-item"><div class="stat-val">${p.stats.Led_Completed_Quests}</div><div class="stat-lbl">Quests Led</div></div>
+        <div class="stat-item"><div class="stat-val">${p.stats.Led_Completed_Crusades}</div><div class="stat-lbl">Crusades</div></div>
+      </div>
+      <div class="card-footer">
+        <div class="role-path-tag">Joined <span>${p.joinDate || '—'}</span></div>
+        <div class="banner-pts-tag"><strong>${tbp}</strong> banner pts</div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ── Render table ─────────────────────────────────────────── */
+function renderTable(list){
+  const tbody = document.getElementById('table-tbody');
+  tbody.innerHTML = '';
+  list.forEach(p => {
+    const rep = calcRep(p.reputationXP);
+    const tbp = totalBannerPts(p);
+    const init = p.username.charAt(0).toUpperCase();
+    const tr = document.createElement('tr');
+    tr.onclick = () => { window.location.href = `OFS_PlayerSheet.html?player=${encodeURIComponent(p.id)}`; };
+    tr.innerHTML = `
+      <td><div class="tbl-avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="">` : init}</div></td>
+      <td class="tbl-username">${p.username}</td>
+      <td><span class="badge badge-dim">${p.rank}</span></td>
+      <td><span class="badge badge-gold">Lvl ${rep.lvl}</span></td>
+      <td class="tbl-dim">${p.activeBanner}</td>
+      <td class="tbl-num">${tbp}</td>
+      <td class="tbl-num">${p.stats.FPS_Kills_Total.toLocaleString()}</td>
+      <td class="tbl-num">${p.stats.Ship_Kills_Total.toLocaleString()}</td>
+      <td class="tbl-num">${p.stats.Led_Completed_Quests}</td>
+      <td class="tbl-dim">${p.faction}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+/* ── Leaderboard render ───────────────────────────────────── */
+function renderLB(){
+  PLAYERS = OFS_SHARED.getPlayers();
+  const metric = document.querySelector('#lb-tabs .lb-tab.active').dataset.lb;
+  const sorted = [...PLAYERS].sort((a,b) => {
+    switch(metric){
+      case 'rep':       return calcRep(b.reputationXP).lvl - calcRep(a.reputationXP).lvl;
+      case 'fps':       return b.stats.FPS_Kills_Total - a.stats.FPS_Kills_Total;
+      case 'ship':      return b.stats.Ship_Kills_Total - a.stats.Ship_Kills_Total;
+      case 'quests':    return b.stats.Led_Completed_Quests - a.stats.Led_Completed_Quests;
+      case 'crusades':  return b.stats.Led_Completed_Crusades - a.stats.Led_Completed_Crusades;
+      case 'bannerpts': return totalBannerPts(b) - totalBannerPts(a);
+    }
+  });
+  function getVal(p){
+    switch(metric){
+      case 'rep':       return 'Lvl ' + calcRep(p.reputationXP).lvl;
+      case 'fps':       return p.stats.FPS_Kills_Total.toLocaleString();
+      case 'ship':      return p.stats.Ship_Kills_Total.toLocaleString();
+      case 'quests':    return p.stats.Led_Completed_Quests;
+      case 'crusades':  return p.stats.Led_Completed_Crusades;
+      case 'bannerpts': return totalBannerPts(p);
+    }
+  }
+  const list = document.getElementById('lb-list');
+  list.innerHTML = '';
+  if(!sorted.length) return;
+  const maxRaw = metric === 'rep'
+    ? calcRep(sorted[0].reputationXP).lvl
+    : (parseInt(getVal(sorted[0]).toString().replace(/[^0-9]/g,'')) || 1);
+
+  sorted.slice(0,10).forEach((p,i) => {
+    const rankClass = i===0?'r1':i===1?'r2':i===2?'r3':'';
+    const val = getVal(p);
+    const raw = parseInt(val.toString().replace(/[^0-9]/g,'')) || 0;
+    const pct = Math.round((raw/maxRaw)*100);
+    const rep = calcRep(p.reputationXP);
+    const tbp = totalBannerPts(p);
+    const lvlPct = Math.round((rep.lvl / MAX_LVL) * 100);
+    const bData = (p.banners && p.banners[p.activeBanner]) || { p: 0, m: false };
+    const bTitle = bannerRankTitle(p.activeBanner, bData.p, bData.m) || '';
+    const init = p.username.charAt(0).toUpperCase();
+    const bannerLine = p.activeBanner ? (p.activeBanner + (bTitle ? ' · ' + bTitle : '')) : '—';
+    const div = document.createElement('div');
+    div.className = 'lb-row';
+    div.innerHTML = `
+      <div class="lb-flip-inner">
+        <div class="lb-flip-front">
+          <div class="lb-rank ${rankClass}">${i+1}</div>
+          <div><div class="lb-name">${p.username}</div><div class="lb-sub">${p.rank}</div></div>
+          <div class="lb-bar-bg"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
+          <div class="lb-val">${val}</div>
+        </div>
+        <a class="lb-flip-back" href="OFS_PlayerSheet.html?player=${encodeURIComponent(p.id)}">
+          <img class="lb-back-avatar" src="${p.avatarUrl || 'ofs_logo.png'}" alt="${p.username}" onerror="this.src='ofs_logo.png'">
+          <div class="lb-back-mid">
+            <div class="lb-back-name">${p.username}</div>
+            <div class="lb-back-rank">${p.rank}</div>
+          </div>
+          <div class="lb-back-right">
+            <div class="lb-back-banner">${bannerLine}</div>
+            <div class="lb-back-joined">Joined ${p.joinDate || '—'}</div>
+          </div>
+        </a>
+      </div>`;
+    list.appendChild(div);
+  });
+}
+
+/* ── Main render ──────────────────────────────────────────── */
+function render(){
+  if(viewMode === 'leaderboard'){ renderLB(); return; }
+  PLAYERS = OFS_SHARED.getPlayers();
+  const list = getFiltered();
+  document.getElementById('shown-count').textContent = list.length;
+  document.getElementById('total-count').textContent = PLAYERS.length;
+
+  const empty = document.getElementById('empty-state');
+  const cards = document.getElementById('cards-view');
+  const table = document.getElementById('table-view');
+
+  if(!list.length){
+    cards.style.display = 'none';
+    table.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  if(viewMode === 'cards'){
+    cards.style.display = 'grid';
+    table.style.display = 'none';
+    renderCards(list);
+  } else {
+    cards.style.display = 'none';
+    table.style.display = 'block';
+    renderTable(list);
+  }
+}
+
+/* ── Event listeners ──────────────────────────────────────── */
+['ctrl-search','ctrl-rank','ctrl-banner','ctrl-faction','ctrl-sort'].forEach(id => {
+  document.getElementById(id).addEventListener(id === 'ctrl-search' ? 'input' : 'change', render);
+});
+
+function setViewMode(mode) {
+  viewMode = mode;
+  const isLB = mode === 'leaderboard';
+
+  // Header toggle buttons
+  document.getElementById('pvt-roster').classList.toggle('active', !isLB);
+  document.getElementById('pvt-leaderboard').classList.toggle('active', isLB);
+
+  // Card/table view buttons — only relevant in roster mode
+  document.getElementById('view-cards').classList.toggle('active', mode === 'cards');
+  document.getElementById('view-table').classList.toggle('active', mode === 'table');
+
+  // Header text
+  document.getElementById('header-title').textContent = isLB ? 'Leaderboard' : 'Member Roster';
+  document.getElementById('header-sub').textContent   = isLB
+    ? 'Top members ranked by activity and achievement'
+    : 'All active Knights, Templars, and officers of the Order';
+  document.getElementById('header-count').style.display = isLB ? 'none' : '';
+
+  // Controls bar — hide in leaderboard mode
+  document.querySelector('.controls-bar').style.display = isLB ? 'none' : '';
+
+  // Panel visibility
+  const lbView = document.getElementById('leaderboard-view');
+  const cards  = document.getElementById('cards-view');
+  const table  = document.getElementById('table-view');
+  const empty  = document.getElementById('empty-state');
+
+  if(isLB){
+    cards.style.display = 'none';
+    table.style.display = 'none';
+    empty.style.display = 'none';
+    lbView.style.display = 'block';
+    renderLB();
+  } else {
+    lbView.style.display = 'none';
+    render();
+  }
+}
+
+document.getElementById('pvt-roster').addEventListener('click', () => {
+  const mode = document.getElementById('view-table').classList.contains('active') ? 'table' : 'cards';
+  setViewMode(mode);
+});
+document.getElementById('pvt-leaderboard').addEventListener('click', () => setViewMode('leaderboard'));
+document.getElementById('view-cards').addEventListener('click', () => setViewMode('cards'));
+document.getElementById('view-table').addEventListener('click', () => setViewMode('table'));
+
+document.getElementById('lb-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.lb-tab');
+  if(!tab) return;
+  document.querySelectorAll('#lb-tabs .lb-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  renderLB();
+});
+
+// Initial render
+render();
+
+window.addEventListener('storage', () => {
+  PLAYERS = OFS_SHARED.getPlayers();
+  syncControls();
+  render();
+});
+</script>
+<script>if(window.parent!==window)window.parent.postMessage({type:'ofs-page-load',page:'roster'},'*');</script>
+<script>OFSSheets.load().then(function() { if (window.OFSNav) OFSNav.refresh(); });</script>
+</body>
+</html>

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player Sheet — Order of the Fallen Star</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #07070f;
+      --bg-card:   #0e0e1c;
+      --bg-card2:  #13132a;
+      --gold:      #c9a84c;
+      --gold-lt:   #e8ca6a;
+      --gold-dim:  #6e5a28;
+      --silver:    #b0b8c8;
+      --silver-dim:#5a6272;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7568;
+      --b-gold:    rgba(201,168,76,.28);
+      --b-dim:     rgba(201,168,76,.09);
+      --glow:      rgba(201,168,76,.12);
+    }
+
+    html { font-size: 16px; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Navigation handled by header_bar.js ── */
+
+    #starfield {
+      position: fixed; inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 92px 28px 72px;
+    }
+
+    /* ── Page Breadcrumb ─────────────────────────────────── */
+    .page-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 0 28px;
+      margin-bottom: 36px;
+      border-bottom: 1px solid var(--b-dim);
+    }
+    .page-breadcrumb a {
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .page-breadcrumb a:hover { color: var(--gold); }
+    .page-breadcrumb .sep {
+      color: var(--text-dim);
+      font-size: .65rem;
+    }
+    .page-breadcrumb .current {
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    .site-footer {
+      text-align: center;
+      padding: 44px 0 18px;
+      border-top: 1px solid var(--b-gold);
+      margin-top: 64px;
+    }
+    .footer-glory {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 20px;
+    }
+    .footer-links {
+      display: flex; justify-content: center; gap: 6px;
+      flex-wrap: wrap; list-style: none; margin-bottom: 18px;
+    }
+    .footer-links a {
+      font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .14em;
+      text-transform: uppercase; color: var(--silver-dim);
+      text-decoration: none; padding: 4px 10px; transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy { font-family: 'Inter', sans-serif; font-size: .7rem; color: var(--text-dim); }
+    .footer-sc { margin-top: 20px; opacity: .35; transition: opacity .2s; }
+    .footer-sc:hover { opacity: .55; }
+    .footer-sc img { height: 48px; display: block; margin: 0 auto; }
+
+    /* ── Player Identity ─────────────────────────────────── */
+    .identity {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      padding: 32px 36px;
+      margin-bottom: 44px;
+      box-shadow: 0 0 48px rgba(201,168,76,.04), inset 0 1px 0 rgba(201,168,76,.08);
+    }
+    .avatar {
+      flex-shrink: 0;
+      width: 114px; height: 114px;
+      border-radius: 50%;
+      border: 2px solid var(--gold);
+      background: var(--bg-card2);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Cinzel', serif;
+      font-size: 2.6rem;
+      color: var(--gold);
+      box-shadow: 0 0 24px rgba(201,168,76,.28);
+      text-shadow: 0 0 18px rgba(201,168,76,.5);
+      overflow: hidden;
+    }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .ident-divider {
+      flex-shrink: 0;
+      width: 1px; height: 80px;
+      background: linear-gradient(to bottom, transparent, var(--gold-dim), transparent);
+    }
+    .ident-info { flex: 1; }
+    .ident-username {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem; font-weight: 700;
+      color: var(--gold-lt);
+      letter-spacing: .07em;
+      text-shadow: 0 0 22px rgba(201,168,76,.3);
+      margin-bottom: 8px;
+    }
+    .ident-rank {
+      font-family: 'Cinzel', serif;
+      font-size: .88rem;
+      color: var(--silver);
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+    .ident-banner {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 5px;
+    }
+    .ident-banner-name {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+    }
+    .ident-banner-sep {
+      color: var(--gold-dim);
+      font-size: .65rem;
+    }
+    .ident-banner-rank {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .ident-ship {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: .95rem;
+      color: var(--text-dim);
+      margin-top: 3px;
+    }
+
+    /* ── Reputation level ────────────────────────────────── */
+    .rep-block {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--b-dim);
+      width: 100%;
+    }
+    .rep-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .rep-label {
+      font-family: 'Cinzel', serif;
+      font-size: .65rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .rep-level {
+      font-family: 'Cinzel', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gold-lt);
+      line-height: 1;
+      text-shadow: 0 0 16px rgba(201,168,76,.4);
+    }
+    .rep-level-max {
+      color: var(--gold-lt);
+      text-shadow: 0 0 20px rgba(201,168,76,.7);
+    }
+    .rep-xp-label {
+      font-size: .68rem;
+      color: var(--silver-dim);
+      margin-left: auto;
+      letter-spacing: .04em;
+    }
+    .rep-bar-bg {
+      width: 100%; height: 5px;
+      background: rgba(255,255,255,.05);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .rep-bar-fill {
+      height: 100%; border-radius: 3px;
+      background: linear-gradient(to right, var(--gold-dim), var(--gold));
+      transition: width .7s ease;
+    }
+    .rep-bar-fill.maxed {
+      background: linear-gradient(to right, var(--gold), var(--gold-lt));
+      box-shadow: 0 0 8px rgba(201,168,76,.5);
+    }
+
+    /* ── Section header ──────────────────────────────────── */
+    .sec-head {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 22px;
+    }
+    .sec-head h2 {
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      white-space: nowrap;
+    }
+    .sec-line {
+      flex: 1; height: 1px;
+      background: linear-gradient(to right, var(--gold-dim), transparent);
+    }
+
+    /* ── Stats grid ──────────────────────────────────────── */
+    .stats-section { margin-bottom: 52px; }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--b-dim);
+      border-radius: 3px;
+      padding: 18px 22px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .stat-card:hover {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 18px var(--glow);
+    }
+    .stat-lbl {
+      font-size: .65rem;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .stat-val {
+      font-family: 'Cinzel', serif;
+      font-size: 1.9rem; font-weight: 600;
+      color: var(--silver);
+      line-height: 1;
+    }
+
+    /* ── Banners grid ────────────────────────────────────── */
+    .banners-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .banner-card {
+      background: var(--bg-card);
+      border: 1px solid var(--b-dim);
+      border-radius: 3px;
+      padding: 20px 16px 16px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 10px;
+      transition: border-color .25s, box-shadow .25s, transform .25s;
+    }
+    .banner-card:hover {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 22px var(--glow);
+      transform: translateY(-2px);
+    }
+    .banner-card.has-medal  { border-color: rgba(201,168,76,.2); }
+    .banner-card.is-master  {
+      border-color: rgba(201,168,76,.48);
+      box-shadow: 0 0 22px rgba(201,168,76,.1);
+    }
+
+    /* medal area */
+    .medal-wrap {
+      width: 120px; height: 120px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .medal-wrap img {
+      width: 120px; height: 120px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 10px rgba(201,168,76,.45));
+    }
+    .medal-locked {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      border: 2px dashed var(--silver-dim);
+      display: flex; align-items: center; justify-content: center;
+      opacity: .3;
+    }
+    .medal-locked svg { width: 38px; height: 38px; fill: var(--silver-dim); }
+
+    .banner-name {
+      font-family: 'Cinzel', serif;
+      font-size: .68rem;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: center;
+    }
+
+    .banner-title {
+      font-family: 'Cinzel', serif;
+      font-size: .92rem; font-weight: 600;
+      text-align: center;
+    }
+    .t0 { color: var(--text-dim); }
+    .t1 { color: var(--silver); }
+    .t2 { color: var(--silver); }
+    .t3 { color: var(--gold-lt); text-shadow: 0 0 12px rgba(201,168,76,.45); }
+
+    /* progress */
+    .prog-wrap { width: 100%; }
+    .prog-bg {
+      width: 100%; height: 3px;
+      background: rgba(255,255,255,.05);
+      border-radius: 2px; overflow: hidden;
+    }
+    .prog-fill {
+      height: 100%; border-radius: 2px;
+      background: linear-gradient(to right, var(--gold-dim), var(--gold));
+      transition: width .6s ease;
+    }
+    .prog-fill.maxed {
+      background: linear-gradient(to right, var(--gold), var(--gold-lt));
+    }
+    .prog-labels {
+      display: flex; justify-content: space-between;
+      margin-top: 5px;
+      font-size: .58rem; letter-spacing: .07em; text-transform: uppercase;
+    }
+    .prog-cur  { color: var(--silver-dim); }
+    .prog-next { color: var(--text-dim); }
+    .prog-lock { color: var(--gold-dim); font-style: italic; }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 960px) {
+      .banners-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 700px) {
+      .identity { flex-direction: column; text-align: center; }
+      .ident-divider { display: none; }
+      .banners-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid   { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<nav id="main-nav"></nav>
+
+<div class="wrap">
+
+  <!-- Breadcrumb -->
+  <div class="page-breadcrumb">
+    <a href="OFS_Roster.html">← Roster</a>
+    <span class="sep">/</span>
+    <span class="current" id="breadcrumb-name">Player Sheet</span>
+  </div>
+
+  <!-- Player Identity -->
+  <section class="identity">
+    <div class="avatar" id="js-avatar">V</div>
+    <div class="ident-divider"></div>
+    <div class="ident-info">
+      <div class="ident-username" id="js-username">Vanderan</div>
+      <div class="ident-rank"     id="js-rank">Primarch of Conquest</div>
+      <div class="ident-banner"   id="js-banner"></div>
+      <div class="ident-ship"     id="js-ship"></div>
+      <div class="rep-block"      id="js-rep"></div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats-section">
+    <div class="sec-head"><h2>Combat &amp; Activity Record</h2><div class="sec-line"></div></div>
+    <div class="stats-grid" id="js-stats"></div>
+  </section>
+
+  <!-- Banners -->
+  <section>
+    <div class="sec-head"><h2>Banners of the Order</h2><div class="sec-line"></div></div>
+    <div class="banners-grid" id="js-banners"></div>
+  </section>
+
+  <footer class="site-footer">
+    <div class="footer-glory">Glory to the Fallen Star. Our light endures, unbroken.</div>
+    <ul class="footer-links">
+      <li><a href="OFS_Home.html">Home</a></li>
+      <li><a href="OFS_Codex.html">Codex</a></li>
+      <li><a href="OFS_Timeline.html">Chronicles</a></li>
+      <li><a href="OFS_Roster.html">Roster</a></li>
+      <li><a href="OFS_PlayerSheet.html">Player Sheet</a></li>
+      <li><a href="OFS_Admin.html">Admin</a></li>
+    </ul>
+    <div class="footer-copy">Order of the Fallen Star &nbsp;·&nbsp; Star Citizen Organization</div>
+    <div class="footer-sc">
+      <img src="Star-Citizen-Logo-white.png" alt="Star Citizen">
+    </div>
+  </footer>
+
+</div><!-- /wrap -->
+
+<script src="header_bar.js"></script>
+<script src="ofs-data.js"></script>
+<script src="ofs-sheets.js"></script>
+<script src="ofs-nav.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   STAR FIELD
+═══════════════════════════════════════════════════════ */
+(function () {
+  const cv = document.getElementById('starfield');
+  const cx = cv.getContext('2d');
+  let stars = [];
+
+  function resize() {
+    cv.width  = window.innerWidth;
+    cv.height = window.innerHeight;
+    stars = [];
+    const n = Math.floor(cv.width * cv.height / 3800);
+    for (let i = 0; i < n; i++) {
+      stars.push({
+        x: Math.random() * cv.width,
+        y: Math.random() * cv.height,
+        r: Math.random() * 1.1 + 0.2,
+        a: Math.random() * 0.55 + 0.1,
+        spd: Math.random() * 0.0004 + 0.0001
+      });
+    }
+  }
+
+  function draw(t) {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    for (const s of stars) {
+      const pulse = Math.sin(t * s.spd * 900 + s.x * 0.01) * 0.18 + 0.82;
+      cx.beginPath();
+      cx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      cx.fillStyle = `rgba(190,210,255,${(s.a * pulse).toFixed(3)})`;
+      cx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  resize();
+  window.addEventListener('resize', resize);
+  requestAnimationFrame(draw);
+})();
+
+/* ═══════════════════════════════════════════════════════
+   STATIC LOOKUP TABLES
+═══════════════════════════════════════════════════════ */
+const STAT_LABELS = {
+  PatrolCount           : "Patrols",
+  TotalLength           : "Total Patrol Length",
+  FPS_Kills_Total       : "FPS Kills",
+  Ship_Kills_Total      : "Ship Kills",
+  Crusades_Total        : "Crusades",
+  Turret_Kills_Total    : "Turret Kills",
+  Quest_Total           : "Quests Completed",
+  Led_Completed_Quests  : "Quests Led",
+  Led_Completed_Crusades: "Crusades Led"
+};
+
+const BANNER_RANKS = {
+  "The Artificer" : ["Apprentice","Tinkerer",   "Artisan",    "Craftsman"    ],
+  "The Astraeus"  : ["Apprentice","Helion",      "Archon",     "Strategos"    ],
+  "The Engineer"  : ["Apprentice","Technician",  "Fabricator", "Mechanic"     ],
+  "The Explorer"  : ["Apprentice","Seeker",      "Wayfarer",   "Pathfinder"   ],
+  "The Fang"      : ["Apprentice","Hound",       "Stalker",    "Wolf"         ],
+  "The Forager"   : ["Apprentice","Scavenger",   "Harvester",  "Prospector"   ],
+  "The Guardian"  : ["Apprentice","Vanguard",    "Bulwark",    "Sentinel"     ],
+  "The Merchant"  : ["Apprentice","Provisioner", "Steward",    "Quartermaster"],
+  "The Healer"    : ["Apprentice","Apothecary",  "Physician",  "Chirurgeon"   ],
+  "The Privateer" : ["Apprentice","Wayman",      "Freeblade",  "Marauder"     ],
+  "The Talon"     : ["Apprentice","Sparrow",     "Falcon",     "Raven"        ]
+};
+
+const MEDAL_IMGS = {
+  "The Astraeus" : "Medals/The Astraeus - Medal.png",
+  "The Explorer" : "Medals/The Explorer - Medal.png",
+  "The Fang"     : "Medals/The Fang - Medal.png",
+  "The Guardian" : "Medals/The Gaurdian - Medal.png",
+  "The Healer"   : "Medals/The Healer - Medal.png",
+  "The Merchant" : "Medals/The Merchant - Medal.png"
+};
+
+/* ═══════════════════════════════════════════════════════
+   REPUTATION HELPERS
+═══════════════════════════════════════════════════════ */
+function getLevelXP() {
+  try {
+    const v = JSON.parse(localStorage.getItem('ofs_level_xp') || 'null');
+    if (Array.isArray(v) && v.length) return v;
+  } catch(e) {}
+  const MIN = 100, MAX = 1_000_000, N = 100;
+  return Array.from({length: N}, (_, i) =>
+    i === 0 ? MIN : Math.floor(MIN * Math.pow(MAX / MIN, i / (N - 1)))
+  );
+}
+
+function calcRep(xp) {
+  const LEVEL_XP = getLevelXP();
+  const maxLvl = LEVEL_XP.length;
+  let lvl = 1;
+  for (let i = 0; i < maxLvl; i++) {
+    if (xp >= LEVEL_XP[i]) lvl = i + 1; else break;
+  }
+  lvl = Math.min(lvl, maxLvl);
+  const isMax   = lvl >= maxLvl;
+  const floorXP = LEVEL_XP[lvl - 1];
+  const ceilXP  = isMax ? floorXP : LEVEL_XP[lvl];
+  const pct     = isMax ? 100 : Math.min(((xp - floorXP) / (ceilXP - floorXP)) * 100, 100);
+  const toNext  = isMax ? 0 : ceilXP - xp;
+  return { lvl, xp, floorXP, ceilXP, pct, toNext, isMax };
+}
+
+/* ═══════════════════════════════════════════════════════
+   RANK LOGIC
+═══════════════════════════════════════════════════════ */
+function rankInfo(name, pts, medal) {
+  const r = BANNER_RANKS[name];
+  if (!r) return { title: 'Apprentice', idx: 0 };
+  let idx;
+  if      (pts >= 60 && medal) idx = 3;
+  else if (pts >= 30)          idx = 2;
+  else if (pts >= 15)          idx = 1;
+  else                          idx = 0;
+  return { title: r[idx], idx };
+}
+
+function progressInfo(pts, medal) {
+  if (pts >= 60 && medal)
+    return { pct: 100, cur: "Master", nxt: null, locked: false, maxed: true };
+  if (pts >= 30) {
+    if (!medal)
+      return { pct: 100, cur: `${pts} pts`, nxt: "Medal required for Master", locked: true, maxed: false };
+    const pct = Math.min(((pts - 30) / 30) * 100, 100);
+    return { pct, cur: `${pts} / 60 pts`, nxt: "→ Master", locked: false, maxed: false };
+  }
+  if (pts >= 15) {
+    const pct = ((pts - 15) / 15) * 100;
+    return { pct, cur: `${pts} / 30 pts`, nxt: "→ Sub Rank 2", locked: false, maxed: false };
+  }
+  const pct = (pts / 15) * 100;
+  return { pct, cur: `${pts} / 15 pts`, nxt: "→ Sub Rank 1", locked: false, maxed: false };
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════ */
+function buildLocked() {
+  const wrap = document.createElement('div');
+  wrap.className = 'medal-locked';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z');
+  svg.appendChild(path);
+  wrap.appendChild(svg);
+  return wrap;
+}
+
+function render(p) {
+  // Breadcrumb + title
+  document.title = `${p.username} — Player Sheet`;
+  const breadcrumbEl = document.getElementById('breadcrumb-name');
+  if (breadcrumbEl) breadcrumbEl.textContent = p.username;
+
+  // Identity
+  document.getElementById('js-username').textContent = p.username;
+  document.getElementById('js-rank').textContent     = p.rank;
+
+  // Banner name + banner rank title under the org rank
+  const bData    = p.banners[p.activeBanner] || { p: 0, m: false };
+  const bTitle   = rankInfo(p.activeBanner, bData.p, bData.m).title;
+  const bannerEl = document.getElementById('js-banner');
+  if (p.activeBanner) {
+    bannerEl.innerHTML =
+      `<span class="ident-banner-name">${p.activeBanner}</span>` +
+      `<span class="ident-banner-sep">·</span>` +
+      `<span class="ident-banner-rank">${bTitle}</span>`;
+  } else {
+    bannerEl.innerHTML = '';
+  }
+
+  // Ship on its own line
+  const shipEl = document.getElementById('js-ship');
+  shipEl.textContent = p.ship || '';
+
+  const avatarEl = document.getElementById('js-avatar');
+  if (p.avatarUrl) {
+    avatarEl.innerHTML = `<img src="${p.avatarUrl}" alt="${p.username}">`;
+  } else {
+    avatarEl.textContent = p.username.charAt(0).toUpperCase();
+  }
+
+  // Reputation — uses raw reputationXP from Member Log
+  const rep   = calcRep(p.reputationXP || 0);
+  const repEl = document.getElementById('js-rep');
+  const xpLine = rep.isMax
+    ? `${rep.xp.toLocaleString()} XP — MAX LEVEL`
+    : `${rep.xp.toLocaleString()} / ${rep.ceilXP.toLocaleString()} XP · ${rep.toNext.toLocaleString()} to Level ${rep.lvl + 1}`;
+  repEl.innerHTML = `
+    <div class="rep-header">
+      <span class="rep-label">Reputation</span>
+      <span class="rep-level${rep.isMax ? ' rep-level-max' : ''}">Level ${rep.lvl}</span>
+      <span class="rep-xp-label">${xpLine}</span>
+    </div>
+    <div class="rep-bar-bg">
+      <div class="rep-bar-fill${rep.isMax ? ' maxed' : ''}" style="width:${rep.pct.toFixed(1)}%"></div>
+    </div>`;
+
+  // Stats
+  const statsGrid = document.getElementById('js-stats');
+  statsGrid.innerHTML = '';
+  const statsToShow = {
+    PatrolCount:            p.stats.PatrolCount,
+    TotalLength:            window.OFSData.formatPatrolLength(p.stats.TotalLength),
+    FPS_Kills_Total:        p.stats.FPS_Kills_Total,
+    Ship_Kills_Total:       p.stats.Ship_Kills_Total,
+    Crusades_Total:         p.stats.Crusades_Total,
+    Turret_Kills_Total:     p.stats.Turret_Kills_Total,
+    Quest_Total:            p.stats.Quest_Total,
+    Led_Completed_Quests:   p.stats.Led_Completed_Quests,
+    Led_Completed_Crusades: p.stats.Led_Completed_Crusades
+  };
+  for (const [key, val] of Object.entries(statsToShow)) {
+    const div = document.createElement('div');
+    div.className = 'stat-card';
+    div.innerHTML = `<div class="stat-lbl">${STAT_LABELS[key]}</div><div class="stat-val">${typeof val === 'number' ? val.toLocaleString() : val}</div>`;
+    statsGrid.appendChild(div);
+  }
+
+  // Banners — live data uses { p, m } format
+  const bannersGrid = document.getElementById('js-banners');
+  bannersGrid.innerHTML = '';
+  for (const [name, bData] of Object.entries(p.banners)) {
+    const pts   = bData.p || 0;
+    const medal = bData.m || false;
+    const { title, idx } = rankInfo(name, pts, medal);
+    const prog           = progressInfo(pts, medal);
+    const hasMedalImg    = name in MEDAL_IMGS;
+
+    const medalWrap = document.createElement('div');
+    medalWrap.className = 'medal-wrap';
+    if (medal && hasMedalImg) {
+      const img = document.createElement('img');
+      img.src = MEDAL_IMGS[name];
+      img.alt = `Medal — ${name}`;
+      img.addEventListener('error', () => { medalWrap.innerHTML = ''; medalWrap.appendChild(buildLocked()); });
+      medalWrap.appendChild(img);
+    } else {
+      medalWrap.appendChild(buildLocked());
+    }
+
+    let progRight = '';
+    if (prog.locked)    progRight = `<span class="prog-lock">${prog.nxt}</span>`;
+    else if (prog.nxt)  progRight = `<span class="prog-next">${prog.nxt}</span>`;
+
+    const cardClass = ['banner-card', medal ? 'has-medal' : '', idx === 3 ? 'is-master' : ''].filter(Boolean).join(' ');
+    const card = document.createElement('div');
+    card.className = cardClass;
+    card.appendChild(medalWrap);
+
+    const rest = document.createElement('div');
+    rest.innerHTML = `
+      <div class="banner-name">${name}</div>
+      <div class="banner-title t${idx}">${title}</div>
+      <div class="prog-wrap">
+        <div class="prog-bg">
+          <div class="prog-fill${prog.maxed ? ' maxed' : ''}" style="width:${prog.pct.toFixed(1)}%"></div>
+        </div>
+        <div class="prog-labels">
+          <span class="prog-cur">${prog.cur}</span>
+          ${progRight}
+        </div>
+      </div>`;
+    while (rest.firstChild) card.appendChild(rest.firstChild);
+    bannersGrid.appendChild(card);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT — render from cache, then refresh with live data
+═══════════════════════════════════════════════════════ */
+const _playerId = new URLSearchParams(window.location.search).get('player');
+
+function tryRender() {
+  const p = window.OFSData && (
+    _playerId ? window.OFSData.getPlayerById(_playerId) : window.OFSData.getPlayers()[0]
+  );
+  if (p) render(p);
+}
+
+tryRender(); // instant from cache
+
+OFSSheets.load().then(function() {
+  tryRender(); // re-render with fresh sheet data
+  if (window.OFSNav) OFSNav.refresh();
+});
+
+window.addEventListener('storage', function(event) {
+  if (window.OFSData && event.key === window.OFSData.STORAGE_PLAYERS) tryRender();
+});
+</script>
+<script>if(window.parent!==window)window.parent.postMessage({type:'ofs-page-load',page:'playersheet'},'*');</script>
+</body>
+</html>

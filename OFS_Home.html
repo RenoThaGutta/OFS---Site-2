@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order of the Fallen Star</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #07070f;
+      --bg-card:   #0e0e1c;
+      --bg-card2:  #13132a;
+      --gold:      #c9a84c;
+      --gold-lt:   #e8ca6a;
+      --gold-dim:  #6e5a28;
+      --silver:    #b0b8c8;
+      --silver-dim:#5a6272;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7568;
+      --b-gold:    rgba(201,168,76,.28);
+      --b-dim:     rgba(201,168,76,.09);
+      --glow:      rgba(201,168,76,.12);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    ::-webkit-scrollbar             { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track       { background: var(--bg-card); }
+    ::-webkit-scrollbar-thumb       { background: var(--gold-dim); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+    ::-webkit-scrollbar-corner      { background: var(--bg-card); }
+    * { scrollbar-width: thin; scrollbar-color: var(--gold-dim) var(--bg-card); }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Star field ────────────────────────────────────────── */
+    #starfield {
+      position: fixed; inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ── Navigation handled by header_bar.js ── */
+
+    /* ── Hero ──────────────────────────────────────────────── */
+    .hero {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 40px 80px;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('Hero%20image%20%231.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      filter: brightness(.72) saturate(1.1);
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(7,7,15,.15) 0%,
+        rgba(7,7,15,.05) 40%,
+        rgba(7,7,15,.5)  72%,
+        rgba(7,7,15,1)   100%
+      );
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      max-width: 720px;
+    }
+    .hero-logo {
+      height: 160px;
+      filter: drop-shadow(0 0 40px rgba(201,168,76,.55)) drop-shadow(0 0 80px rgba(201,168,76,.2));
+      animation: logo-pulse 4s ease-in-out infinite;
+    }
+    @keyframes logo-pulse {
+      0%, 100% { filter: drop-shadow(0 0 40px rgba(201,168,76,.55)) drop-shadow(0 0 80px rgba(201,168,76,.2)); }
+      50%       { filter: drop-shadow(0 0 55px rgba(201,168,76,.75)) drop-shadow(0 0 100px rgba(201,168,76,.3)); }
+    }
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 700;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      text-shadow: 0 0 60px rgba(201,168,76,.45), 0 2px 4px rgba(0,0,0,.8);
+      line-height: 1.1;
+    }
+    .hero-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(.75rem, 1.5vw, .95rem);
+      letter-spacing: .32em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+    }
+    .hero-divider {
+      width: 180px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+    }
+    .hero-motto {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: clamp(1rem, 2vw, 1.28rem);
+      color: var(--silver);
+      line-height: 1.7;
+      letter-spacing: .03em;
+      text-shadow: 0 1px 8px rgba(0,0,0,.9);
+    }
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 12px;
+    }
+    .btn {
+      font-family: 'Cinzel', serif;
+      font-size: .75rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 13px 28px;
+      border: 1px solid var(--b-gold);
+      border-radius: 2px;
+      background: rgba(201,168,76,.08);
+      color: var(--gold);
+      transition: background .22s, box-shadow .22s, color .22s;
+    }
+    .btn:hover {
+      background: rgba(201,168,76,.18);
+      box-shadow: 0 0 22px rgba(201,168,76,.2);
+      color: var(--gold-lt);
+    }
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--silver-dim);
+      color: var(--silver);
+    }
+    .btn-ghost:hover {
+      background: rgba(176,184,200,.06);
+      box-shadow: 0 0 18px rgba(176,184,200,.1);
+      color: var(--silver);
+    }
+    .hero-scroll {
+      position: absolute;
+      bottom: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: .55;
+      animation: bounce 2.4s ease-in-out infinite;
+    }
+    .hero-scroll span {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+    }
+    .hero-scroll svg { width: 18px; height: 18px; stroke: var(--silver-dim); }
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50%       { transform: translateX(-50%) translateY(7px); }
+    }
+
+    /* ── Sections (main content below hero) ───────────────── */
+    .page-content {
+      position: relative;
+      z-index: 1;
+    }
+    section {
+      padding: 96px 40px;
+    }
+    .section-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-family: 'Cinzel', serif;
+      font-size: .68rem;
+      letter-spacing: .3em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 14px;
+    }
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-shadow: 0 0 28px rgba(201,168,76,.2);
+      margin-bottom: 18px;
+    }
+    .section-rule {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(to right, var(--gold-dim), transparent);
+      margin-bottom: 40px;
+    }
+
+    /* ── Fade-in animation ─────────────────────────────────── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(36px);
+      transition: opacity .7s ease, transform .7s ease;
+    }
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── About Section ─────────────────────────────────────── */
+    #about {
+      background:
+        linear-gradient(to bottom, var(--bg) 0%, rgba(7,7,15,.25) 35%, rgba(7,7,15,.25) 65%, var(--bg) 100%),
+        url('Hero%20image%20%232.png') center center / cover no-repeat;
+      border-top: 1px solid var(--b-dim);
+      border-bottom: 1px solid var(--b-dim);
+    }
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 72px;
+      align-items: start;
+    }
+    .about-body {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.18rem;
+      line-height: 1.85;
+      color: var(--text);
+    }
+    .about-body p + p { margin-top: 1.2em; }
+    .about-body em {
+      color: var(--gold);
+      font-style: italic;
+    }
+    .about-pillars {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .pillar-card {
+      background: rgba(14,14,28,.78);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--b-dim);
+      border-left: 3px solid var(--gold-dim);
+      border-radius: 2px;
+      padding: 20px 22px;
+      transition: border-color .22s, box-shadow .22s;
+    }
+    .pillar-card:hover {
+      border-left-color: var(--gold);
+      box-shadow: 0 0 24px rgba(201,168,76,.06);
+    }
+    .pillar-title {
+      font-family: 'Cinzel', serif;
+      font-size: .8rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 7px;
+    }
+    .pillar-text {
+      font-family: 'Crimson Text', serif;
+      font-size: 1rem;
+      color: var(--silver);
+      line-height: 1.6;
+    }
+
+    /* ── Triumvirate Banner ────────────────────────────────── */
+    #triumvirate {
+      background:
+        linear-gradient(to bottom, var(--bg) 0%, rgba(7,7,15,.25) 35%, rgba(7,7,15,.25) 65%, var(--bg) 100%),
+        url('Hero%20image%20%231.png') center center / cover no-repeat;
+      border-top: 1px solid var(--b-gold);
+      border-bottom: 1px solid var(--b-gold);
+      padding: 72px 40px;
+    }
+    .triumvirate-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      margin-top: 48px;
+    }
+    .triumvir-card {
+      background: var(--bg);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: inset 0 1px 0 rgba(201,168,76,.08), 0 0 40px rgba(201,168,76,.03);
+      transition: box-shadow .25s, transform .25s;
+    }
+    .triumvir-card:hover {
+      box-shadow: 0 0 40px rgba(201,168,76,.12), inset 0 1px 0 rgba(201,168,76,.15);
+      transform: translateY(-3px);
+    }
+    .triumvir-sigil {
+      width: 52px; height: 52px;
+      margin: 0 auto 18px;
+      border: 1px solid var(--b-gold);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-card2);
+    }
+    .triumvir-sigil svg { width: 26px; height: 26px; stroke: var(--gold); fill: none; stroke-width: 1.5; }
+    .triumvir-domain {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .26em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 8px;
+    }
+    .triumvir-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--gold-lt);
+      letter-spacing: .1em;
+      margin-bottom: 6px;
+    }
+    .triumvir-title {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      color: var(--silver-dim);
+      font-size: .92rem;
+    }
+
+    /* ── Chronicle Section ─────────────────────────────────── */
+    #chronicle {
+      background:
+        linear-gradient(to bottom, var(--bg) 0%, rgba(7,7,15,.25) 35%, rgba(7,7,15,.25) 65%, var(--bg) 100%),
+        url('Hero%20image%20%233.png') center center / cover no-repeat;
+    }
+    .chronicle-card {
+      background: rgba(14,14,28,.45);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(201,168,76,.04);
+    }
+    .chronicle-header {
+      background: linear-gradient(to right, rgba(19,19,42,.55), rgba(14,14,28,.55));
+      padding: 28px 40px;
+      border-bottom: 1px solid var(--b-gold);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .chronicle-tag {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      background: rgba(201,168,76,.08);
+      border: 1px solid var(--b-dim);
+      padding: 4px 10px;
+      border-radius: 2px;
+    }
+    .chronicle-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--gold-lt);
+      letter-spacing: .08em;
+    }
+    .chronicle-subtitle {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      color: var(--silver-dim);
+      font-size: 1rem;
+      margin-top: 4px;
+    }
+    .chronicle-body {
+      padding: 40px;
+    }
+    .chronicle-segment + .chronicle-segment {
+      margin-top: 36px;
+      padding-top: 36px;
+      border-top: 1px solid var(--b-dim);
+    }
+    .chronicle-segment-title {
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .chronicle-text {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.12rem;
+      line-height: 1.9;
+      color: var(--text);
+    }
+    .chronicle-quote {
+      margin: 24px 0 0;
+      padding: 18px 24px;
+      border-left: 3px solid var(--gold-dim);
+      background: rgba(201,168,76,.04);
+      border-radius: 0 2px 2px 0;
+    }
+    .chronicle-quote p {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: 1.08rem;
+      color: var(--silver);
+      line-height: 1.7;
+    }
+    .chronicle-footer {
+      padding: 20px 40px;
+      border-top: 1px solid var(--b-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: rgba(201,168,76,.02);
+    }
+    .chronicle-decree {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: .9rem;
+      color: var(--text-dim);
+    }
+    .chronicle-cta {
+      font-family: 'Cinzel', serif;
+      font-size: .68rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border: 1px solid var(--b-dim);
+      padding: 7px 16px;
+      border-radius: 2px;
+      transition: background .2s, border-color .2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .chronicle-cta:hover {
+      background: rgba(201,168,76,.08);
+      border-color: var(--b-gold);
+    }
+
+    /* ── Banners Section ───────────────────────────────────── */
+    .banners-pages-wrap {
+      background:
+        linear-gradient(to bottom, var(--bg) 0%, rgba(7,7,15,.25) 15%, rgba(7,7,15,.25) 85%, var(--bg) 100%),
+        url('Hero%20image%20%231.png') center center / cover no-repeat;
+    }
+    #banners {
+      background: none;
+      border-top: 1px solid var(--b-dim);
+    }
+    .banners-intro {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--silver);
+      max-width: 680px;
+      margin-bottom: 52px;
+    }
+    .banners-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 16px;
+    }
+    .banner-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--b-dim);
+      border-radius: 3px;
+      padding: 22px 18px;
+      text-align: center;
+      cursor: default;
+      transition: border-color .22s, box-shadow .22s, transform .22s;
+    }
+    .banner-tile:hover {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 28px rgba(201,168,76,.08);
+      transform: translateY(-3px);
+    }
+    .banner-icon {
+      font-size: 1.6rem;
+      margin-bottom: 12px;
+      line-height: 1;
+    }
+    .banner-name {
+      font-family: 'Cinzel', serif;
+      font-size: .8rem;
+      letter-spacing: .1em;
+      color: var(--gold);
+      margin-bottom: 6px;
+    }
+    .banner-focus {
+      font-family: 'Inter', sans-serif;
+      font-size: .72rem;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+
+    /* ── Contract Services Section ────────────────────────── */
+    #services {
+      border-top: 1px solid var(--b-dim);
+      border-bottom: 1px solid var(--b-dim);
+      background:
+        linear-gradient(to bottom, var(--bg) 0%, rgba(7,7,15,.25) 35%, rgba(7,7,15,.25) 65%, var(--bg) 100%),
+        url('Large%20Background%20Image_home.png') center center / cover no-repeat;
+    }
+    .services-intro {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.12rem;
+      line-height: 1.85;
+      color: var(--text);
+      max-width: 800px;
+      margin-bottom: 52px;
+    }
+    .services-intro p + p { margin-top: 1.1em; }
+    .section-sub-heading {
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      margin-bottom: 20px;
+    }
+    .services-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 52px;
+    }
+    .service-card {
+      background: var(--bg-card);
+      border: 1px solid var(--b-dim);
+      border-left: 3px solid var(--gold-dim);
+      border-radius: 2px;
+      padding: 24px 26px;
+      transition: border-color .22s, box-shadow .22s;
+    }
+    .service-card:hover {
+      border-left-color: var(--gold);
+      box-shadow: 0 0 24px rgba(201,168,76,.07);
+    }
+    .service-card-title {
+      font-family: 'Cinzel', serif;
+      font-size: .76rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 14px;
+    }
+    .service-list {
+      list-style: none;
+      padding: 0; margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .service-list li {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.02rem;
+      color: var(--silver);
+      line-height: 1.5;
+      padding-left: 16px;
+      position: relative;
+    }
+    .service-list li::before {
+      content: '—';
+      position: absolute;
+      left: 0;
+      color: var(--gold-dim);
+      font-size: .85rem;
+      line-height: 1.5;
+    }
+    .service-list li.svc-planned {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    .hire-block {
+      background: var(--bg-card2);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      padding: 30px 36px;
+      margin-bottom: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+    .hire-block-text h3 {
+      font-family: 'Cinzel', serif;
+      font-size: .82rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .hire-block-text p {
+      font-family: 'Crimson Text', serif;
+      font-size: 1rem;
+      color: var(--silver-dim);
+      line-height: 1.6;
+      max-width: 520px;
+    }
+    .hire-btns {
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .hire-btn {
+      font-family: 'Cinzel', serif;
+      font-size: .66rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      border: 1px solid var(--b-gold);
+      padding: 11px 20px;
+      border-radius: 2px;
+      background: rgba(201,168,76,.04);
+      transition: background .2s, border-color .2s, color .2s;
+      white-space: nowrap;
+    }
+    .hire-btn:hover {
+      background: rgba(201,168,76,.12);
+      border-color: var(--gold);
+      color: var(--gold-lt);
+    }
+    .hire-btn.hire-primary {
+      background: rgba(201,168,76,.10);
+      border-color: var(--gold);
+    }
+    .hire-btn.hire-primary:hover {
+      background: rgba(201,168,76,.20);
+    }
+    .policy-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    .policy-card {
+      background: rgba(14,14,28,.78);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--b-dim);
+      border-radius: 2px;
+      padding: 22px 22px;
+    }
+    .policy-card-title {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 10px;
+    }
+    .policy-card-body {
+      font-family: 'Crimson Text', serif;
+      font-size: .98rem;
+      line-height: 1.65;
+      color: var(--text-dim);
+    }
+    .disclaimer-block {
+      background: rgba(14,14,28,.88);
+      backdrop-filter: blur(4px);
+      border: 1px solid var(--b-dim);
+      border-left: 3px solid var(--gold-dim);
+      border-radius: 0 2px 2px 0;
+      padding: 24px 28px;
+    }
+    .disclaimer-title {
+      font-family: 'Cinzel', serif;
+      font-size: .68rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 14px;
+    }
+    .disclaimer-body {
+      font-family: 'Crimson Text', serif;
+      font-size: .98rem;
+      line-height: 1.72;
+      color: var(--text-dim);
+    }
+    .disclaimer-body p + p { margin-top: 1em; }
+
+    /* ── Pages navigation (site map section) ──────────────── */
+    #site-pages {
+      padding: 80px 40px;
+      background: none;
+    }
+    .pages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 24px;
+      margin-top: 48px;
+    }
+    .page-card {
+      background: var(--bg);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      padding: 28px 26px;
+      text-decoration: none;
+      display: block;
+      transition: box-shadow .22s, transform .22s;
+    }
+    .page-card:hover {
+      box-shadow: 0 0 36px rgba(201,168,76,.1);
+      transform: translateY(-3px);
+    }
+    .page-card-icon {
+      font-size: 1.5rem;
+      margin-bottom: 14px;
+      opacity: .8;
+    }
+    .page-card-title {
+      font-family: 'Cinzel', serif;
+      font-size: .92rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+    .page-card-desc {
+      font-family: 'Inter', sans-serif;
+      font-size: .78rem;
+      color: var(--silver-dim);
+      line-height: 1.55;
+    }
+
+    /* ── Footer ────────────────────────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--b-gold);
+      background: var(--bg);
+      padding: 52px 40px 36px;
+      text-align: center;
+    }
+    .footer-logo {
+      height: 52px;
+      margin-bottom: 20px;
+      filter: drop-shadow(0 0 14px rgba(201,168,76,.3));
+      opacity: .85;
+    }
+    .footer-motto {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: 1.02rem;
+      color: var(--silver-dim);
+      margin-bottom: 10px;
+    }
+    .footer-glory {
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 28px;
+    }
+    .footer-rule {
+      width: 160px;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+      margin: 0 auto 24px;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      list-style: none;
+      margin-bottom: 24px;
+    }
+    .footer-links a {
+      font-family: 'Cinzel', serif;
+      font-size: .65rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      text-decoration: none;
+      padding: 4px 10px;
+      transition: color .2s;
+    }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-copy {
+      font-family: 'Inter', sans-serif;
+      font-size: .7rem;
+      color: var(--text-dim);
+    }
+    .footer-sc {
+      margin-top: 20px;
+      opacity: .35;
+      transition: opacity .2s;
+    }
+    .footer-sc:hover { opacity: .55; }
+    .footer-sc img { height: 48px; display: block; margin: 0 auto; }
+
+    /* ── Responsive ────────────────────────────────────────── */
+    @media (max-width: 860px) {
+      section { padding: 72px 20px; }
+      .about-grid { grid-template-columns: 1fr; gap: 44px; }
+      .triumvirate-grid { grid-template-columns: 1fr; gap: 16px; }
+      .chronicle-header { flex-direction: column; align-items: flex-start; }
+      .chronicle-body { padding: 28px 22px; }
+      .chronicle-footer { flex-direction: column; gap: 12px; }
+      .services-grid { grid-template-columns: 1fr; }
+      .policy-grid { grid-template-columns: 1fr; }
+      .hire-block { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 560px) {
+      .hero-logo { height: 110px; }
+      .hero-cta { flex-direction: column; align-items: center; }
+      .banners-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Star field canvas -->
+<canvas id="starfield"></canvas>
+
+<!-- ── Navigation ─────────────────────────────────────────── -->
+<nav id="main-nav"></nav>
+
+<!-- ── Hero ───────────────────────────────────────────────── -->
+<section class="hero" id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
+
+  <div class="hero-content">
+    <img class="hero-logo" id="js-hero-logo" src="ofs_logo.png" alt="Order of the Fallen Star" data-edit-key="hero-logo">
+    <div>
+      <div class="hero-subtitle" id="js-hero-subtitle" data-edit-key="hero-subtitle">Star Citizen Organization</div>
+      <h1 class="hero-title" id="js-hero-title" data-edit-key="hero-title">Order of the<br>Fallen Star</h1>
+    </div>
+    <div class="hero-divider"></div>
+    <p class="hero-motto" id="js-hero-motto" data-edit-key="hero-motto">
+      "From betrayal, we were forged.<br>
+      From the void, we struck.<br>
+      From the Fallen Star, we ascended."
+    </p>
+    <div class="hero-cta">
+      <a href="#services" class="btn btn-ghost">What We Do</a>
+      <a href="#about" class="btn">Who We Are</a>
+      <a href="#chronicle" class="btn btn-ghost">Latest Chronicle</a>
+    </div>
+  </div>
+
+  <div class="hero-scroll">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+  </div>
+</section>
+
+<!-- ── Main Content ────────────────────────────────────────── -->
+<div class="page-content">
+
+  <!-- Contract Services -->
+  <section id="services">
+    <div class="section-inner fade-up">
+      <div class="section-label">What We Do</div>
+      <h2 class="section-title">Order of the Fallen Star <span style="color:var(--gold-dim);font-size:.72em;letter-spacing:.06em">(FALLSTR)</span></h2>
+      <div class="section-rule"></div>
+
+      <div class="services-intro">
+        <p>The Order of the Fallen Star (OFS) is a structured mercenary and security organization operating across the Star Citizen universe. Our focus is providing reliable, organized operational support for individuals, corporations, and organizations requiring professional assistance in hostile or contested environments.</p>
+        <p>OFS is built around coordinated fleet operations, disciplined command structure, and experienced pilots capable of operating across multiple mission profiles. Our members regularly conduct combat, escort, and security operations in both PvE and PvP environments, allowing us to respond effectively to a wide range of contract requirements.</p>
+        <p>Our objective is simple: deliver dependable contract services while maintaining operational discipline and client trust.</p>
+      </div>
+
+      <div class="section-sub-heading">Services We Provide</div>
+      <div class="services-grid">
+        <div class="service-card">
+          <div class="service-card-title">Security &amp; Protection</div>
+          <ul class="service-list">
+            <li>Escort for cargo, mining, salvage, and transport operations</li>
+            <li>Fleet and capital ship security</li>
+            <li class="svc-planned">Station or location security during high-risk activities</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-card-title">Combat Operations</div>
+          <ul class="service-list">
+            <li>Organized combat support against hostile players or NPC threats</li>
+            <li>Large-scale fleet engagements</li>
+            <li>Tactical strike operations</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-card-title">Operational Support</div>
+          <ul class="service-list">
+            <li>Event security and protection during large player gatherings</li>
+            <li>Contracted force presence in contested areas</li>
+            <li>Strategic fleet deployment and defensive operations</li>
+          </ul>
+        </div>
+        <div class="service-card">
+          <div class="service-card-title">Specialized Contracts</div>
+          <ul class="service-list">
+            <li>Custom security operations tailored to client needs</li>
+            <li>Multi-ship fleet deployments</li>
+            <li>High-risk or high-value asset protection</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="hire-block">
+        <div class="hire-block-text">
+          <h3>Hiring OFS</h3>
+          <p>Contract requests and service listings can be submitted through the following platforms. All contracts are reviewed by OFS leadership to determine scope, feasibility, and operational requirements.</p>
+        </div>
+        <div class="hire-btns">
+          <a class="hire-btn hire-primary" href="https://uexcorp.space/marketplace/orgs/@FALLSTR/" target="_blank" rel="noopener">Hire OFS — UEX Corp</a>
+          <a class="hire-btn" href="https://sc-market.space/contractor/FALLSTR/services" target="_blank" rel="noopener">Service Listings — SC Market</a>
+        </div>
+      </div>
+
+      <div class="policy-grid">
+        <div class="policy-card">
+          <div class="policy-card-title">Operational Standards</div>
+          <div class="policy-card-body">OFS operates under a clear command structure to maintain efficiency and operational security. Once a contract begins, OFS leadership directs all operational execution. Clients may define objectives during setup; however, operational command remains with OFS during execution.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-card-title">Client Confidentiality</div>
+          <div class="policy-card-body">OFS maintains strict confidentiality regarding its clients and contract details. We do not publicly disclose the identity of organizations or individuals who hire our services, nor do we share operational details of completed contracts.</div>
+        </div>
+        <div class="policy-card">
+          <div class="policy-card-title">Recruitment</div>
+          <div class="policy-card-body">OFS is actively recruiting pilots, combat specialists, and crew members who value coordination, discipline, and organized fleet operations. Contact us through our RSI page or the service platforms listed above.</div>
+        </div>
+      </div>
+
+      <div class="disclaimer-block">
+        <div class="disclaimer-title">Operational Conduct Disclaimer</div>
+        <div class="disclaimer-body">
+          <p>The Order of the Fallen Star (OFS) operates strictly as a contract-based mercenary and security organization. All combat operations conducted by OFS are performed in response to client contracts, security obligations, or defensive fleet actions.</p>
+          <p>If you encounter OFS forces during an operation, our actions are not personal and are not directed at individuals outside the scope of a contract. Engagements occur solely because OFS has been hired to provide protection, enforce an objective, or operate within a contested area. OFS does not participate in harassment or targeted griefing.</p>
+          <p>Our operations are conducted within the framework of Star Citizen's gameplay systems. We recognize that combat encounters may be frustrating for those involved; however, our members are acting in a professional capacity fulfilling a contracted obligation, and engagements should be viewed as part of normal gameplay rather than personal hostility.</p>
+          <p>In order to maintain operational security and protect our clients, OFS does not disclose the identity of individuals or organizations that hire our services, nor do we publicly discuss the details of contracts after they are completed.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section id="about">
+    <div class="section-inner fade-up">
+      <div class="section-label" id="js-about-label" data-edit-key="about-label">Who We Are</div>
+      <h2 class="section-title" id="js-about-heading" data-edit-key="about-heading">Forged from the Void</h2>
+      <div class="section-rule"></div>
+      <div class="about-grid">
+        <div class="about-body" id="js-about-body" data-edit-key="about-body">
+          <p>The <em>Order of the Fallen Star</em> is a Star Citizen organization operating across the verse — disciplined, lore-driven, and built through conflict. What began as a breakaway force from The Galactic Order has grown into a sovereign war structure with its own code of law, ranked hierarchy, and earned legacy.</p>
+          <p>We are not defined by numbers. We are defined by resolve. Every member who stands under our banner chose to remain when departure was easier. Every rank was earned through documented action. Every chronicle in our record was written in fire and silence.</p>
+          <p>We operate through Quests and Crusades. We govern by the <em>Codex of the Fallen Star</em>. We are led by a Triumvirate of Primarchs — Conquest, Harmony, and Justice — who hold the Order to its founding purpose: to endure, to grow, and to ascend.</p>
+          <p>The Galactic Order has fallen. The Fallen Star remains.</p>
+        </div>
+        <div class="about-pillars" id="js-about-pillars">
+          <div class="pillar-card" data-edit-key="pillar-0">
+            <div class="pillar-title">Discipline</div>
+            <div class="pillar-text">Every action is logged. Every rank is earned. The Codex governs all members — without exception — because fairness demands accountability.</div>
+          </div>
+          <div class="pillar-card" data-edit-key="pillar-1">
+            <div class="pillar-title">Lore-Driven Identity</div>
+            <div class="pillar-text">Our history is recorded in full. From the First War at Pyro's Heart to our homecoming at Nyx, every age and chronicle is preserved in the Codex of the Fallen Star.</div>
+          </div>
+          <div class="pillar-card" data-edit-key="pillar-2">
+            <div class="pillar-title">Earned Unity</div>
+            <div class="pillar-text">Authority flows from contribution, not appointment. Eleven Banners serve members of every calling — fighter, medic, merchant, navigator — all under one star.</div>
+          </div>
+          <div class="pillar-card" data-edit-key="pillar-3">
+            <div class="pillar-title">Purpose in the Sixth Age</div>
+            <div class="pillar-text">Having defeated and dissolved The Galactic Order, we no longer exist in opposition to an enemy. We exist as ourselves — expanding, building, and enduring.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Triumvirate -->
+  <section id="triumvirate">
+    <div class="section-inner">
+      <div class="section-label fade-up" id="js-triv-label" data-edit-key="triv-label">Leadership</div>
+      <h2 class="section-title fade-up" id="js-triv-heading" data-edit-key="triv-heading">The Triumvirate</h2>
+      <div class="section-rule fade-up"></div>
+      <div class="triumvirate-grid" id="js-triumvirate-grid">
+
+        <div class="triumvir-card fade-up" data-edit-key="triumvir-0">
+          <div class="triumvir-sigil">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="triumvir-domain" id="js-triv-0-domain">Primarch of Conquest</div>
+          <div class="triumvir-name" id="js-triv-0-name">Vanderan</div>
+          <div class="triumvir-title" id="js-triv-0-role">Military Operations &amp; War Command</div>
+        </div>
+
+        <div class="triumvir-card fade-up" style="transition-delay:.1s" data-edit-key="triumvir-1">
+          <div class="triumvir-sigil">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 12s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+          </div>
+          <div class="triumvir-domain" id="js-triv-1-domain">Primarch of Harmony</div>
+          <div class="triumvir-name" id="js-triv-1-name">Kraz</div>
+          <div class="triumvir-title" id="js-triv-1-role">Diplomacy, Unity &amp; Internal Affairs</div>
+        </div>
+
+        <div class="triumvir-card fade-up" style="transition-delay:.2s" data-edit-key="triumvir-2">
+          <div class="triumvir-sigil">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="triumvir-domain" id="js-triv-2-domain">Primarch of Justice</div>
+          <div class="triumvir-name" id="js-triv-2-name">U-Gen-X</div>
+          <div class="triumvir-title" id="js-triv-2-role">Order, Law &amp; Enforcement</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Chronicle -->
+  <section id="chronicle">
+    <div class="section-inner fade-up">
+      <div class="section-label" id="js-chronicle-label" data-edit-key="chronicle-label">War Chronicle</div>
+      <h2 class="section-title" id="js-chronicle-heading" data-edit-key="chronicle-heading">Latest Chronicle</h2>
+      <div class="section-rule"></div>
+
+      <div id="js-chronicle-card" data-edit-key="chronicle"></div>
+    </div>
+  </section>
+
+  <!-- Banners + Pages (shared background) -->
+  <div class="banners-pages-wrap">
+  <section id="banners">
+    <div class="section-inner fade-up">
+      <div class="section-label" id="js-banners-label" data-edit-key="banners-label">The Eleven Banners</div>
+      <h2 class="section-title" id="js-banners-heading" data-edit-key="banners-heading">Paths of Service</h2>
+      <div class="section-rule"></div>
+      <p class="banners-intro" id="js-banners-intro" data-edit-key="banners-intro">Banners are the operational and specialized sub-units of the Order. Each represents a distinct role, profession, or calling. Members align with the Banner that reflects their skills, playstyle, and purpose in service to the Fallen Star.</p>
+
+      <div class="banners-grid" id="js-banners-grid">
+        <div class="banner-tile" id="js-banner-0" data-edit-key="banner-0"><div class="banner-icon">⚒</div><div class="banner-name">The Artificer</div><div class="banner-focus">Crafting, engineering &amp; item creation</div></div>
+        <div class="banner-tile" id="js-banner-1" data-edit-key="banner-1"><div class="banner-icon">🌌</div><div class="banner-name">The Astraeus</div><div class="banner-focus">Navigation, exploration &amp; deep-space ops</div></div>
+        <div class="banner-tile" id="js-banner-2" data-edit-key="banner-2"><div class="banner-icon">⚙</div><div class="banner-name">The Engineer</div><div class="banner-focus">Ship &amp; base maintenance, technical ops</div></div>
+        <div class="banner-tile" id="js-banner-3" data-edit-key="banner-3"><div class="banner-icon">🗺</div><div class="banner-name">The Explorer</div><div class="banner-focus">Scouting, pathfinding &amp; discovery</div></div>
+        <div class="banner-tile" id="js-banner-4" data-edit-key="banner-4"><div class="banner-icon">🐺</div><div class="banner-name">The Fang</div><div class="banner-focus">Close-quarters combat &amp; strike operations</div></div>
+        <div class="banner-tile" id="js-banner-5" data-edit-key="banner-5"><div class="banner-icon">⛏</div><div class="banner-name">The Forager</div><div class="banner-focus">Resource gathering, salvage &amp; supply</div></div>
+        <div class="banner-tile" id="js-banner-6" data-edit-key="banner-6"><div class="banner-icon">🛡</div><div class="banner-name">The Guardian</div><div class="banner-focus">Defense, protection &amp; escort duties</div></div>
+        <div class="banner-tile" id="js-banner-7" data-edit-key="banner-7"><div class="banner-icon">💊</div><div class="banner-name">The Healer</div><div class="banner-focus">Medical support &amp; crew recovery</div></div>
+        <div class="banner-tile" id="js-banner-8" data-edit-key="banner-8"><div class="banner-icon">📦</div><div class="banner-name">The Merchant</div><div class="banner-focus">Trade, logistics &amp; economic operations</div></div>
+        <div class="banner-tile" id="js-banner-9" data-edit-key="banner-9"><div class="banner-icon">⚔</div><div class="banner-name">The Privateer</div><div class="banner-focus">Bounty hunting, interdiction &amp; privateering</div></div>
+        <div class="banner-tile" id="js-banner-10" data-edit-key="banner-10"><div class="banner-icon">🦅</div><div class="banner-name">The Talon</div><div class="banner-focus">Air superiority, dogfighting &amp; fighter ops</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Site Pages Navigator -->
+  <section id="site-pages">
+    <div class="section-inner">
+      <div class="section-label fade-up" id="js-pages-label" data-edit-key="pages-label">Navigate the Order</div>
+      <h2 class="section-title fade-up" id="js-pages-heading" data-edit-key="pages-heading">Pages &amp; Records</h2>
+      <div class="section-rule fade-up"></div>
+      <div class="pages-grid">
+
+        <a id="js-page-card-0" href="OFS_Codex.html" class="page-card fade-up" data-edit-key="page-card-0">
+          <div class="page-card-icon" id="js-page-0-icon">📜</div>
+          <div class="page-card-title" id="js-page-0-title">The Codex</div>
+          <div class="page-card-desc" id="js-page-0-desc">Twelve articles of law. Sacred oaths. The governing doctrine of the Order — its authority, its discipline, and its doctrine of advancement.</div>
+        </a>
+
+        <a id="js-page-card-1" href="OFS_Timeline.html" class="page-card fade-up" style="transition-delay:.08s" data-edit-key="page-card-1">
+          <div class="page-card-icon" id="js-page-1-icon">🏛</div>
+          <div class="page-card-title" id="js-page-1-title">Chronicles</div>
+          <div class="page-card-desc" id="js-page-1-desc">Six ages of history. Five war chronicles. From the First War at Pyro's Heart to the homecoming at Nyx — the full record of the Fallen Star.</div>
+        </a>
+
+        <a id="js-page-card-2" href="OFS_Roster.html" class="page-card fade-up" style="transition-delay:.16s" data-edit-key="page-card-2">
+          <div class="page-card-icon" id="js-page-2-icon">👥</div>
+          <div class="page-card-title" id="js-page-2-title">Roster</div>
+          <div class="page-card-desc" id="js-page-2-desc">Browse all active members of the Order. Filter by rank, banner, or chapter. View any player's full service record.</div>
+        </a>
+
+        <a id="js-page-card-3" href="OFS_PlayerSheet.html" class="page-card fade-up" style="transition-delay:.24s" data-edit-key="page-card-3">
+          <div class="page-card-icon" id="js-page-3-icon">📋</div>
+          <div class="page-card-title" id="js-page-3-title">Player Sheet</div>
+          <div class="page-card-desc" id="js-page-3-desc">Combat stats, banner ranks, medal display, reputation level, and wallet — the complete profile for every Knight of the Order.</div>
+        </a>
+
+      </div>
+    </div>
+  </section>
+  </div><!-- /banners-pages-wrap -->
+
+</div><!-- /page-content -->
+
+<!-- ── Footer ─────────────────────────────────────────────── -->
+<footer>
+  <img class="footer-logo" src="ofs_logo.png" alt="OFS">
+  <div class="footer-motto">"From betrayal, we were forged. From the void, we struck. From the Fallen Star, we ascended."</div>
+  <div class="footer-glory">Glory to the Fallen Star. Our light endures, unbroken.</div>
+  <div class="footer-rule"></div>
+  <ul class="footer-links">
+    <li><a href="OFS_Home.html">Home</a></li>
+    <li><a href="OFS_Codex.html">Codex</a></li>
+    <li><a href="OFS_Timeline.html">Chronicles</a></li>
+    <li><a href="OFS_Roster.html">Roster</a></li>
+    <li><a href="OFS_PlayerSheet.html">Player Sheet</a></li>
+    <li><a href="OFS_Admin.html">Admin</a></li>
+  </ul>
+  <div class="footer-copy">Order of the Fallen Star &nbsp;·&nbsp; Star Citizen Organization</div>
+  <div class="footer-sc">
+    <img src="Star-Citizen-Logo-white.png" alt="Star Citizen">
+  </div>
+</footer>
+
+<script src="ofs-lore.js"></script>
+<script>
+/* ── Home Chronicle (data-driven) ────────────────────────── */
+(function(){
+  function buildCard(data){
+    var segs = data.segments || [];
+    var segHTML = segs.map(function(seg){
+      var paras = (seg.body || '').split(/\n\n+/);
+      var quotes = (seg.quote || '').split(/\n\n+/).filter(function(q){ return q.trim(); });
+      var textHTML = paras.filter(function(p){ return p.trim(); })
+                         .map(function(p){ return '<p>' + p.trim() + '</p>'; }).join('');
+      var quoteHTML = quotes.map(function(q){ return '<p>' + q.trim() + '</p>'; }).join('');
+      return '<div class="chronicle-segment">'
+        + '<h3 class="chronicle-segment-title">' + seg.heading + '</h3>'
+        + '<div class="chronicle-text">' + textHTML + '</div>'
+        + (quoteHTML ? '<div class="chronicle-quote">' + quoteHTML + '</div>' : '')
+        + '</div>';
+    }).join('');
+
+    return '<div class="chronicle-card">'
+      + '<div class="chronicle-header">'
+      +   '<div>'
+      +     '<div class="chronicle-tag">' + (data.tag || '') + '</div>'
+      +     '<h2 class="chronicle-title">' + (data.title || '') + '</h2>'
+      +     '<p class="chronicle-subtitle">' + (data.subtitle || '') + '</p>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="chronicle-body">' + segHTML + '</div>'
+      + '<div class="chronicle-footer">'
+      +   (data.decree ? '<p class="chronicle-decree">' + data.decree + '</p>' : '')
+      +   '<a class="chronicle-cta" href="OFS_Timeline.html">View Full Chronicles →</a>'
+      + '</div>'
+      + '</div>';
+  }
+
+  function render(){
+    var el = document.getElementById('js-chronicle-card');
+    if(!el) return;
+    el.innerHTML = buildCard(window.OFSLore.getHomeChronicle());
+  }
+
+  render();
+
+  window.addEventListener('storage', function(e){
+    if(e.key === window.OFSLore.STORAGE_HOME_CHRONICLE) render();
+  });
+})();
+
+/* ── Home Content: hero, about, triumvirate ───────────────── */
+(function(){
+  function setText(id, val){ var el = document.getElementById(id); if(el) el.textContent = val; }
+  function setHTML(id, val){ var el = document.getElementById(id); if(el) el.innerHTML  = val; }
+
+  function renderContent(){
+    var d = window.OFSLore.getHomeContent();
+
+    // Hero
+    var logo = document.getElementById('js-hero-logo');
+    if(logo) logo.src = d.hero.logo || 'ofs_logo.png';
+    setText('js-hero-subtitle', d.hero.subtitle);
+    setHTML('js-hero-title',    (d.hero.title || '').replace(/\n/g, '<br>'));
+    setHTML('js-hero-motto',    (d.hero.motto  || '').replace(/\n/g, '<br>'));
+
+    // About section headings
+    if(d.aboutSection){
+      setText('js-about-label',   d.aboutSection.label);
+      setText('js-about-heading', d.aboutSection.heading);
+    }
+
+    // About body
+    var bodyEl = document.getElementById('js-about-body');
+    if(bodyEl){
+      var paras = (d.about.body || '').split(/\n\n+/);
+      bodyEl.innerHTML = paras.map(function(p){ return '<p>' + p.trim() + '</p>'; }).join('');
+    }
+
+    // About pillars
+    var pillarsEl = document.getElementById('js-about-pillars');
+    if(pillarsEl && d.about.pillars){
+      pillarsEl.querySelectorAll('.pillar-card').forEach(function(card, i){
+        var p = d.about.pillars[i];
+        if(!p) return;
+        var t = card.querySelector('.pillar-title');
+        var x = card.querySelector('.pillar-text');
+        if(t) t.textContent = p.title;
+        if(x) x.textContent = p.text;
+      });
+    }
+
+    // Triumvirate section headings
+    if(d.trivSection){
+      setText('js-triv-label',   d.trivSection.label);
+      setText('js-triv-heading', d.trivSection.heading);
+    }
+
+    // Triumvirate members — regenerate grid dynamically
+    var trivGrid = document.getElementById('js-triumvirate-grid');
+    if(trivGrid && d.triumvirate){
+      var SIGILS = [
+        '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
+        '<circle cx="12" cy="12" r="10"/><path d="M8 12s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>',
+        '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>'
+      ];
+      trivGrid.innerHTML = '';
+      d.triumvirate.forEach(function(m, i){
+        var delay = i > 0 ? ' style="transition-delay:' + (i * 0.1) + 's"' : '';
+        var card = document.createElement('div');
+        card.className = 'triumvir-card fade-up';
+        card.dataset.editKey = 'triumvir-' + i;
+        if(i > 0) card.style.transitionDelay = (i * 0.1) + 's';
+        card.innerHTML =
+          '<div class="triumvir-sigil"><svg viewBox="0 0 24 24">' + SIGILS[i % SIGILS.length] + '</svg></div>' +
+          '<div class="triumvir-domain" id="js-triv-'+i+'-domain">' + (m.domain || '') + '</div>' +
+          '<div class="triumvir-name"   id="js-triv-'+i+'-name">'   + (m.name   || '') + '</div>' +
+          '<div class="triumvir-title"  id="js-triv-'+i+'-role">'   + (m.role   || '') + '</div>';
+        trivGrid.appendChild(card);
+      });
+    }
+
+    // Chronicle section headings
+    if(d.chronicleSection){
+      setText('js-chronicle-label',   d.chronicleSection.label);
+      setText('js-chronicle-heading', d.chronicleSection.heading);
+    }
+
+    // Banners section
+    if(d.banners){
+      setText('js-banners-label',   d.banners.label);
+      setText('js-banners-heading', d.banners.heading);
+      setText('js-banners-intro',   d.banners.intro);
+      var grid = document.getElementById('js-banners-grid');
+      if(grid && d.banners.tiles){
+        grid.innerHTML = '';
+        d.banners.tiles.forEach(function(t, i){
+          var tile = document.createElement('div');
+          tile.className = 'banner-tile';
+          tile.id = 'js-banner-' + i;
+          tile.dataset.editKey = 'banner-' + i;
+          var ic = document.createElement('div'); ic.className = 'banner-icon';  ic.textContent = t.icon;  tile.appendChild(ic);
+          var nm = document.createElement('div'); nm.className = 'banner-name';  nm.textContent = t.name;  tile.appendChild(nm);
+          var fc = document.createElement('div'); fc.className = 'banner-focus'; fc.textContent = t.focus; tile.appendChild(fc);
+          grid.appendChild(tile);
+        });
+      }
+    }
+
+    // Pages section
+    if(d.pages){
+      setText('js-pages-label',   d.pages.label);
+      setText('js-pages-heading', d.pages.heading);
+      (d.pages.cards || []).forEach(function(c, i){
+        var card = document.getElementById('js-page-card-'+i);
+        if(!card) return;
+        if(c.href) card.href = c.href;
+        setText('js-page-'+i+'-icon',  c.icon);
+        setText('js-page-'+i+'-title', c.title);
+        setText('js-page-'+i+'-desc',  c.desc);
+      });
+    }
+  }
+
+  renderContent();
+
+  window.addEventListener('storage', function(e){
+    if(e.key === window.OFSLore.STORAGE_HOME_CONTENT) renderContent();
+  });
+})();
+
+/* ── Star field ────────────────────────────────────────────── */
+(function(){
+  const cv = document.getElementById('starfield');
+  const ctx = cv.getContext('2d');
+  let W, H, stars;
+
+  function resize(){
+    W = cv.width  = window.innerWidth;
+    H = cv.height = window.innerHeight;
+  }
+
+  function makeStars(n){
+    return Array.from({length:n}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.3 + .2,
+      a: Math.random(),
+      da: (Math.random() * .003 + .0005) * (Math.random() < .5 ? 1 : -1),
+      dx: (Math.random() - .5) * .06,
+      dy: (Math.random() - .5) * .06,
+    }));
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(const s of stars){
+      s.a += s.da;
+      if(s.a > 1) s.da = -Math.abs(s.da);
+      if(s.a < 0) s.da =  Math.abs(s.da);
+      s.x += s.dx; s.y += s.dy;
+      if(s.x < 0) s.x = W;
+      if(s.x > W) s.x = 0;
+      if(s.y < 0) s.y = H;
+      if(s.y > H) s.y = 0;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(220,215,200,${s.a * .7})`;
+      ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); stars = makeStars(260); });
+  resize();
+  stars = makeStars(260);
+  draw();
+})();
+
+/* ── Scroll-based fade-in ─────────────────────────────────── */
+(function(){
+  const els = document.querySelectorAll('.fade-up');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        e.target.classList.add('visible');
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  els.forEach(el => obs.observe(el));
+})();
+
+/* ── Nav: shrink on scroll ────────────────────────────────── */
+(function(){
+  const nav = document.getElementById('main-nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background = window.scrollY > 80
+      ? 'rgba(7,7,15,.96)'
+      : 'rgba(7,7,15,.82)';
+  }, {passive:true});
+})();
+
+/* ── Admin edit-mode (only active when inside admin iframe) ── */
+(function(){
+  if(window.parent === window) return; // standalone page — do nothing
+  window.parent.postMessage({ type:'ofs-page-load', page:'home' }, '*');
+
+  var style = document.createElement('style');
+  style.textContent =
+    '[data-edit-key]{cursor:pointer;outline:2px solid transparent;outline-offset:4px;transition:outline-color .15s}' +
+    '[data-edit-key]:hover{outline-color:rgba(201,168,76,.6)}' +
+    '[data-edit-key].ofs-sel{outline-color:#c9a84c!important}';
+  document.head.appendChild(style);
+
+  document.addEventListener('click', function(e){
+    var el = e.target.closest('[data-edit-key]');
+    if(!el) return;
+    e.preventDefault();
+    document.querySelectorAll('[data-edit-key].ofs-sel').forEach(function(x){
+      x.classList.remove('ofs-sel');
+    });
+    el.classList.add('ofs-sel');
+    window.parent.postMessage({ type: 'ofs-edit', key: el.dataset.editKey }, '*');
+  });
+})();
+</script>
+<script src="header_bar.js"></script>
+<script src="ofs-data.js"></script>
+<script src="ofs-sheets.js"></script>
+<script src="ofs-nav.js"></script>
+<script>OFSSheets.load().then(function() { if (window.OFSNav) OFSNav.refresh(); });</script>
+</body>
+</html>

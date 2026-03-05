@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verifying Identity — Order of the Fallen Star</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Crimson+Text:ital@0;1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #07070f;
+      --bg-card:  #0e0e1c;
+      --gold:     #c9a84c;
+      --gold-lt:  #e8ca6a;
+      --silver:   #b0b8c8;
+      --silver-dim:#5a6272;
+      --text:     #ddd8cc;
+      --b-gold:   rgba(201,168,76,.28);
+      --danger:   #c94c4c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Text', serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 4px;
+      padding: 48px 52px;
+      width: 420px;
+      text-align: center;
+      box-shadow: 0 0 60px rgba(201,168,76,.06);
+    }
+
+    .card img {
+      height: 64px;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 0 12px rgba(201,168,76,.35));
+    }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 8px;
+    }
+
+    .sub {
+      font-style: italic;
+      color: var(--silver-dim);
+      font-size: .9rem;
+      margin-bottom: 32px;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--b-gold);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status {
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--silver);
+    }
+
+    /* Error state */
+    .error-icon {
+      font-size: 2rem;
+      margin-bottom: 16px;
+      color: var(--danger);
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-family: 'Cinzel', serif;
+      font-size: .8rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .error-detail {
+      color: var(--silver-dim);
+      font-size: .85rem;
+      margin-bottom: 28px;
+    }
+
+    .btn-back {
+      display: inline-block;
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      padding: 10px 24px;
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      transition: background .2s;
+    }
+    .btn-back:hover { background: rgba(201,168,76,.08); }
+
+    /* Success flash */
+    .success-icon { font-size: 2rem; margin-bottom: 16px; color: var(--gold-lt); }
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <img src="ofs_logo.png" alt="OFS" onerror="this.style.display='none'">
+    <h1>Order of the Fallen Star</h1>
+    <p class="sub">Admin Portal</p>
+
+    <div id="state-verifying">
+      <div class="spinner"></div>
+      <div class="status">Verifying identity&hellip;</div>
+    </div>
+
+    <div id="state-success" style="display:none">
+      <div class="success-icon">&#x2713;</div>
+      <div class="status">Identity confirmed — redirecting&hellip;</div>
+    </div>
+
+    <div id="state-error" style="display:none">
+      <div class="error-icon">&#x2715;</div>
+      <div class="error-msg" id="err-title">Access Denied</div>
+      <div class="error-detail" id="err-detail"></div>
+      <a href="OFS_Home.html" class="btn-back">Return to Site</a>
+    </div>
+  </div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────
+    var WORKER_URL   = 'https://ofs-api.orderofthefallenstar.workers.dev';
+    var REDIRECT_URI = 'https://orderofthefallenstar.com/auth/callback';
+    var SESSION_KEY  = 'ofs_discord_session';
+
+    // ── Helpers ───────────────────────────────────────────
+    function show(id) {
+      ['state-verifying','state-success','state-error'].forEach(function(s){
+        document.getElementById(s).style.display = (s === id) ? '' : 'none';
+      });
+    }
+
+    function showError(title, detail) {
+      document.getElementById('err-title').textContent  = title  || 'Access Denied';
+      document.getElementById('err-detail').textContent = detail || '';
+      show('state-error');
+    }
+
+    // ── Main ──────────────────────────────────────────────
+    (function run() {
+      // 1. Read ?code= from URL
+      var params = new URLSearchParams(window.location.search);
+      var code   = params.get('code');
+      var error  = params.get('error');
+
+      if (error) {
+        showError('Authorization Cancelled', 'Discord reported: ' + error);
+        return;
+      }
+
+      if (!code) {
+        showError('Invalid Callback', 'No authorization code was received. Please try logging in again.');
+        return;
+      }
+
+      // 3. Exchange code via Cloudflare Worker (client_secret is safe there)
+      fetch(WORKER_URL + '/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code
+        })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (!data.ok) {
+          showError(
+            data.reason === 'not_whitelisted' ? 'Access Denied' : 'Authentication Failed',
+            data.reason === 'not_whitelisted'
+              ? 'Your Discord account is not on the admin whitelist.'
+              : (data.message || 'An unexpected error occurred.')
+          );
+          return;
+        }
+
+        // 4. Store session
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          id:        data.id,
+          username:  data.username,
+          avatarUrl: data.avatarUrl || '',
+          token:     data.token
+        }));
+
+        show('state-success');
+
+        // 5. Redirect to admin after brief confirmation flash
+        setTimeout(function() {
+          location.replace('OFS_Admin.html');
+        }, 900);
+      })
+      .catch(function(err) {
+        showError('Connection Error', 'Could not reach the authentication server. Please try again.');
+      });
+    }());
+  </script>
+</body>
+</html>
