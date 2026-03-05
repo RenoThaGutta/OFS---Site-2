@@ -3,3 +3,13 @@
 
 [build.environment]
   NODE_VERSION = "22"
+
+[[redirects]]
+  from = "/"
+  to   = "/OFS_Home.html"
+  status = 301
+
+[[redirects]]
+  from = "/home"
+  to   = "/OFS_Home.html"
+  status = 301
