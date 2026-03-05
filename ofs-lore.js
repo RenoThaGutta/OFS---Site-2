@@ -119,22 +119,37 @@
     }
   };
 
+  function mergeArr(saved, def) {
+    // Use saved array only if it's non-empty; otherwise fall back to defaults
+    return (saved && saved.length) ? saved : def;
+  }
+
   function getHomeContent() {
     try {
       var stored = localStorage.getItem(STORAGE_HOME_CONTENT);
       if (stored) {
         var data = JSON.parse(stored);
-        // Fresh defaults used as fallback base — never mutated
+        // Fresh defaults — never mutated
         var d = JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
+
+        var about   = Object.assign({}, d.about,   data.about   || {});
+        about.pillars = mergeArr((data.about || {}).pillars, d.about.pillars);
+
+        var banners = Object.assign({}, d.banners, data.banners || {});
+        banners.tiles = mergeArr((data.banners || {}).tiles, d.banners.tiles);
+
+        var pages   = Object.assign({}, d.pages,   data.pages   || {});
+        pages.cards = mergeArr((data.pages || {}).cards, d.pages.cards);
+
         return {
           hero:             Object.assign({}, d.hero,             data.hero             || {}),
-          about:            Object.assign({}, d.about,            data.about            || {}),
+          about:            about,
           aboutSection:     Object.assign({}, d.aboutSection,     data.aboutSection     || {}),
-          triumvirate:      (data.triumvirate && data.triumvirate.length) ? data.triumvirate : d.triumvirate,
+          triumvirate:      mergeArr(data.triumvirate, d.triumvirate),
           trivSection:      Object.assign({}, d.trivSection,      data.trivSection      || {}),
           chronicleSection: Object.assign({}, d.chronicleSection, data.chronicleSection || {}),
-          banners:          Object.assign({}, d.banners,          data.banners          || {}),
-          pages:            Object.assign({}, d.pages,            data.pages            || {})
+          banners:          banners,
+          pages:            pages
         };
       }
     } catch (e) {}
