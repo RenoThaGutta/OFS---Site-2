@@ -1320,7 +1320,14 @@
   window.addEventListener('storage', function(e){
     if(e.key === window.OFSLore.STORAGE_HOME_CONTENT) renderContent();
   });
-  window.addEventListener('ofs-lore-loaded', renderContent);
+  window.addEventListener('ofs-lore-loaded', function() {
+    renderContent();
+    // Triumvirate cards are dynamically rebuilt; the IntersectionObserver
+    // only captured elements at page load and won't see the new ones.
+    // Force them visible so they don't stay at opacity:0.
+    var tg = document.getElementById('js-triumvirate-grid');
+    if(tg) tg.querySelectorAll('.fade-up').forEach(function(el){ el.classList.add('visible'); });
+  });
 })();
 
 /* ── Star field ────────────────────────────────────────────── */
