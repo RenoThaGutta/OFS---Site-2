@@ -124,19 +124,18 @@
       var stored = localStorage.getItem(STORAGE_HOME_CONTENT);
       if (stored) {
         var data = JSON.parse(stored);
-        var def  = JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
-        // Deep merge: top-level sections inherit from defaults so missing fields
-        // never crash the render (e.g. d.hero.subtitle when hero is absent).
-        var merged = Object.assign(def, data);
-        merged.hero           = Object.assign({}, def.hero,           data.hero           || {});
-        merged.about          = Object.assign({}, def.about,          data.about          || {});
-        merged.aboutSection   = Object.assign({}, def.aboutSection,   data.aboutSection   || {});
-        merged.trivSection    = Object.assign({}, def.trivSection,    data.trivSection    || {});
-        merged.chronicleSection = Object.assign({}, def.chronicleSection, data.chronicleSection || {});
-        merged.banners        = Object.assign({}, def.banners,        data.banners        || {});
-        merged.pages          = Object.assign({}, def.pages,          data.pages          || {});
-        if (!merged.triumvirate || !merged.triumvirate.length) merged.triumvirate = def.triumvirate;
-        return merged;
+        // Fresh defaults used as fallback base — never mutated
+        var d = JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
+        return {
+          hero:             Object.assign({}, d.hero,             data.hero             || {}),
+          about:            Object.assign({}, d.about,            data.about            || {}),
+          aboutSection:     Object.assign({}, d.aboutSection,     data.aboutSection     || {}),
+          triumvirate:      (data.triumvirate && data.triumvirate.length) ? data.triumvirate : d.triumvirate,
+          trivSection:      Object.assign({}, d.trivSection,      data.trivSection      || {}),
+          chronicleSection: Object.assign({}, d.chronicleSection, data.chronicleSection || {}),
+          banners:          Object.assign({}, d.banners,          data.banners          || {}),
+          pages:            Object.assign({}, d.pages,            data.pages            || {})
+        };
       }
     } catch (e) {}
     return JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
