@@ -113,12 +113,22 @@
     }
     .nav-tab:hover  { color: var(--silver); }
     .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-    .nav-logout {
+    .nav-back {
       margin-left: auto;
+      font-family: 'Cinzel', serif; font-size: .65rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: #5a6272; text-decoration: none; cursor: pointer;
+      padding: 8px 14px; border: 1px solid rgba(201,168,76,.09); border-radius: 3px;
+      transition: color .2s, border-color .2s;
+    }
+    .nav-back:visited { color: #5a6272; }
+    .nav-back:hover   { color: #c9a84c; border-color: rgba(201,168,76,.28); }
+    .nav-logout {
       font-family: 'Cinzel', serif; font-size: .65rem;
       letter-spacing: .14em; text-transform: uppercase;
       color: var(--silver-dim); cursor: pointer;
       padding: 8px 14px; border: 1px solid var(--b-dim); border-radius: 3px;
+      margin-left: 8px;
       transition: color .2s, border-color .2s;
     }
     .nav-logout:hover { color: var(--danger); border-color: rgba(192,57,43,.4); }
@@ -608,7 +618,7 @@
       <div class="nav-tab"        data-tab="audit">Audit Log</div>
       <div class="nav-tab"        data-tab="pages">Pages</div>
     </div>
-    <a href="OFS_Home.html" style="font-family:'Cinzel',serif;font-size:.65rem;letter-spacing:.14em;text-transform:uppercase;color:var(--silver-dim);text-decoration:none;padding:8px 14px;border:1px solid var(--b-dim);border-radius:3px;margin-right:8px;transition:color .2s,border-color .2s;" onmouseover="this.style.color='var(--gold)';this.style.borderColor='var(--b-gold)'" onmouseout="this.style.color='var(--silver-dim)';this.style.borderColor='var(--b-dim)'">← Site</a>
+    <a href="OFS_Home.html" class="nav-back">← Site</a>
     <div class="nav-logout" onclick="logout()">Logout</div>
   </nav>
 
