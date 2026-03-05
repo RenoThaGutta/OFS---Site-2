@@ -34,7 +34,12 @@
   function getHomeChronicle() {
     try {
       var stored = localStorage.getItem(STORAGE_HOME_CHRONICLE);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        var data = JSON.parse(stored);
+        var def  = JSON.parse(JSON.stringify(DEFAULT_HOME_CHRONICLE));
+        // Merge with defaults so missing fields don't crash renders
+        return Object.assign(def, data);
+      }
     } catch (e) {}
     return JSON.parse(JSON.stringify(DEFAULT_HOME_CHRONICLE));
   }
@@ -117,7 +122,22 @@
   function getHomeContent() {
     try {
       var stored = localStorage.getItem(STORAGE_HOME_CONTENT);
-      if (stored) return JSON.parse(stored);
+      if (stored) {
+        var data = JSON.parse(stored);
+        var def  = JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
+        // Deep merge: top-level sections inherit from defaults so missing fields
+        // never crash the render (e.g. d.hero.subtitle when hero is absent).
+        var merged = Object.assign(def, data);
+        merged.hero           = Object.assign({}, def.hero,           data.hero           || {});
+        merged.about          = Object.assign({}, def.about,          data.about          || {});
+        merged.aboutSection   = Object.assign({}, def.aboutSection,   data.aboutSection   || {});
+        merged.trivSection    = Object.assign({}, def.trivSection,    data.trivSection    || {});
+        merged.chronicleSection = Object.assign({}, def.chronicleSection, data.chronicleSection || {});
+        merged.banners        = Object.assign({}, def.banners,        data.banners        || {});
+        merged.pages          = Object.assign({}, def.pages,          data.pages          || {});
+        if (!merged.triumvirate || !merged.triumvirate.length) merged.triumvirate = def.triumvirate;
+        return merged;
+      }
     } catch (e) {}
     return JSON.parse(JSON.stringify(DEFAULT_HOME_CONTENT));
   }
