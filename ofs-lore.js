@@ -1,6 +1,9 @@
 (function (global) {
   'use strict';
 
+  /* ── Worker URL ───────────────────────────────────────────── */
+  var WORKER_URL = 'https://ofs-api.orderofthefallenstar.workers.dev';
+
   /* ── Home Chronicle ───────────────────────────────────────── */
   var STORAGE_HOME_CHRONICLE = 'ofs_home_chronicle';
 
@@ -38,6 +41,11 @@
 
   function saveHomeChronicle(data) {
     localStorage.setItem(STORAGE_HOME_CHRONICLE, JSON.stringify(data));
+    fetch(WORKER_URL + '/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'home_chronicle', value: data })
+    }).catch(function () {});
   }
 
   /* ── Home Content (hero, about, triumvirate) ──────────────── */
@@ -116,7 +124,36 @@
 
   function saveHomeContent(data) {
     localStorage.setItem(STORAGE_HOME_CONTENT, JSON.stringify(data));
+    fetch(WORKER_URL + '/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'home_content', value: data })
+    }).catch(function () {});
   }
+
+  /* ── Auto-sync from Worker on page load ──────────────────── */
+  // Fetches latest content from Sheets via Worker and updates localStorage.
+  // Dispatches 'ofs-lore-loaded' event when done so pages can re-render.
+  (function () {
+    fetch(WORKER_URL + '/content')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data.ok || !data.data) return;
+        var changed = false;
+        if (data.data.home_chronicle) {
+          localStorage.setItem(STORAGE_HOME_CHRONICLE, JSON.stringify(data.data.home_chronicle));
+          changed = true;
+        }
+        if (data.data.home_content) {
+          localStorage.setItem(STORAGE_HOME_CONTENT, JSON.stringify(data.data.home_content));
+          changed = true;
+        }
+        if (changed) {
+          global.dispatchEvent(new Event('ofs-lore-loaded'));
+        }
+      })
+      .catch(function () {});
+  }());
 
   /* ── Exports ──────────────────────────────────────────────── */
   global.OFSLore = {

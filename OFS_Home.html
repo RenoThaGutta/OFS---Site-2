@@ -1199,6 +1199,7 @@
   window.addEventListener('storage', function(e){
     if(e.key === window.OFSLore.STORAGE_HOME_CHRONICLE) render();
   });
+  window.addEventListener('ofs-lore-loaded', render);
 })();
 
 /* ── Home Content: hero, about, triumvirate ───────────────── */
@@ -1319,6 +1320,7 @@
   window.addEventListener('storage', function(e){
     if(e.key === window.OFSLore.STORAGE_HOME_CONTENT) renderContent();
   });
+  window.addEventListener('ofs-lore-loaded', renderContent);
 })();
 
 /* ── Star field ────────────────────────────────────────────── */
