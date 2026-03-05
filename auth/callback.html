@@ -62,10 +62,9 @@
 
   <script>
     /* ── Config ─────────────────────────────────────── */
-    var APPS_SCRIPT_URL  = '';   // fill in after Apps Script is deployed
-    var REDIRECT_URI     = 'https://orderofthefallenstar.com/auth/callback';
-    var SESSION_KEY      = 'ofs_discord_session';
-    var RETURN_PAGE      = '../OFS_Admin.html';
+    var WORKER_URL  = 'https://ofs-api.orderofthefallenstar.workers.dev';
+    var SESSION_KEY = 'ofs_discord_session';
+    var RETURN_PAGE = '../OFS_Admin.html';
 
     /* ── DOM helpers ─────────────────────────────────── */
     var heading  = document.getElementById('heading');
@@ -97,18 +96,11 @@
         return;
       }
 
-      if (!APPS_SCRIPT_URL) {
-        showError('Backend Not Configured',
-          'The Apps Script backend hasn\'t been deployed yet.<br>' +
-          'Set <code>APPS_SCRIPT_URL</code> in <code>auth/callback.html</code> to enable Discord login.');
-        return;
-      }
-
-      /* Exchange code for session via Apps Script */
-      fetch(APPS_SCRIPT_URL, {
+      /* Exchange code for session via Cloudflare Worker */
+      fetch(WORKER_URL + '/auth', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ op: 'discordAuth', code: code, redirect_uri: REDIRECT_URI })
+        body:    JSON.stringify({ code: code })
       })
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -121,7 +113,10 @@
           }));
           showSuccess(data.username);
         } else {
-          showError('Access Denied', data.reason || 'Discord authentication failed.');
+          var msg = data.reason === 'not_whitelisted'
+            ? 'Your Discord account is not on the admin whitelist.'
+            : (data.reason || 'Discord authentication failed.');
+          showError('Access Denied', msg);
         }
       })
       .catch(function () {
