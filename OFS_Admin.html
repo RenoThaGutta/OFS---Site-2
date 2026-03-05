@@ -2100,8 +2100,8 @@ _previewFrame.addEventListener('load', function(){
     const filename = href.split('/').pop().split('?')[0].split('#')[0];
     const pageKey  = PAGE_FILENAME_MAP[filename] || null;
     const current  = document.querySelector('.pages-sub-tab.active')?.dataset.page || null;
-    // Only switch if the loaded page differs from the active tab
-    if(pageKey !== current){
+    // Only switch if we can positively identify a different page (ignore about:blank / unknown URLs)
+    if(pageKey && pageKey !== current){
       activatePageTab(pageKey);
     }
   } catch(e){
