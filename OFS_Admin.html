@@ -180,6 +180,10 @@
       border: 1px solid var(--gold-dim); background: var(--bg-card2);
       display: inline-flex; align-items: center; justify-content: center;
       font-family: 'Cinzel', serif; font-size: .9rem; color: var(--gold);
+      overflow: hidden; object-fit: cover; flex-shrink: 0;
+    }
+    .data-table .avatar-sm img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 50%;
     }
     .badge {
       display: inline-block; padding: 3px 8px; border-radius: 2px;
@@ -1287,9 +1291,10 @@ function renderRoster(){
     const rep=calcRep(p.reputationXP||0);
     const tbp=totalBannerPts(p);
     const init=p.username.charAt(0).toUpperCase();
+    const avatarInner=p.avatarUrl?`<img src="${p.avatarUrl}" alt="${init}" onerror="this.parentNode.innerHTML='${init}'">`:`${init}`;
     const tr=document.createElement('tr');
     tr.innerHTML=`
-      <td><div class="avatar-sm">${init}</div></td>
+      <td><div class="avatar-sm">${avatarInner}</div></td>
       <td><strong>${p.username}</strong></td>
       <td><span class="badge badge-dim">${p.rank}</span></td>
       <td><span class="badge badge-gold">Lvl ${rep.lvl}</span></td>
