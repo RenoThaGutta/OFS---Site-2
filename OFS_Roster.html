@@ -987,8 +987,14 @@ window.addEventListener('storage', () => {
   syncControls();
   render();
 });
+
+OFSSheets.load().then(function() {
+  PLAYERS = OFS_SHARED.getPlayers();
+  syncControls();
+  render();
+  if (window.OFSNav) OFSNav.refresh();
+});
 </script>
 <script>if(window.parent!==window)window.parent.postMessage({type:'ofs-page-load',page:'roster'},'*');</script>
-<script>OFSSheets.load().then(function() { if (window.OFSNav) OFSNav.refresh(); });</script>
 </body>
 </html>

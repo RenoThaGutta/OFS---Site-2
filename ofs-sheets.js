@@ -22,7 +22,7 @@
     USERNAME:       1,   // B — "Username"
     RANK:           2,   // C — "Rank"
     // D (3):  "Role"            — display role, not imported
-    // E (4):  "Current Chapter" — not imported
+    CHAPTER:        4,   // E — "Current Chapter" (faction)
     JOIN_DATE:      5,   // F — "Join Date"
     TIME_IN_SERVICE:6,   // G — "Time in service"
     // H (7):  "Squire_1"       — not imported
@@ -119,6 +119,7 @@
         id:            uid,
         username:      cell(row, ML.USERNAME),
         rank:          cell(row, ML.RANK),
+        faction:       cell(row, ML.CHAPTER) || 'Unassigned',
         rolePath:      cell(row, ML.ROLE_PATH),
         joinDate:      cell(row, ML.JOIN_DATE),
         timeInService: cell(row, ML.TIME_IN_SERVICE),
