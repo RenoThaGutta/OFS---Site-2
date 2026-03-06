@@ -43,7 +43,7 @@
     // AD (29): "Banner Points" — aggregate, use banner sheet instead
     // AE (30): "Banner Medals" — aggregate, use banner sheet instead
     REPUTATION_XP: 31,   // AF — "Reputation XP"
-    // AG (32): "Medals"        — not imported
+    MEDALS:        32,   // AG — "Medals" (comma-separated banner names)
   };
 
   const PT = {
@@ -89,18 +89,19 @@
     }
 
     // Index banner points by User ID — columns are dynamic
-    const bannerMap = {};
+    // Store just points here; medal flags come from Member Log "Medals" column
+    const bannerPtsMap = {};  // uid -> { bannerName: number }
+    let bpBannerNames = [];   // ordered list of banner names from header row
     if (data.bannerPoints && data.bannerPoints.length > 1) {
-      const bannerNames = data.bannerPoints[0].slice(1); // drop col A ("Banners")
+      bpBannerNames = data.bannerPoints[0].slice(1); // drop col A ("Banners")
       for (const row of data.bannerPoints.slice(1)) {
         const uid = cell(row, 0).trim();
         if (!uid) continue;
-        const banners = {};
-        bannerNames.forEach(function (name, i) {
-          const pts = Number(row[i + 1]) || 0;
-          banners[name] = { p: pts, m: pts >= 60 };
+        const pts = {};
+        bpBannerNames.forEach(function (name, i) {
+          pts[name] = Number(row[i + 1]) || 0;
         });
-        bannerMap[uid] = banners;
+        bannerPtsMap[uid] = pts;
       }
     }
 
@@ -114,6 +115,19 @@
 
       const patrolRow = patrolMap[uid] || [];
       const walletRow = walletMap[uid] || [];
+
+      // Medals: explicit comma-separated list in Member Log (e.g. "The Fang,The Guardian")
+      const medalsStr = cell(row, ML.MEDALS);
+      const medalSet  = new Set(
+        medalsStr ? medalsStr.split(',').map(function(s) { return s.trim(); }).filter(Boolean) : []
+      );
+
+      // Build banners: points from Banners points per user, medals from Member Log
+      const ptsMap  = bannerPtsMap[uid] || {};
+      const banners = {};
+      bpBannerNames.forEach(function (bn) {
+        banners[bn] = { p: ptsMap[bn] || 0, m: medalSet.has(bn) };
+      });
 
       players.push({
         id:            uid,
@@ -139,7 +153,7 @@
           Led_Completed_Quests:   num(patrolRow, PT.LED_QUESTS),
           Led_Completed_Crusades: num(patrolRow, PT.LED_CRUSADES)
         },
-        banners: bannerMap[uid] || {},
+        banners: banners,
         wallet: {
           gold:   num(walletRow, BK.GOLD),
           silver: num(walletRow, BK.SILVER),
@@ -325,11 +339,54 @@
     return res.json();
   }
 
+  /**
+   * Update (or create) the user's row in "Banners points per user".
+   * @param {string} userId
+   * @param {object} changedBanners  { "The Fang": 22, "The Guardian": 15 } — only changed banners
+   */
+  async function updateBannerPoints(userId, changedBanners) {
+    const res = await fetch(WORKER_URL + '/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        op:     'upsert',
+        sheet:  'Banners points per user',
+        keyCol: 0,
+        keyVal: String(userId),
+        data:   changedBanners
+      })
+    });
+    return res.json();
+  }
+
+  /**
+   * Update the "Medals" cell in Member Log for this user.
+   * @param {string}   userId
+   * @param {string[]} medalBanners  Array of banner names the user currently holds medals for.
+   *                                  Pass [] to clear all medals.
+   */
+  async function updateMedals(userId, medalBanners) {
+    const res = await fetch(WORKER_URL + '/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        op:     'update',
+        sheet:  'Member Log',
+        keyCol: 0,
+        keyVal: String(userId),
+        data:   { Medals: medalBanners.join(',') }
+      })
+    });
+    return res.json();
+  }
+
   global.OFSSheets = {
     load,
     appendStatAdjustment,
     updateWallet,
     appendBankLog,
+    updateBannerPoints,
+    updateMedals,
     WORKER_URL
   };
 

@@ -1587,6 +1587,19 @@ function saveModal(){
       diff(`${bn} Points`, existing.banners[bn].p, newBanners[bn].p);
       if(existing.banners[bn].m!==newBanners[bn].m) diff(`${bn} Medal`, existing.banners[bn].m?'Awarded':'Not awarded', newBanners[bn].m?'Awarded':'Not awarded');
     });
+    if(window.OFSSheets){
+      // Write changed banner points to "Banners points per user" sheet
+      const changedPts={};
+      let hasPtChange=false;
+      BANNER_NAMES.forEach(function(bn){
+        if(newBanners[bn].p!==(existing.banners[bn]||{p:0}).p){changedPts[bn]=newBanners[bn].p;hasPtChange=true;}
+      });
+      if(hasPtChange) OFSSheets.updateBannerPoints(existing.id, changedPts);
+      // Write medals to "Medals" column in Member Log
+      const newMedalList=BANNER_NAMES.filter(function(bn){return newBanners[bn].m;});
+      const oldMedalList=BANNER_NAMES.filter(function(bn){return (existing.banners[bn]||{}).m;});
+      if(newMedalList.join(',')!==oldMedalList.join(',')) OFSSheets.updateMedals(existing.id, newMedalList);
+    }
     diff('Gold',   existing.wallet.gold,   newWallet.gold);
     diff('Silver', existing.wallet.silver, newWallet.silver);
     diff('Copper', existing.wallet.copper, newWallet.copper);
