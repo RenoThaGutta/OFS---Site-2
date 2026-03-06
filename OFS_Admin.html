@@ -1578,6 +1578,11 @@ function saveModal(){
     diff('Faction',    existing.faction,       document.getElementById('f-faction').value);
     diff('Active Banner',existing.activeBanner,document.getElementById('f-activeBanner').value);
     Object.keys(newStats).forEach(k=>diff(k, existing.stats[k], newStats[k]));
+    // Write adjustment row if any stats changed
+    const statDeltas = {};
+    let hasStatChange = false;
+    Object.keys(newStats).forEach(function(k){ const d=newStats[k]-(existing.stats[k]||0); if(d!==0){statDeltas[k]=d;hasStatChange=true;} });
+    if(hasStatChange && window.OFSSheets) OFSSheets.appendStatAdjustment(existing.id, statDeltas, 'Admin edit', currentAdmin);
     BANNER_NAMES.forEach(bn=>{
       diff(`${bn} Points`, existing.banners[bn].p, newBanners[bn].p);
       if(existing.banners[bn].m!==newBanners[bn].m) diff(`${bn} Medal`, existing.banners[bn].m?'Awarded':'Not awarded', newBanners[bn].m?'Awarded':'Not awarded');
