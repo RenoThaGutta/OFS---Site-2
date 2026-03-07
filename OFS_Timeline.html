@@ -976,6 +976,8 @@
       card.addEventListener('click', function(){ openModal(titleText); });
     }
   });
+  // Expose for the block-edit IIFE (different scope)
+  window._tlDETAILS = DETAILS;
 })();
 </script>
 
@@ -1087,13 +1089,16 @@ document.querySelectorAll('.event').forEach(ev => {
       }
       if(titleEl && data.title) titleEl.textContent = data.title;
       if(bodyEl  && data.body !== undefined) bodyEl.innerHTML  = data.body;
-      // Update DETAILS for modal popup
+      // Update DETAILS for modal popup (via shared window reference)
       if(data.detailBody !== undefined || data.detailTitle !== undefined){
         var key = data.blockId;
-        if(!DETAILS[key]) DETAILS[key] = {};
-        if(data.detailTag   !== undefined) DETAILS[key].tag   = data.detailTag;
-        if(data.detailTitle !== undefined) DETAILS[key].title = data.detailTitle;
-        if(data.detailBody  !== undefined) DETAILS[key].body  = data.detailBody;
+        var D = window._tlDETAILS;
+        if(D){
+          if(!D[key]) D[key] = {};
+          if(data.detailTag   !== undefined) D[key].tag   = data.detailTag;
+          if(data.detailTitle !== undefined) D[key].title = data.detailTitle;
+          if(data.detailBody  !== undefined) D[key].body  = data.detailBody;
+        }
       }
     }
   }
@@ -1162,7 +1167,7 @@ document.querySelectorAll('.event').forEach(ev => {
         var numText = numEl.textContent.trim();
         if(titleText.startsWith(numText)) titleText = titleText.slice(numText.length).trim();
       }
-      var detail = DETAILS[titleText] || {};
+      var detail = (window._tlDETAILS && window._tlDETAILS[titleText]) || {};
       msg = { type:'ofs-timeline-block-edit', kind:'card', tlId:tlId,
               tag:tagText, tagColor:tagColor, title:titleText, body:bodyHtml,
               detailTag:detail.tag||'', detailTitle:detail.title||'', detailBody:detail.body||'' };
