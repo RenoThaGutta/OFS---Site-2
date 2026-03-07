@@ -1244,8 +1244,10 @@ function logChange(player, field, oldVal, newVal) {
 /* ══════════════════════════════════════════════════════════
    XP / REP
 ══════════════════════════════════════════════════════════ */
-const XP_PER_QUEST = 100, XP_PER_CRUSADE = 300, MAX_LVL = 100, XP_MIN = 100, XP_MAX = 1_000_000;
-const LEVEL_XP = Array.from({length:MAX_LVL},(_,i)=>i===0?XP_MIN:Math.floor(XP_MIN*Math.pow(XP_MAX/XP_MIN,i/(MAX_LVL-1))));
+const XP_MIN = 100, XP_MAX = 1_000_000;
+const _FALLBACK_XP = Array.from({length:100},(_,i)=>i===0?XP_MIN:Math.floor(XP_MIN*Math.pow(XP_MAX/XP_MIN,i/99)));
+let LEVEL_XP = (function(){ try{ const v=JSON.parse(localStorage.getItem('ofs_level_xp')||'null'); if(Array.isArray(v)&&v.length) return v; }catch(e){} return _FALLBACK_XP; }());
+const MAX_LVL = LEVEL_XP.length;
 
 function calcRep(xp){
   xp = xp || 0;
@@ -1293,6 +1295,7 @@ function renderRoster(){
     const init=p.username.charAt(0).toUpperCase();
     const avatarInner=p.avatarUrl?`<img src="${p.avatarUrl}" alt="${init}" onerror="this.parentNode.innerHTML='${init}'">`:`${init}`;
     const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
     tr.innerHTML=`
       <td><div class="avatar-sm">${avatarInner}</div></td>
       <td><strong>${p.username}</strong></td>
@@ -1307,6 +1310,7 @@ function renderRoster(){
         <span style="color:#cd7f32;margin-left:6px">⬛ ${p.wallet.copper}c</span>
       </td>
       <td><button class="edit-btn" onclick="openModal('${p.id}')">Edit</button></td>`;
+    tr.addEventListener('click', function(e){ if(!e.target.closest('.edit-btn')) location.href='OFS_PlayerSheet.html?player='+p.id; });
     tb.appendChild(tr);
   });
 }
