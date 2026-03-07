@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // Don't render the user zone when embedded in an iframe (e.g. admin page manager preview)
+  if (window.self !== window.top) return;
+
   var DISCORD_OAUTH_URL = 'https://discord.com/oauth2/authorize?client_id=1429228667564851383&response_type=code&redirect_uri=https%3A%2F%2Forderofthefallenstar.com%2Fauth%2Fcallback&scope=identify';
   var SESSION_KEY = 'ofs_discord_session';
 
