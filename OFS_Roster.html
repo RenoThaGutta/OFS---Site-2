@@ -190,6 +190,14 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       margin-bottom: 5px;
     }
+    #roster-name-tooltip {
+      position: fixed; display: none; pointer-events: none; z-index: 600;
+      background: var(--bg-card2); border: 1px solid var(--b-gold);
+      border-radius: 4px; padding: 6px 12px;
+      font-family: 'Cinzel', serif; font-size: .78rem; letter-spacing: .06em;
+      color: var(--gold-lt); white-space: nowrap;
+      box-shadow: 0 4px 16px rgba(0,0,0,.6);
+    }
     .card-rank {
       display: inline-block;
       font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .12em;
@@ -776,7 +784,7 @@ function renderCards(list){
       <div class="card-identity">
         <div class="card-avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="${p.username}">` : init}</div>
         <div class="card-name-block">
-          <div class="card-username" title="${displayName(p)}">${displayName(p)}</div>
+          <div class="card-username">${displayName(p)}</div>
           <span class="card-rank">${p.rank}</span>
         </div>
       </div>
@@ -1005,6 +1013,30 @@ OFSSheets.load().then(function() {
   render();
   if (window.OFSNav) OFSNav.refresh();
 });
+</script>
+<div id="roster-name-tooltip"></div>
+<script>
+  (function () {
+    var tip = document.getElementById('roster-name-tooltip');
+    document.addEventListener('mousemove', function (e) {
+      if (tip.style.display === 'block') {
+        var x = e.clientX + 14, y = e.clientY + 14;
+        if (x + tip.offsetWidth + 10 > window.innerWidth) x = e.clientX - tip.offsetWidth - 8;
+        tip.style.left = x + 'px';
+        tip.style.top  = y + 'px';
+      }
+    });
+    document.addEventListener('mouseover', function (e) {
+      var el = e.target.closest('.card-username');
+      if (el && el.scrollWidth > el.offsetWidth) {
+        tip.textContent = el.textContent;
+        tip.style.display = 'block';
+      }
+    });
+    document.addEventListener('mouseout', function (e) {
+      if (e.target.closest('.card-username')) tip.style.display = 'none';
+    });
+  }());
 </script>
 <script>if(window.parent!==window)window.parent.postMessage({type:'ofs-page-load',page:'roster'},'*');</script>
 </body>
