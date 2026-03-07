@@ -115,6 +115,12 @@
   }
 
   function init() {
+    // Hide nav entirely when embedded in an iframe (e.g. admin page manager preview)
+    if (window.self !== window.top) {
+      var nav = document.getElementById('main-nav');
+      if (nav) nav.style.display = 'none';
+      return;
+    }
     injectCSS();
     buildNav();
   }
