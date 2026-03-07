@@ -558,8 +558,9 @@
 
   function parseDate(str) {
     if (!str) return null;
-    // Handle "2026-03-06 18:25:04" (space instead of T)
+    // Sheet timestamps are UTC; append Z so the browser doesn't interpret as local time
     var iso = String(str).replace(' ', 'T');
+    if (!/Z$|[+-]\d{2}:\d{2}$/.test(iso)) iso += 'Z';
     var d = new Date(iso);
     return isNaN(d.getTime()) ? null : d;
   }
