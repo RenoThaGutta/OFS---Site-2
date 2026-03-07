@@ -715,6 +715,16 @@ syncControls();
 /* ── Sort & filter ────────────────────────────────────────── */
 function getFiltered(){
   PLAYERS = OFS_SHARED.getPlayers();
+  // Strip rank prefix from username for display (sheet stores "Rank Name", we show just "Name")
+  function displayName(p) {
+    var name = String(p.username || '');
+    var rank = String(p.rank || '');
+    if (rank && name.toLowerCase().startsWith(rank.toLowerCase() + ' ')) {
+      return name.slice(rank.length + 1).trim();
+    }
+    return name;
+  }
+
   const q    = document.getElementById('ctrl-search').value.trim().toLowerCase();
   const rank = document.getElementById('ctrl-rank').value;
   const ban  = document.getElementById('ctrl-banner').value;
@@ -765,7 +775,7 @@ function renderCards(list){
       <div class="card-identity">
         <div class="card-avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="${p.username}">` : init}</div>
         <div class="card-name-block">
-          <div class="card-username">${p.username}</div>
+          <div class="card-username">${displayName(p)}</div>
           <span class="card-rank">${p.rank}</span>
         </div>
       </div>
@@ -805,7 +815,7 @@ function renderTable(list){
     tr.onclick = () => { window.location.href = `OFS_PlayerSheet.html?player=${encodeURIComponent(p.id)}`; };
     tr.innerHTML = `
       <td><div class="tbl-avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="">` : init}</div></td>
-      <td class="tbl-username">${p.username}</td>
+      <td class="tbl-username">${displayName(p)}</td>
       <td><span class="badge badge-dim">${p.rank}</span></td>
       <td><span class="badge badge-gold">Lvl ${rep.lvl}</span></td>
       <td class="tbl-dim">${p.activeBanner}</td>
@@ -867,14 +877,14 @@ function renderLB(){
       <div class="lb-flip-inner">
         <div class="lb-flip-front">
           <div class="lb-rank ${rankClass}">${i+1}</div>
-          <div><div class="lb-name">${p.username}</div><div class="lb-sub">${p.rank}</div></div>
+          <div><div class="lb-name">${displayName(p)}</div><div class="lb-sub">${p.rank}</div></div>
           <div class="lb-bar-bg"><div class="lb-bar-fill" style="width:${pct}%"></div></div>
           <div class="lb-val">${val}</div>
         </div>
         <a class="lb-flip-back" href="OFS_PlayerSheet.html?player=${encodeURIComponent(p.id)}">
           <img class="lb-back-avatar" src="${p.avatarUrl || 'ofs_logo.png'}" alt="${p.username}" onerror="this.src='ofs_logo.png'">
           <div class="lb-back-mid">
-            <div class="lb-back-name">${p.username}</div>
+            <div class="lb-back-name">${displayName(p)}</div>
             <div class="lb-back-rank">${p.rank}</div>
           </div>
           <div class="lb-back-right">
