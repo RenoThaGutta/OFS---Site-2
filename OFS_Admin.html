@@ -390,11 +390,11 @@
     .si-type  { font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--silver-dim); flex-shrink: 0; }
     .pages-editor { display: flex; flex-direction: column; gap: 14px; }
     .editor-empty {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      height: 480px; border: 1px dashed var(--b-dim); border-radius: 3px;
-      color: var(--text-dim); font-size: .85rem; gap: 10px;
+      display: flex; flex-direction: row; align-items: center;
+      padding: 8px 12px; border: 1px dashed var(--b-dim); border-radius: 3px;
+      color: var(--text-dim); font-size: .75rem; gap: 8px;
     }
-    .editor-empty span { font-size: 1.8rem; opacity: .3; }
+    .editor-empty span { font-size: .9rem; opacity: .4; }
     .editor-topbar {
       display: flex; align-items: center; justify-content: space-between;
       padding-bottom: 14px; border-bottom: 1px solid var(--b-dim); gap: 12px;
@@ -464,7 +464,7 @@
       padding-right: 10px;
     }
     .edit-sub-panel { display: flex; flex-direction: column; gap: 12px; }
-    .edit-sub-panel .editor-empty { height: 240px; }
+    .edit-sub-panel .editor-empty { height: auto; }
     .edit-sub-panel .section-list { max-height: 200px; }
     .preview-panel {
       position: sticky;
