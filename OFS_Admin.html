@@ -1505,6 +1505,7 @@ function renderAll(){
   const defs = window.OFSSheets && OFSSheets.getBannerDefs ? OFSSheets.getBannerDefs() : [];
   if(defs.length) BANNER_NAMES = defs.map(d=>d.name);
   renderRoster();
+  renderBanManageList();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3169,6 +3170,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const stab = btn.dataset.bstab;
     document.getElementById('ban-pop').style.display     = stab==='ban-pop'    ? '' : 'none';
     document.getElementById('ban-manage').style.display  = stab==='ban-manage' ? '' : 'none';
+    if(stab==='ban-manage') renderBanManageList();
   });
 
   /* ════════════════════════
