@@ -2736,12 +2736,14 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         id: String(row[0]||''), title: String(row[1]||''), body: String(row[2]||''),
         date: String(row[3]||''), author: String(row[4]||''),
         pinned: String(row[5]||'').toLowerCase()==='true',
-        category: String(row[6]||'general').toLowerCase()
+        category: String(row[6]||'general').toLowerCase(),
+        image: String(row[7]||'')
       };
       if(sec === 'events') return {
         id: String(row[0]||''), title: String(row[1]||''), date: String(row[2]||''),
         type: String(row[3]||''), description: String(row[4]||''),
-        status: String(row[5]||'upcoming').toLowerCase()
+        status: String(row[5]||'upcoming').toLowerCase(),
+        image: String(row[6]||'')
       };
       return { // media
         id: String(row[0]||''), type: String(row[1]||'screenshot').toLowerCase(),
@@ -2767,14 +2769,14 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     if(!window.OFSSheets) return;
     try {
       await OFSSheets.overwriteTavernRow('Tavern_Announcements', item.id,
-        [item.id, item.title, item.body, item.date, item.author, String(item.pinned), item.category]);
+        [item.id, item.title, item.body, item.date, item.author, String(item.pinned), item.category, item.image||'']);
     } catch(e) { showToast('Local save OK — Sheet sync failed'); }
   }
   async function sheetSaveEvent(item) {
     if(!window.OFSSheets) return;
     try {
       await OFSSheets.overwriteTavernRow('Tavern_Events', item.id,
-        [item.id, item.title, item.date, item.type, item.description, item.status]);
+        [item.id, item.title, item.date, item.type, item.description, item.status, item.image||'']);
     } catch(e) { showToast('Local save OK — Sheet sync failed'); }
   }
   async function sheetSaveMedia(item) {
@@ -2845,6 +2847,10 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
           <label class="tf-toggle"><input id="tf-ann-pinned" type="checkbox"${item.pinned?' checked':''}><span>Pin to top of Tavern Hall</span></label>
         </div>
       </div>
+      <div class="tf-row">
+        <div class="hf-label">Image URL</div>
+        <input id="tf-ann-image" class="hf-input" type="url" value="${escHtml(item.image||'')}" placeholder="https://… (optional)">
+      </div>
       <div class="tf-save-row">
         ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelAnn('${escHtml(item.id)}')">Delete</button>`:''}
         <button class="tf-save-btn" onclick="window._tavSaveAnn('${escHtml(item.id)}')">Save Announcement</button>
@@ -2853,7 +2859,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   }
 
   window._tavNewAnn = function(){
-    const item={id:genId('ann'),title:'',body:'',date:new Date().toISOString().slice(0,10),author:'',pinned:false,category:'general'};
+    const item={id:genId('ann'),title:'',body:'',date:new Date().toISOString().slice(0,10),author:'',pinned:false,category:'general',image:''};
     showAnnForm(item,true);
   };
   window._tavEditAnn = function(id){
@@ -2868,7 +2874,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       date:document.getElementById('tf-ann-date').value,
       author:document.getElementById('tf-ann-author').value.trim(),
       category:document.getElementById('tf-ann-cat').value,
-      pinned:document.getElementById('tf-ann-pinned').checked};
+      pinned:document.getElementById('tf-ann-pinned').checked,
+      image:document.getElementById('tf-ann-image').value.trim()};
     if(idx>=0) items[idx]=item; else items.push(item);
     setSection('announcements',items);
     logChange('Admin','Tavern/Announcement','—',title);
@@ -2921,6 +2928,10 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       </div>
       <div class="tf-row"><div class="hf-label">Status</div><select id="tf-evt-status" class="hf-input">${statOpts}</select></div>
       <div class="tf-row"><div class="hf-label">Description</div><textarea id="tf-evt-desc" class="hf-textarea" rows="4" placeholder="Event details…">${escHtml(item.description)}</textarea></div>
+      <div class="tf-row">
+        <div class="hf-label">Image URL</div>
+        <input id="tf-evt-image" class="hf-input" type="url" value="${escHtml(item.image||'')}" placeholder="https://… (optional)">
+      </div>
       <div class="tf-save-row">
         ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelEvent('${escHtml(item.id)}')">Delete</button>`:''}
         <button class="tf-save-btn" onclick="window._tavSaveEvent('${escHtml(item.id)}')">Save Event</button>
@@ -2929,7 +2940,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   }
 
   window._tavNewEvent = function(){
-    const item={id:genId('evt'),title:'',date:new Date().toISOString().slice(0,10),type:'',status:'upcoming',description:''};
+    const item={id:genId('evt'),title:'',date:new Date().toISOString().slice(0,10),type:'',status:'upcoming',description:'',image:''};
     showEventForm(item,true);
   };
   window._tavEditEvent = function(id){
@@ -2943,7 +2954,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const item={id,title,date:document.getElementById('tf-evt-date').value,
       type:document.getElementById('tf-evt-type').value,
       status:document.getElementById('tf-evt-status').value,
-      description:document.getElementById('tf-evt-desc').value.trim()};
+      description:document.getElementById('tf-evt-desc').value.trim(),
+      image:document.getElementById('tf-evt-image').value.trim()};
     if(idx>=0) items[idx]=item; else items.push(item);
     setSection('events',items);
     logChange('Admin','Tavern/Event','—',title);
