@@ -713,17 +713,18 @@ let sortAsc  = false;
 syncControls();
 
 /* ── Sort & filter ────────────────────────────────────────── */
+// Strip rank prefix from username for display (sheet stores "Rank Name", we show just "Name")
+function displayName(p) {
+  var name = String(p.username || '');
+  var rank = String(p.rank || '');
+  if (rank && name.toLowerCase().startsWith(rank.toLowerCase() + ' ')) {
+    return name.slice(rank.length + 1).trim();
+  }
+  return name;
+}
+
 function getFiltered(){
   PLAYERS = OFS_SHARED.getPlayers();
-  // Strip rank prefix from username for display (sheet stores "Rank Name", we show just "Name")
-  function displayName(p) {
-    var name = String(p.username || '');
-    var rank = String(p.rank || '');
-    if (rank && name.toLowerCase().startsWith(rank.toLowerCase() + ' ')) {
-      return name.slice(rank.length + 1).trim();
-    }
-    return name;
-  }
 
   const q    = document.getElementById('ctrl-search').value.trim().toLowerCase();
   const rank = document.getElementById('ctrl-rank').value;
