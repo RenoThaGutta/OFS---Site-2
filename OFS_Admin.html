@@ -212,8 +212,10 @@
     .banner-pop-card.bp-empty-card { opacity: .55; }
     .bp-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
     .bp-card-header .bp-name { margin-bottom: 0; }
-    .bp-card-medal { width: 110px; height: 110px; object-fit: contain; flex-shrink: 0; }
+    .bp-card-medal { width: 110px; height: 110px; object-fit: contain; flex-shrink: 0; cursor: zoom-in; }
     .bp-card-medal-placeholder { width: 110px; height: 110px; flex-shrink: 0; }
+    #img-zoom-tip { position: fixed; z-index: 99999; pointer-events: none; display: none; background: var(--bg-card); border: 1px solid var(--b-gold); border-radius: 6px; padding: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.8); }
+    #img-zoom-tip img { display: block; max-width: 300px; max-height: 300px; object-fit: contain; }
     .bp-name { font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
     .bp-count { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 700; color: var(--silver); line-height: 1; }
     .bp-count-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
@@ -1593,7 +1595,7 @@ function renderBannerPop(){
     card.innerHTML=`
       <div class="bp-card-header">
         <div class="bp-name">${bn}</div>
-        ${medalSrc?`<img class="bp-card-medal" src="${medalSrc}" alt="${bn} Medal" title="${bn} Medal">`:`<div class="bp-card-medal-placeholder"></div>`}
+        ${medalSrc?`<img class="bp-card-medal" src="${medalSrc}" data-zoom="${medalSrc}" alt="${bn} Medal" title="${bn} Medal">`:`<div class="bp-card-medal-placeholder"></div>`}
       </div>
       <div class="bp-count-row">
         <div class="bp-count">${members.length}</div>
@@ -2790,6 +2792,36 @@ function driveDirect(url){
 }
 function updateCharCount(countId, textareaId){ document.getElementById(countId).textContent = document.getElementById(textareaId).value.length + ' characters'; }
 
+// Image zoom tooltip — add data-zoom="<url>" to any img to enable
+(function(){
+  var tip, tipImg;
+  function init(){
+    tip = document.createElement('div'); tip.id = 'img-zoom-tip';
+    tipImg = document.createElement('img');
+    tip.appendChild(tipImg);
+    document.body.appendChild(tip);
+  }
+  document.addEventListener('mouseover', function(e){
+    var el = e.target.closest('[data-zoom]');
+    if(!el || !el.dataset.zoom) return;
+    if(!tip) init();
+    tipImg.src = el.dataset.zoom;
+    tip.style.display = 'block';
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!tip || tip.style.display === 'none') return;
+    var x = e.clientX + 18, y = e.clientY + 18;
+    if(x + 320 > window.innerWidth)  x = e.clientX - 320;
+    if(y + 320 > window.innerHeight) y = e.clientY - 320;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  });
+  document.addEventListener('mouseout', function(e){
+    var el = e.target.closest('[data-zoom]');
+    if(!el) return;
+    if(tip) tip.style.display = 'none';
+  });
+}());
+
 function showToast(msg){
   let t = document.getElementById('toast');
   if(!t){ t=document.createElement('div'); t.id='toast'; t.style.cssText='position:fixed;bottom:28px;right:28px;z-index:9999;background:var(--bg-card);border:1px solid var(--gold);border-radius:3px;padding:12px 20px;font-family:Cinzel,serif;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);box-shadow:0 0 20px rgba(201,168,76,.2);transition:opacity .4s;'; document.body.appendChild(t); }
@@ -3216,7 +3248,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         </div>
         <div id="bf-medal-preview-box" style="flex-shrink:0;width:110px;height:110px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
           ${def.medalUrl
-            ? `<img id="bf-medal-preview" src="${escHtml(driveDirect(def.medalUrl))}" style="max-width:96px;max-height:96px;object-fit:contain;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
+            ? `<img id="bf-medal-preview" src="${escHtml(driveDirect(def.medalUrl))}" data-zoom="${escHtml(driveDirect(def.medalUrl))}" style="max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
             : ''}
           <span id="bf-medal-placeholder" style="font-size:.65rem;color:var(--silver-dim);text-align:center;${def.medalUrl?'display:none':''}">No image</span>
         </div>
@@ -3246,7 +3278,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       if(!img){
         img = document.createElement('img');
         img.id = 'bf-medal-preview';
-        img.style.cssText = 'max-width:96px;max-height:96px;object-fit:contain;';
+        img.style.cssText = 'max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;';
         img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
         if(box) box.insertBefore(img, placeholder);
       }
@@ -3255,6 +3287,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       if(direct !== this.value) this.value = direct;
       if(direct){
         img.src = direct;
+        img.dataset.zoom = direct;
         img.style.display = '';
         if(placeholder) placeholder.style.display = 'none';
       } else {
