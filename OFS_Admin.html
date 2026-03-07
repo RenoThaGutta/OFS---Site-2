@@ -613,8 +613,46 @@
     .tav-subpanel.active { display: block; }
 
     .tav-split {
-      display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;
+      display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; align-items: start;
     }
+    .tav-preview {
+      background: var(--bg-card); border: 1px solid var(--b-dim);
+      border-radius: 4px; padding: 16px 18px; position: sticky; top: 76px;
+    }
+    .tav-preview-head {
+      font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .18em;
+      color: var(--text-dim); text-transform: uppercase;
+      padding-bottom: 8px; border-bottom: 1px solid var(--b-dim); margin-bottom: 14px;
+    }
+    .tav-preview-empty { color: var(--text-dim); font-size: .78rem; text-align: center; padding: 20px 0; font-family: 'Crimson Text',serif; font-style: italic; }
+    /* ── announcement preview ── */
+    .prev-ann-card { display: flex; flex-direction: column; gap: 7px; }
+    .prev-ann-pinned { border-left: 2px solid var(--gold); padding-left: 10px; }
+    .prev-ann-pin-badge { display: inline-block; font-family: 'Cinzel',serif; font-size: .54rem; letter-spacing: .1em; color: var(--gold); border: 1px solid var(--b-gold); border-radius: 2px; padding: 1px 5px; margin-bottom: 2px; }
+    .prev-ann-eyebrow { font-family: 'Cinzel',serif; font-size: .55rem; letter-spacing: .14em; color: var(--text-dim); text-transform: uppercase; }
+    .prev-ann-title { font-family: 'Cinzel',serif; font-size: .86rem; color: var(--gold-lt); line-height: 1.3; }
+    .prev-ann-body { font-size: .76rem; color: var(--text); line-height: 1.5; white-space: pre-wrap; max-height: 100px; overflow: hidden; }
+    .prev-ann-img { width: 100%; max-height: 180px; object-fit: contain; border-radius: 3px; }
+    .prev-ann-meta { font-size: .66rem; color: var(--text-dim); margin-top: 2px; }
+    /* hero-style pinned announcement preview */
+    .prev-ann-hero-wrap { position: relative; border-radius: 4px; overflow: hidden; margin-bottom: 10px; }
+    .prev-ann-hero-wrap img { width: 100%; height: 140px; object-fit: cover; display: block; }
+    .prev-ann-hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 12px; background: linear-gradient(transparent, rgba(7,7,15,.9)); }
+    .prev-ann-hero-overlay .prev-ann-eyebrow { display: block; margin-bottom: 3px; }
+    .prev-ann-hero-overlay .prev-ann-title { font-size: .8rem; }
+    /* ── event preview ── */
+    .prev-evt-card { border: 1px solid var(--b-dim); border-radius: 4px; overflow: hidden; }
+    .prev-evt-card img { width: 100%; max-height: 130px; object-fit: cover; display: block; }
+    .prev-evt-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .prev-evt-meta-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .prev-evt-type { font-family: 'Cinzel',serif; font-size: .58rem; letter-spacing: .1em; color: var(--text-dim); text-transform: uppercase; }
+    .prev-evt-date { font-size: .66rem; color: var(--text-dim); margin-left: auto; }
+    .prev-evt-title { font-family: 'Cinzel',serif; font-size: .86rem; color: var(--gold-lt); line-height: 1.3; }
+    .prev-evt-desc { font-size: .74rem; color: var(--text); line-height: 1.5; white-space: pre-wrap; max-height: 80px; overflow: hidden; }
+    /* ── media preview ── */
+    .prev-media-img img { width: 100%; border-radius: 4px; max-height: 220px; object-fit: contain; display: block; background: var(--bg-card2); }
+    .prev-media-video iframe { width: 100%; aspect-ratio: 16/9; border-radius: 4px; border: none; display: block; }
+    .prev-media-caption { font-size: .74rem; color: var(--text-dim); margin-top: 8px; text-align: center; font-style: italic; }
     .tav-list {
       background: var(--bg-card); border: 1px solid var(--b-gold);
       border-radius: 4px; overflow: hidden;
@@ -1174,6 +1212,10 @@
           <div class="tav-form" id="tav-ann-form">
             <div class="tav-form-empty">Select an announcement to edit, or create a new one.</div>
           </div>
+          <div class="tav-preview" id="tav-ann-preview">
+            <div class="tav-preview-head">Preview</div>
+            <div class="tav-preview-empty">Open an item to see a preview.</div>
+          </div>
         </div>
       </div>
 
@@ -1189,6 +1231,10 @@
           <div class="tav-form" id="tav-events-form">
             <div class="tav-form-empty">Select an event to edit, or create a new one.</div>
           </div>
+          <div class="tav-preview" id="tav-events-preview">
+            <div class="tav-preview-head">Preview</div>
+            <div class="tav-preview-empty">Open an item to see a preview.</div>
+          </div>
         </div>
       </div>
 
@@ -1203,6 +1249,10 @@
           </div>
           <div class="tav-form" id="tav-media-form">
             <div class="tav-form-empty">Select a media item to edit, or add a new one.</div>
+          </div>
+          <div class="tav-preview" id="tav-media-preview">
+            <div class="tav-preview-head">Preview</div>
+            <div class="tav-preview-empty">Open an item to see a preview.</div>
           </div>
         </div>
       </div>
@@ -2856,6 +2906,13 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <button class="tf-save-btn" onclick="window._tavSaveAnn('${escHtml(item.id)}')">Save Announcement</button>
       </div>`;
     highlightActive('tav-ann-list', item.id);
+    // attach live preview listeners
+    ['tf-ann-title','tf-ann-body','tf-ann-date','tf-ann-author','tf-ann-cat','tf-ann-image'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.addEventListener('input', updateAnnPreview);
+    });
+    const pinnedEl=document.getElementById('tf-ann-pinned');
+    if(pinnedEl) pinnedEl.addEventListener('change', updateAnnPreview);
+    updateAnnPreview();
   }
 
   window._tavNewAnn = function(){
@@ -2937,6 +2994,14 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <button class="tf-save-btn" onclick="window._tavSaveEvent('${escHtml(item.id)}')">Save Event</button>
       </div>`;
     highlightActive('tav-events-list', item.id);
+    // attach live preview listeners
+    ['tf-evt-title','tf-evt-date','tf-evt-type','tf-evt-status','tf-evt-desc','tf-evt-image'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.addEventListener('input', updateEventPreview);
+    });
+    ['tf-evt-type','tf-evt-status'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.addEventListener('change', updateEventPreview);
+    });
+    updateEventPreview();
   }
 
   window._tavNewEvent = function(){
@@ -3010,6 +3075,12 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <button class="tf-save-btn" onclick="window._tavSaveMedia('${escHtml(item.id)}')">Save Media</button>
       </div>`;
     highlightActive('tav-media-list', item.id);
+    // attach live preview listeners
+    ['tf-med-url','tf-med-caption'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.addEventListener('input', updateMediaPreview);
+    });
+    document.querySelectorAll('input[name="tf-med-type"]').forEach(r=>r.addEventListener('change', updateMediaPreview));
+    updateMediaPreview();
   }
 
   window._tavNewMedia = function(){
@@ -3043,6 +3114,96 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     document.getElementById('tav-media-form').innerHTML='<div class="tav-form-empty">Select a media item to edit, or add a new one.</div>';
   };
   window.tavNewMedia = window._tavNewMedia;
+
+  /* ════════════════════════
+     LIVE PREVIEW HELPERS
+  ════════════════════════ */
+  function _fmtPrevDate(d){ return d ? new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
+
+  function updateAnnPreview(){
+    const el=document.getElementById('tav-ann-preview'); if(!el) return;
+    const title=(document.getElementById('tf-ann-title')||{}).value||'';
+    const body=(document.getElementById('tf-ann-body')||{}).value||'';
+    const image=((document.getElementById('tf-ann-image')||{}).value||'').trim();
+    const pinned=!!(document.getElementById('tf-ann-pinned')||{}).checked;
+    const cat=(document.getElementById('tf-ann-cat')||{}).value||'general';
+    const author=(document.getElementById('tf-ann-author')||{}).value||'';
+    const date=_fmtPrevDate((document.getElementById('tf-ann-date')||{}).value||'');
+    const catLabel=CAT_LABELS[cat]||cat;
+    if(!title&&!body&&!image){
+      el.innerHTML='<div class="tav-preview-head">Preview</div><div class="tav-preview-empty">Fill in the form to see a preview.</div>'; return;
+    }
+    let h='<div class="tav-preview-head">Preview</div>';
+    if(pinned&&image){
+      h+=`<div class="prev-ann-hero-wrap"><img src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">
+        <div class="prev-ann-hero-overlay"><span class="prev-ann-eyebrow">${escHtml(catLabel)}</span>
+          <div class="prev-ann-title">${escHtml(title)}</div></div></div>
+        ${body?`<div class="prev-ann-card"><div class="prev-ann-body">${escHtml(body)}</div></div>`:''}`;
+    } else {
+      h+=`<div class="prev-ann-card${pinned?' prev-ann-pinned':''}">
+        ${pinned?'<div class="prev-ann-pin-badge">Pinned</div>':''}
+        <div class="prev-ann-eyebrow">${escHtml(catLabel)}</div>
+        <div class="prev-ann-title">${escHtml(title)}</div>
+        ${body?`<div class="prev-ann-body">${escHtml(body)}</div>`:''}
+        ${image?`<img class="prev-ann-img" src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">`:''}
+        ${author||date?`<div class="prev-ann-meta">${escHtml(author)}${author&&date?' · ':''}${date}</div>`:''}
+      </div>`;
+    }
+    el.innerHTML=h;
+  }
+
+  function updateEventPreview(){
+    const el=document.getElementById('tav-events-preview'); if(!el) return;
+    const title=(document.getElementById('tf-evt-title')||{}).value||'';
+    const date=_fmtPrevDate((document.getElementById('tf-evt-date')||{}).value||'');
+    const type=(document.getElementById('tf-evt-type')||{}).value||'';
+    const status=(document.getElementById('tf-evt-status')||{}).value||'upcoming';
+    const desc=(document.getElementById('tf-evt-desc')||{}).value||'';
+    const image=((document.getElementById('tf-evt-image')||{}).value||'').trim();
+    if(!title&&!desc&&!image){
+      el.innerHTML='<div class="tav-preview-head">Preview</div><div class="tav-preview-empty">Fill in the form to see a preview.</div>'; return;
+    }
+    const statusCls=STATUS_BADGES[status]||'badge-dim';
+    const statusLbl=status==='ongoing'?'Live':status==='past'?'Ended':'Upcoming';
+    let h='<div class="tav-preview-head">Preview</div>';
+    h+=`<div class="prev-evt-card">
+      ${image?`<img src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">`:''}
+      <div class="prev-evt-body">
+        <div class="prev-evt-meta-row">
+          <span class="badge ${statusCls}">${statusLbl}</span>
+          ${type?`<span class="prev-evt-type">${escHtml(type)}</span>`:''}
+          ${date?`<span class="prev-evt-date">${date}</span>`:''}
+        </div>
+        <div class="prev-evt-title">${escHtml(title)}</div>
+        ${desc?`<div class="prev-evt-desc">${escHtml(desc)}</div>`:''}
+      </div>
+    </div>`;
+    el.innerHTML=h;
+  }
+
+  function _ytId(url){
+    const m=url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+    return m?m[1]:null;
+  }
+
+  function updateMediaPreview(){
+    const el=document.getElementById('tav-media-preview'); if(!el) return;
+    const url=((document.getElementById('tf-med-url')||{}).value||'').trim();
+    const caption=(document.getElementById('tf-med-caption')||{}).value||'';
+    const typeEl=document.querySelector('input[name="tf-med-type"]:checked');
+    const type=typeEl?typeEl.value:'screenshot';
+    let h='<div class="tav-preview-head">Preview</div>';
+    if(!url){ el.innerHTML=h+'<div class="tav-preview-empty">Enter a URL to see a preview.</div>'; return; }
+    if(type==='video'){
+      const id=_ytId(url);
+      if(id) h+=`<div class="prev-media-video"><iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>${caption?`<div class="prev-media-caption">${escHtml(caption)}</div>`:''}</div>`;
+      else h+='<div class="tav-preview-empty">Enter a valid YouTube URL to embed the video.</div>';
+    } else {
+      h+=`<div class="prev-media-img"><img src="${escHtml(url)}" alt="${escHtml(caption)}" onerror="this.style.opacity='.25'">
+        ${caption?`<div class="prev-media-caption">${escHtml(caption)}</div>`:''}</div>`;
+    }
+    el.innerHTML=h;
+  }
 
   /* ── Helper: highlight active row ── */
   function highlightActive(listId, id){
