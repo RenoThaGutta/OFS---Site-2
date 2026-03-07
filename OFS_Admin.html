@@ -3176,7 +3176,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   /* ════════════════════════
      MANAGE BANNERS
   ════════════════════════ */
-  function renderBanManageList(){
+  window.renderBanManageList = function renderBanManageList(){
     const defs = (OFSSheets.getBannerDefs && OFSSheets.getBannerDefs()) || [];
     const el = document.getElementById('ban-manage-list');
     if(!el) return;
