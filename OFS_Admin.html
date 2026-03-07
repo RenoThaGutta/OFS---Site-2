@@ -3256,6 +3256,18 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       <div class="tf-row"><div class="hf-label">Description</div>
         <textarea id="bf-desc" class="hf-textarea" rows="3" placeholder="Short description of the banner's focus…">${escHtml(def.description)}</textarea>
       </div>
+      <div class="tf-row" style="display:flex;gap:16px;align-items:flex-start">
+        <div style="flex:1">
+          <div class="hf-label">Banner Image URL</div>
+          <input id="bf-bannerurl" class="hf-input" type="url" value="${escHtml(def.bannerImageUrl||'')}" placeholder="https://… or Google Drive share link">
+        </div>
+        <div id="bf-banner-preview-box" style="flex-shrink:0;width:110px;height:110px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
+          ${def.bannerImageUrl
+            ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" data-zoom="${escHtml(driveDirect(def.bannerImageUrl))}" style="max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
+            : ''}
+          <span id="bf-banner-placeholder" style="font-size:.65rem;color:var(--silver-dim);text-align:center;${def.bannerImageUrl?'display:none':''}">No image</span>
+        </div>
+      </div>
       <div class="tf-section-head" style="margin-top:4px">Sub-Rank Titles</div>
       <div class="tf-2col">
         <div class="tf-row"><div class="hf-label">Sub Rank 0 (0 pts)</div><input id="bf-r0" class="hf-input" value="${escHtml(def.subRank0)}" placeholder="Apprentice"></div>
@@ -3295,11 +3307,36 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         if(placeholder) placeholder.style.display = '';
       }
     });
+    // Live banner image preview
+    const bannerUrlInput = document.getElementById('bf-bannerurl');
+    if(bannerUrlInput) bannerUrlInput.addEventListener('input', function(){
+      const box = document.getElementById('bf-banner-preview-box');
+      const placeholder = document.getElementById('bf-banner-placeholder');
+      let img = document.getElementById('bf-banner-preview');
+      if(!img){
+        img = document.createElement('img');
+        img.id = 'bf-banner-preview';
+        img.style.cssText = 'max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;';
+        img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
+        if(box) box.insertBefore(img, placeholder);
+      }
+      const direct = driveDirect(this.value);
+      if(direct !== this.value) this.value = direct;
+      if(direct){
+        img.src = direct;
+        img.dataset.zoom = direct;
+        img.style.display = '';
+        if(placeholder) placeholder.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        if(placeholder) placeholder.style.display = '';
+      }
+    });
     highlightActive('ban-manage-list', def.name);
   }
 
   window.banManageNew = function(){
-    showBanForm({name:'',subRank0:'Apprentice',subRank1:'',subRank2:'',subRankMaster:'',medalName:'',medalUrl:'',description:''},true);
+    showBanForm({name:'',subRank0:'Apprentice',subRank1:'',subRank2:'',subRankMaster:'',medalName:'',medalUrl:'',bannerImageUrl:'',description:''},true);
   };
   window.banManageEdit = function(name){
     const defs=(OFSSheets.getBannerDefs&&OFSSheets.getBannerDefs())||[];
@@ -3318,6 +3355,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       medalName:document.getElementById('bf-medalname').value.trim(),
       medalUrl:document.getElementById('bf-medalurl').value.trim(),
       description:document.getElementById('bf-desc').value.trim(),
+      bannerImageUrl:document.getElementById('bf-bannerurl').value.trim(),
     };
     showToast('Saving…');
     try { await OFSSheets.saveBannerDef(def, isNew); } catch(e){ showToast('Sheet sync failed'); return; }

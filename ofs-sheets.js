@@ -181,9 +181,10 @@
           subRank1:      String(row[2] || '').trim() || 'Sub Rank 1',
           subRank2:      String(row[3] || '').trim() || 'Sub Rank 2',
           subRankMaster: String(row[4] || '').trim() || 'Sub Rank Master',
-          medalName:     String(row[5] || '').trim(),
-          medalUrl:      String(row[6] || '').trim(),
-          description:   String(row[7] || '').trim(),
+          medalName:       String(row[5] || '').trim(),
+          medalUrl:        String(row[6] || '').trim(),
+          description:     String(row[7] || '').trim(),
+          bannerImageUrl:  String(row[8] || '').trim(),
         };
       });
   }
@@ -463,7 +464,7 @@
   async function saveBannerDef(def, isNew) {
     const row = [
       def.name, def.subRank0, def.subRank1, def.subRank2,
-      def.subRankMaster, def.medalName, def.medalUrl, def.description
+      def.subRankMaster, def.medalName, def.medalUrl, def.description, def.bannerImageUrl || ''
     ];
     if (isNew) {
       const res = await fetch(WORKER_URL + '/write', {
