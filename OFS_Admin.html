@@ -601,9 +601,18 @@
     <img src="ofs_logo.png" alt="OFS" onerror="this.style.display='none'">
     <h2>Admin Portal</h2>
     <p>Order of the Fallen Star</p>
-    <input type="password" id="pw-input" placeholder="Enter admin password" autocomplete="off">
-    <button class="login-btn" onclick="tryLogin()">Enter</button>
-    <div class="login-err" id="login-err"></div>
+    <!-- State A: not logged in — show Discord button -->
+    <div id="auth-login">
+      <a id="discord-login-btn" href="https://discord.com/oauth2/authorize?client_id=1429228667564851383&response_type=code&redirect_uri=https%3A%2F%2Forderofthefallenstar.com%2Fauth%2Fcallback&scope=identify" class="login-btn" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;">
+        <svg width="18" height="14" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13.553 1.02A13.25 13.25 0 0 0 10.26 0c-.146.263-.316.617-.433.899a12.3 12.3 0 0 0-3.654 0A9.8 9.8 0 0 0 5.74 0 13.28 13.28 0 0 0 2.443 1.022C.352 4.09-.215 7.08.068 10.028a13.35 13.35 0 0 0 4.066 2.059c.328-.446.62-.92.871-1.42a8.67 8.67 0 0 1-1.372-.662c.115-.084.228-.171.337-.26 2.645 1.22 5.514 1.22 8.128 0 .11.089.222.176.337.26a8.68 8.68 0 0 1-1.374.663c.251.499.542.974.871 1.42a13.32 13.32 0 0 0 4.069-2.06c.332-3.485-.567-6.445-2.448-9.008ZM5.347 8.21c-.788 0-1.437-.724-1.437-1.61 0-.887.634-1.613 1.437-1.613.803 0 1.452.725 1.437 1.612 0 .887-.634 1.612-1.437 1.612Zm5.306 0c-.788 0-1.437-.724-1.437-1.61 0-.887.634-1.613 1.437-1.613.803 0 1.452.725 1.437 1.612 0 .887-.634 1.612-1.437 1.612Z" fill="currentColor"/></svg>
+        Login with Discord
+      </a>
+    </div>
+    <!-- State B: logged in but not on whitelist -->
+    <div id="auth-denied" style="display:none;">
+      <div class="login-err" style="display:block;">Your Discord account is not on the admin whitelist.</div>
+    </div>
+    <a href="OFS_Home.html" style="display:block;margin-top:18px;font-size:12px;color:var(--text-dim);text-decoration:none;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text-dim)'">← Return to site</a>
   </div>
 </div>
 
@@ -1105,10 +1114,9 @@
 })();
 
 /* ══════════════════════════════════════════════════════════
-   AUTH — Discord session OR fallback password
+   AUTH — Discord session (whitelist-gated)
 ══════════════════════════════════════════════════════════ */
-const ADMIN_PASSWORD  = 'Admin1234';
-const SESSION_KEY     = 'ofs_discord_session';
+const SESSION_KEY = 'ofs_discord_session';
 let currentAdmin = '';
 
 function grantAccess(name) {
@@ -1119,36 +1127,27 @@ function grantAccess(name) {
     '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:24px">Loading roster…</td></tr>';
   OFSSheets.load()
     .then(() => renderAll())
-    .catch(() => renderAll()); // fall back to cached/default data on error
+    .catch(() => renderAll());
 }
 
-// On load: check for a Discord session and auto-grant if present
+// On load: check for a Discord session — must be an admin to enter
 (function checkSession() {
   try {
     const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
-    if (s && s.id && s.token) {
+    if (s && s.id && s.token && s.isAdmin) {
       grantAccess(s.username || 'Admin');
+    } else if (s && s.id) {
+      // Logged in via Discord but not on the admin whitelist
+      document.getElementById('auth-login').style.display = 'none';
+      document.getElementById('auth-denied').style.display = 'block';
     }
   } catch (e) { /* ignore */ }
 }());
 
-function tryLogin() {
-  const pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PASSWORD) {
-    grantAccess('Admin');
-  } else {
-    document.getElementById('login-err').textContent = 'Incorrect password.';
-  }
-}
-document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
-
 function logout() {
   sessionStorage.removeItem(SESSION_KEY);
   currentAdmin = '';
-  document.getElementById('app').classList.remove('visible');
-  document.getElementById('login-overlay').style.display = 'flex';
-  document.getElementById('pw-input').value = '';
-  document.getElementById('login-err').textContent = '';
+  location.replace('OFS_Home.html');
 }
 
 /* ══════════════════════════════════════════════════════════

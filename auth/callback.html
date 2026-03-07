@@ -62,9 +62,10 @@
 
   <script>
     /* ── Config ─────────────────────────────────────── */
-    var WORKER_URL  = 'https://ofs-api.orderofthefallenstar.workers.dev';
-    var SESSION_KEY = 'ofs_discord_session';
-    var RETURN_PAGE = '../OFS_Home.html';
+    var WORKER_URL   = 'https://ofs-api.orderofthefallenstar.workers.dev';
+    var SESSION_KEY  = 'ofs_discord_session';
+    var PAGE_HOME    = '../OFS_Home.html';
+    var PAGE_ADMIN   = '../OFS_Admin.html';
 
     /* ── DOM helpers ─────────────────────────────────── */
     var heading  = document.getElementById('heading');
@@ -78,12 +79,12 @@
       message.innerHTML = detail + '<br><br><a href="../OFS_Home.html">← Return to site</a>';
     }
 
-    function showSuccess(username) {
+    function showSuccess(username, dest) {
       heading.textContent = 'Welcome, ' + username;
       heading.classList.add('status-ok');
       spinner.style.display = 'none';
       message.innerHTML = 'Identity verified. Redirecting…';
-      setTimeout(function () { location.replace(RETURN_PAGE); }, 1200);
+      setTimeout(function () { location.replace(dest); }, 1200);
     }
 
     /* ── Main flow ───────────────────────────────────── */
@@ -109,14 +110,13 @@
             id:        data.id,
             username:  data.username,
             avatarUrl: data.avatarUrl,
-            token:     data.token
+            token:     data.token,
+            isAdmin:   data.isAdmin || false
           }));
-          showSuccess(data.username);
+          var dest = data.isAdmin ? PAGE_ADMIN : PAGE_HOME;
+          showSuccess(data.username, dest);
         } else {
-          var msg = data.reason === 'not_whitelisted'
-            ? 'Your Discord account is not on the admin whitelist.'
-            : (data.reason || 'Discord authentication failed.');
-          showError('Access Denied', msg);
+          showError('Authentication Failed', data.reason || 'Discord authentication failed.');
         }
       })
       .catch(function () {

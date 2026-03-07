@@ -224,6 +224,17 @@
     return card;
   }
 
+  /* ── Admin link visibility ───────────────────────────── */
+  function toggleAdminLink(session) {
+    var nav = document.getElementById('main-nav');
+    if (!nav) return;
+    var links = nav.querySelectorAll('a[href*="OFS_Admin"]');
+    var show = !!(session && session.isAdmin);
+    for (var i = 0; i < links.length; i++) {
+      links[i].style.display = show ? '' : 'none';
+    }
+  }
+
   /* ── Render the zone ─────────────────────────────────── */
   var zone = null;
 
@@ -238,6 +249,8 @@
     } else {
       zone.appendChild(buildLoginBtn());
     }
+
+    toggleAdminLink(session);
   }
 
   /* ── Init ────────────────────────────────────────────── */
