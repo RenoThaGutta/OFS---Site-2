@@ -132,7 +132,7 @@
       padding: 32px 40px 80px;
       display: grid;
       grid-template-columns: 1fr 340px;
-      grid-template-areas: "announce sidebar" "quests sidebar" "media media";
+      grid-template-areas: "announce sidebar" "quests sidebar" "media sidebar";
       gap: 32px; align-items: start;
     }
 
@@ -234,8 +234,6 @@
     /* ── Media Gallery ── */
     #media-section { grid-area: media; }
 
-    .media-header-left { display: flex; align-items: center; gap: 12px; }
-    .media-count-badge { font-size: .65rem; color: var(--text-dim); letter-spacing: .05em; }
     .media-filter-bar { display: flex; gap: 6px; }
     .media-filter-btn {
       font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .12em; text-transform: uppercase;
@@ -245,49 +243,13 @@
     }
     .media-filter-btn.active, .media-filter-btn:hover { color: var(--gold); border-color: var(--b-gold); background: rgba(201,168,76,.06); }
 
-    .media-grid {
-      padding: 16px 20px 20px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 10px;
-    }
-    .media-item {
-      border-radius: 5px; overflow: hidden;
-      border: 1px solid var(--b-dim); background: var(--bg-card2);
-      position: relative; aspect-ratio: 16/9; cursor: pointer;
-      transition: border-color .25s, transform .2s, box-shadow .25s;
-    }
-    .media-item.hero { grid-column: span 2; }
-    .media-item:hover { border-color: rgba(201,168,76,.55); transform: translateY(-3px); box-shadow: 0 10px 36px rgba(201,168,76,.13); }
+    .media-grid { padding: 16px 24px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+    .media-item { border-radius: 4px; overflow: hidden; border: 1px solid var(--b-dim); background: var(--bg-card2); position: relative; aspect-ratio: 16/9; cursor: pointer; transition: border-color .2s, transform .15s; }
+    .media-item:hover { border-color: var(--b-gold); transform: translateY(-2px); }
     .media-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    /* always-on dark gradient — deepens on hover */
-    .media-overlay {
-      position: absolute; inset: 0;
-      background: linear-gradient(to top, rgba(7,7,15,.78) 0%, rgba(7,7,15,.18) 45%, transparent 72%);
-      transition: opacity .25s;
-    }
-    .media-item:hover .media-overlay { opacity: 1.0; }
-    /* caption sits above the gradient */
-    .media-caption {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 28px 13px 10px;
-      pointer-events: none;
-    }
-    .media-caption-text { font-size: .76rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; margin-bottom: 3px; }
-    .media-item.hero .media-caption-text { font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .04em; }
-    .media-caption-meta { font-size: .63rem; color: rgba(176,184,200,.7); }
-    .media-play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-    /* load-more button */
-    .media-load-more {
-      display: block; width: calc(100% - 40px); margin: 0 20px 18px;
-      padding: 9px; font-family: 'Cinzel', serif; font-size: .6rem;
-      letter-spacing: .15em; text-transform: uppercase;
-      color: var(--text-dim); background: none;
-      border: 1px solid var(--b-dim); border-radius: 3px;
-      cursor: pointer; transition: color .2s, border-color .2s;
-    }
-    .media-load-more:hover { color: var(--gold); border-color: var(--b-gold); }
-    @media (max-width: 700px) { .media-item.hero { grid-column: span 1; } }
+    .media-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 6px 8px; background: linear-gradient(to top, rgba(7,7,15,.85) 0%, transparent 100%); font-size: .7rem; color: var(--text); transform: translateY(100%); transition: transform .2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .media-item:hover .media-caption { transform: translateY(0); }
+    .media-play-icon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 
     /* ── Sidebar ── */
     .tavern-sidebar { grid-area: sidebar; display: flex; flex-direction: column; gap: 24px; position: sticky; top: 82px; }
@@ -419,25 +381,6 @@
   <!-- Main content -->
   <div class="tavern-container">
 
-    <!-- Media Gallery -->
-    <section class="tavern-section" id="media-section">
-      <div class="section-header">
-        <div class="media-header-left">
-          <span class="section-title">Gallery</span>
-          <span class="media-count-badge" id="media-count"></span>
-        </div>
-        <div class="media-filter-bar" id="media-filter-bar">
-          <button class="media-filter-btn active" data-filter="all">All</button>
-          <button class="media-filter-btn" data-filter="screenshot">Screenshots</button>
-          <button class="media-filter-btn" data-filter="video">Videos</button>
-        </div>
-      </div>
-      <div id="media-grid" class="media-grid">
-        <div class="state-loading" style="grid-column:1/-1"><span class="spinner-sm"></span>Loading…</div>
-      </div>
-      <button id="media-load-more" class="media-load-more" style="display:none;">Show More</button>
-    </section>
-
     <!-- Announcements -->
     <section class="tavern-section" id="announcements-section">
       <div class="section-header">
@@ -469,6 +412,21 @@
       </div>
       <div id="quests-completed" class="quest-panel">
         <div class="state-loading"><span class="spinner-sm"></span>Loading…</div>
+      </div>
+    </section>
+
+    <!-- Media Gallery -->
+    <section class="tavern-section" id="media-section">
+      <div class="section-header">
+        <span class="section-title">Gallery</span>
+        <div class="media-filter-bar" id="media-filter-bar">
+          <button class="media-filter-btn active" data-filter="all">All</button>
+          <button class="media-filter-btn" data-filter="screenshot">Screenshots</button>
+          <button class="media-filter-btn" data-filter="video">Videos</button>
+        </div>
+      </div>
+      <div id="media-grid" class="media-grid">
+        <div class="state-loading" style="grid-column:1/-1"><span class="spinner-sm"></span>Loading…</div>
       </div>
     </section>
 
@@ -680,19 +638,13 @@
     renderAnnouncementsList(_allAnnouncements, _activeCat);
   });
 
-  var _allMediaItems    = [];
-  var _activeMediaFilter = 'all';
-  var _mediaShowAll      = false;
-  var _mediaPageSize     = 9; // 1 hero + 8 normal = nice grid
-
+  var _allMediaItems = [];
   document.getElementById('media-filter-bar').addEventListener('click', function (e) {
     var btn = e.target.closest('.media-filter-btn');
     if (!btn) return;
     document.querySelectorAll('.media-filter-btn').forEach(function (b) { b.classList.remove('active'); });
     btn.classList.add('active');
-    _activeMediaFilter = btn.dataset.filter;
-    _mediaShowAll = false;
-    renderMedia(_allMediaItems, _activeMediaFilter);
+    renderMedia(_allMediaItems, btn.dataset.filter);
   });
 
   /* ═══════════════════════════════════════════
@@ -924,81 +876,38 @@
      RENDER: MEDIA GALLERY
   ═══════════════════════════════════════════ */
   function renderMedia(items, filter) {
-    _mediaShowAll = false;
-    _doRenderMedia(items, filter || 'all');
-  }
-
-  function _doRenderMedia(items, filter) {
-    var grid  = document.getElementById('media-grid');
-    var lmBtn = document.getElementById('media-load-more');
-
+    var grid = document.getElementById('media-grid');
     var filtered = (filter && filter !== 'all')
       ? items.filter(function (m) { return m.type === filter; })
       : items;
 
-    // Update count badge
-    var countEl = document.getElementById('media-count');
-    if (countEl) countEl.textContent = filtered.length > 0 ? filtered.length + ' items' : '';
-
     if (filtered.length === 0) {
       grid.innerHTML = '<div class="state-empty" style="grid-column:1/-1">' +
         (items.length === 0 ? 'No media yet.' : 'No ' + esc(filter) + 's found.') + '</div>';
-      if (lmBtn) lmBtn.style.display = 'none';
       return;
     }
 
-    var visible = _mediaShowAll ? filtered : filtered.slice(0, _mediaPageSize);
-    var hasMore = !_mediaShowAll && filtered.length > _mediaPageSize;
-
     var html = '';
-    visible.forEach(function (m, idx) {
-      var isHero    = idx === 0;
-      var heroClass = isHero ? ' hero' : '';
-      var meta      = [m.author, m.date ? fmtDate(m.date) : ''].filter(Boolean).join(' · ');
-      var playSize  = isHero ? 56 : 40;
-
+    filtered.forEach(function (m) {
       if (m.type === 'video') {
         var ytId = getYouTubeId(m.url);
         if (!ytId) return;
         var thumb    = 'https://img.youtube.com/vi/' + ytId + '/mqdefault.jpg';
         var embedUrl = 'https://www.youtube.com/embed/' + ytId + '?autoplay=1';
-        html += '<div class="media-item' + heroClass + '" data-type="video" data-url="' + esc(embedUrl) + '" data-caption="' + esc(m.caption) + '">';
+        html += '<div class="media-item" data-type="video" data-url="' + esc(embedUrl) + '" data-caption="' + esc(m.caption) + '" title="' + esc(m.caption) + '">';
         html += '<img src="' + esc(thumb) + '" alt="' + esc(m.caption) + '" loading="lazy">';
-        html += '<div class="media-overlay"></div>';
-        html += '<div class="media-play-icon"><svg width="' + playSize + '" height="' + playSize + '" viewBox="0 0 40 40" fill="none">' +
-          '<circle cx="20" cy="20" r="19" stroke="rgba(201,168,76,.65)" stroke-width="1.5"/>' +
-          '<path d="M16 13l13 7-13 7V13z" fill="rgba(201,168,76,.95)"/></svg></div>';
-        html += '<div class="media-caption">';
-        if (m.caption) html += '<div class="media-caption-text">' + esc(m.caption) + '</div>';
-        if (meta)      html += '<div class="media-caption-meta">' + esc(meta) + '</div>';
-        html += '</div></div>';
+        html += '<div class="media-play-icon"><svg width="40" height="40" viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" stroke="rgba(201,168,76,.6)" stroke-width="1.5"/><path d="M16 13l13 7-13 7V13z" fill="rgba(201,168,76,.9)"/></svg></div>';
+        if (m.caption) html += '<div class="media-caption">' + esc(m.caption) + '</div>';
+        html += '</div>';
       } else {
-        html += '<div class="media-item' + heroClass + '" data-type="screenshot" data-url="' + esc(m.url) + '" data-caption="' + esc(m.caption) + '">';
+        html += '<div class="media-item" data-type="screenshot" data-url="' + esc(m.url) + '" data-caption="' + esc(m.caption) + '" title="' + esc(m.caption) + '">';
         html += '<img src="' + esc(m.url) + '" alt="' + esc(m.caption) + '" loading="lazy">';
-        html += '<div class="media-overlay"></div>';
-        html += '<div class="media-caption">';
-        if (m.caption) html += '<div class="media-caption-text">' + esc(m.caption) + '</div>';
-        if (meta)      html += '<div class="media-caption-meta">' + esc(meta) + '</div>';
-        html += '</div></div>';
+        if (m.caption) html += '<div class="media-caption">' + esc(m.caption) + '</div>';
+        html += '</div>';
       }
     });
 
     grid.innerHTML = html || '<div class="state-empty" style="grid-column:1/-1">No media yet.</div>';
-
-    if (lmBtn) {
-      if (hasMore) {
-        var remaining = filtered.length - _mediaPageSize;
-        lmBtn.textContent = 'Show ' + remaining + ' more';
-        lmBtn.style.display = 'block';
-        lmBtn.onclick = function () {
-          _mediaShowAll = true;
-          _doRenderMedia(items, filter);
-        };
-      } else {
-        lmBtn.style.display = 'none';
-      }
-    }
-
     grid.querySelectorAll('.media-item').forEach(function (item) {
       item.addEventListener('click', function () {
         if (item.dataset.type === 'video') openLightboxVideo(item.dataset.url, item.dataset.caption);
