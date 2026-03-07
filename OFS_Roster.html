@@ -185,10 +185,10 @@
     .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
     .card-name-block { flex: 1; min-width: 0; }
     .card-username {
-      font-family: 'Cinzel', serif; font-size: .92rem; font-weight: 700;
+      font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 700;
       color: var(--gold-lt); letter-spacing: .06em;
-      word-break: break-word; overflow-wrap: break-word;
-      margin-bottom: 5px; line-height: 1.3;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 5px;
     }
     .card-rank {
       display: inline-block;
