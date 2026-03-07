@@ -124,6 +124,19 @@
       font-family: 'Crimson Text', serif; font-size: 1.05rem;
       color: var(--silver); line-height: 1.75; max-width: 820px;
     }
+    /* Hero image layout (when image present) */
+    .featured-hero { position: relative; margin: -28px -32px 22px; }
+    .featured-hero-img { width: 100%; height: 300px; object-fit: cover; display: block; }
+    .featured-hero-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(7,7,15,.97) 0%, rgba(7,7,15,.55) 55%, transparent 100%);
+      padding: 36px 32px 20px;
+    }
+    .featured-hero .featured-title { margin-bottom: 0; }
+    @media (max-width: 600px) {
+      .featured-hero { margin: -20px -20px 18px; }
+      .featured-hero-overlay { padding: 28px 20px 16px; }
+    }
 
     /* ── Main layout ── */
     .tavern-container {
@@ -744,16 +757,28 @@
     var catCls = CAT_CLASSES[(a.category || 'general')] || 'cat-general';
     var catLbl = CAT_LABELS[(a.category || 'general')]  || 'General';
 
+    var eyebrow = '<div class="featured-eyebrow">'
+      + '<span class="featured-pin-icon">&#x25C6;</span>'
+      + '<span class="cat-badge ' + catCls + '">' + esc(catLbl) + '</span>'
+      + (a.date   ? '<span class="featured-date">' + esc(fmtDate(a.date)) + '</span>' : '')
+      + (a.author ? '<span class="featured-author">— ' + esc(a.author) + '</span>' : '')
+      + '</div>';
+
     var html = '<div class="featured-card">';
-    html += '<div class="featured-eyebrow">';
-    html += '<span class="featured-pin-icon">&#x25C6;</span>';
-    html += '<span class="cat-badge ' + catCls + '">' + esc(catLbl) + '</span>';
-    if (a.date)   html += '<span class="featured-date">' + esc(fmtDate(a.date)) + '</span>';
-    if (a.author) html += '<span class="featured-author">— ' + esc(a.author) + '</span>';
-    html += '</div>';
-    html += '<div class="featured-title">' + esc(a.title) + '</div>';
-    if (a.body)  html += '<div class="featured-body">' + esc(a.body) + '</div>';
-    if (a.image) html += '<img class="announce-img" src="' + esc(a.image) + '" alt="" loading="lazy" style="margin-top:14px;">';
+    if (a.image) {
+      // Hero layout: image fills top, eyebrow + title overlaid at bottom
+      html += '<div class="featured-hero">';
+      html += '<img class="featured-hero-img" src="' + esc(a.image) + '" alt="" loading="lazy">';
+      html += '<div class="featured-hero-overlay">' + eyebrow;
+      html += '<div class="featured-title">' + esc(a.title) + '</div>';
+      html += '</div></div>';
+      if (a.body) html += '<div class="featured-body">' + esc(a.body) + '</div>';
+    } else {
+      // Standard layout: no image
+      html += eyebrow;
+      html += '<div class="featured-title">' + esc(a.title) + '</div>';
+      if (a.body) html += '<div class="featured-body">' + esc(a.body) + '</div>';
+    }
     html += '</div>';
 
     section.innerHTML = html;
