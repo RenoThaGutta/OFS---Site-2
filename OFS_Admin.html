@@ -1208,6 +1208,12 @@
 
             <!-- New entry request template -->
             <div style="border-top:1px solid var(--b-dim);margin-top:16px;padding:16px 0 0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:6px 0 10px;"
+                   onclick="var b=document.getElementById('tl-template-body');var a=document.getElementById('tl-template-arrow');var open=b.style.display!=='none';b.style.display=open?'none':'';a.textContent=open?'▶':'▼';">
+                <div style="font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);">📜 &nbsp;Add New Timeline Entry</div>
+                <span id="tl-template-arrow" style="font-size:.6rem;color:var(--gold-dim);">▶</span>
+              </div>
+              <div id="tl-template-body" style="display:none">
               <div class="tl-notice">
                 <div class="tl-notice-icon">📜</div>
                 <div class="tl-notice-text">
@@ -1263,6 +1269,7 @@
                   <button class="save-btn" onclick="copyTimelineRequest()">Copy Request for Reno</button>
                 </div>
               </div>
+              </div><!-- /tl-template-body -->
             </div>
           </div>
 
