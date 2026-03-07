@@ -620,10 +620,13 @@
       border-radius: 4px; padding: 16px 18px; position: sticky; top: 76px;
     }
     .tav-preview-head {
+      display: flex; align-items: center; justify-content: space-between;
       font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .18em;
       color: var(--text-dim); text-transform: uppercase;
       padding-bottom: 8px; border-bottom: 1px solid var(--b-dim); margin-bottom: 14px;
     }
+    .prev-pin-on  { font-size: .56rem; letter-spacing: .1em; color: var(--gold); border: 1px solid var(--b-gold); border-radius: 2px; padding: 1px 6px; }
+    .prev-pin-off { font-size: .56rem; letter-spacing: .1em; color: var(--text-dim); border: 1px solid var(--b-dim); border-radius: 2px; padding: 1px 6px; }
     .tav-preview-empty { color: var(--text-dim); font-size: .78rem; text-align: center; padding: 20px 0; font-family: 'Crimson Text',serif; font-style: italic; }
     /* ── announcement preview ── */
     .prev-ann-card { display: flex; flex-direction: column; gap: 7px; }
@@ -3130,10 +3133,12 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const author=(document.getElementById('tf-ann-author')||{}).value||'';
     const date=_fmtPrevDate((document.getElementById('tf-ann-date')||{}).value||'');
     const catLabel=CAT_LABELS[cat]||cat;
+    const pinBadge=pinned?'<span class="prev-pin-on">Pinned</span>':'<span class="prev-pin-off">Not Pinned</span>';
+    const header=`<div class="tav-preview-head"><span>Preview</span>${pinBadge}</div>`;
     if(!title&&!body&&!image){
-      el.innerHTML='<div class="tav-preview-head">Preview</div><div class="tav-preview-empty">Fill in the form to see a preview.</div>'; return;
+      el.innerHTML=header+'<div class="tav-preview-empty">Fill in the form to see a preview.</div>'; return;
     }
-    let h='<div class="tav-preview-head">Preview</div>';
+    let h=header;
     if(pinned&&image){
       h+=`<div class="prev-ann-hero-wrap"><img src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">
         <div class="prev-ann-hero-overlay"><span class="prev-ann-eyebrow">${escHtml(catLabel)}</span>
