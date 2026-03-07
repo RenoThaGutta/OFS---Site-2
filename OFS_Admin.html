@@ -1200,6 +1200,71 @@
             </div>
           </div>
 
+            <!-- New entry request template -->
+            <div style="border-top:1px solid var(--b-dim);margin-top:16px;padding:16px 0 0;">
+              <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:6px 0 10px;"
+                   onclick="var b=document.getElementById('tl-template-body');var a=document.getElementById('tl-template-arrow');var open=b.style.display!=='none';b.style.display=open?'none':'';a.textContent=open?'▶':'▼';">
+                <div style="font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);">📜 &nbsp;Add New Timeline Entry</div>
+                <span id="tl-template-arrow" style="font-size:.6rem;color:var(--gold-dim);">▶</span>
+              </div>
+              <div id="tl-template-body" style="display:none">
+              <div class="tl-notice">
+                <div class="tl-notice-icon">📜</div>
+                <div class="tl-notice-text">
+                  <strong>Timeline adds go through Reno.</strong><br>
+                  Fill out the template below, copy the request, and send it to Reno. He will work with the lorekeeper to add the entry with proper styling and placement.
+                </div>
+              </div>
+              <div class="tl-template">
+                <div class="tl-row-2">
+                  <div>
+                    <div class="hf-label">Entry Type</div>
+                    <select id="tl-type" class="hf-input" onchange="updateTlNumHint()">
+                      <option value="Chronicle">Chronicle</option>
+                      <option value="Age">Age</option>
+                      <option value="Prologue">Prologue</option>
+                      <option value="Epilogue">Epilogue</option>
+                      <option value="Interlude">Interlude</option>
+                      <option value="Proclamation">Proclamation</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <div class="hf-label">Number <span id="tl-num-hint" class="tl-num-hint"></span></div>
+                    <input id="tl-num" class="hf-input" type="text" placeholder="e.g. VI">
+                  </div>
+                </div>
+                <div>
+                  <div class="hf-label">Title</div>
+                  <input id="tl-title" class="hf-input" type="text" placeholder="e.g. Chronicle VI">
+                </div>
+                <div>
+                  <div class="hf-label">Subtitle</div>
+                  <input id="tl-subtitle" class="hf-input" type="text" placeholder="e.g. The Age of Ascendance">
+                </div>
+                <div>
+                  <div class="hf-label">What happened (blank line = paragraph break)</div>
+                  <textarea id="tl-body" class="hf-textarea" rows="6" placeholder="Describe the events of this period..."></textarea>
+                </div>
+                <div>
+                  <div class="hf-label">Key figures involved</div>
+                  <textarea id="tl-figures" class="hf-textarea" rows="3" placeholder="e.g. Primarch Vanderan, Captain Blacklung..."></textarea>
+                </div>
+                <div>
+                  <div class="hf-label">Notable actions / battles</div>
+                  <textarea id="tl-actions" class="hf-textarea" rows="3" placeholder="e.g. Strike above MicroTech, interdiction of..."></textarea>
+                </div>
+                <div>
+                  <div class="hf-label">Outcome / significance</div>
+                  <textarea id="tl-outcome" class="hf-textarea" rows="3" placeholder="What was the result or lasting impact?"></textarea>
+                </div>
+                <div class="tl-copy-row">
+                  <span class="tl-copied-msg" id="tl-copied">Copied to clipboard</span>
+                  <button class="save-btn" onclick="copyTimelineRequest()">Copy Request for Reno</button>
+                </div>
+              </div>
+              </div><!-- /tl-template-body -->
+            </div>
 
           <!-- No-editor notice (shown when iframe navigates to a page with no edit panel) -->
           <div id="no-editor-notice" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--text-dim);font-family:'Cinzel',serif;font-size:.8rem;letter-spacing:.08em;">
