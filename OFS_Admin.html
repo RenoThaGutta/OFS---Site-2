@@ -2866,7 +2866,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const el = document.getElementById('tav-ann-list');
     if(!items.length){ el.innerHTML='<div class="tav-list-empty">No announcements yet.</div>'; return; }
     el.innerHTML = items.map(a=>`
-      <div class="tav-item-row" onclick="window._tavEditAnn('${escHtml(a.id)}')">
+      <div class="tav-item-row" data-id="${escHtml(a.id)}" onclick="window._tavEditAnn('${escHtml(a.id)}')">
         <div class="tav-item-main">
           ${a.pinned?'<span style="color:var(--gold);font-size:.7rem;flex-shrink:0">&#x25C6;</span>':''}
           <span class="badge ${CAT_BADGES[a.category]||'badge-dim'}">${escHtml(CAT_LABELS[a.category]||a.category||'General')}</span>
@@ -2964,7 +2964,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const el = document.getElementById('tav-events-list');
     if(!items.length){ el.innerHTML='<div class="tav-list-empty">No events yet.</div>'; return; }
     el.innerHTML = items.map(ev=>`
-      <div class="tav-item-row" onclick="window._tavEditEvent('${escHtml(ev.id)}')">
+      <div class="tav-item-row" data-id="${escHtml(ev.id)}" onclick="window._tavEditEvent('${escHtml(ev.id)}')">
         <div class="tav-item-main">
           <span class="badge ${STATUS_BADGES[ev.status]||'badge-dim'}">${escHtml(ev.status||'upcoming')}</span>
           <span class="tav-item-title">${escHtml(ev.title)}</span>
@@ -3047,7 +3047,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const el = document.getElementById('tav-media-list');
     if(!items.length){ el.innerHTML='<div class="tav-list-empty">No media items yet.</div>'; return; }
     el.innerHTML = items.map(m=>`
-      <div class="tav-item-row" onclick="window._tavEditMedia('${escHtml(m.id)}')">
+      <div class="tav-item-row" data-id="${escHtml(m.id)}" onclick="window._tavEditMedia('${escHtml(m.id)}')">
         <div class="tav-item-main">
           <span class="badge ${m.type==='video'?'badge-gold':'badge-dim'}">${escHtml(m.type||'screenshot')}</span>
           <span class="tav-item-title">${escHtml(m.caption||m.url||'(no caption)')}</span>
@@ -3212,8 +3212,9 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
 
   /* ── Helper: highlight active row ── */
   function highlightActive(listId, id){
-    document.querySelectorAll('#'+listId+' .tav-item-row').forEach(r=>r.classList.remove('active'));
-    // Row onclick uses _tav* functions so we can't easily target by id here; no-op is fine.
+    document.querySelectorAll('#'+listId+' .tav-item-row').forEach(r=>{
+      r.classList.toggle('active', r.dataset.id===id);
+    });
   }
 
   /* ── Init on tab open ── */
