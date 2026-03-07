@@ -672,19 +672,25 @@
     }
 
     .tav-item-row {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 14px; border-bottom: 1px solid var(--b-dim);
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 14px; border-bottom: 1px solid var(--b-dim);
       cursor: pointer; transition: background .2s;
     }
     .tav-item-row:last-child { border-bottom: none; }
-    .tav-item-row:hover, .tav-item-row.active { background: rgba(201,168,76,.05); }
-    .tav-item-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
-    .tav-item-title { font-size: .82rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .tav-item-meta  { font-size: .68rem; color: var(--text-dim); flex-shrink: 0; }
+    .tav-item-row:hover, .tav-item-row.active { background: rgba(201,168,76,.07); }
+    .tav-item-row.active .tav-item-title { color: var(--gold-lt); }
+    .tav-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .tav-item-title {
+      font-size: .84rem; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .tav-item-sub   { display: flex; align-items: center; gap: 6px; }
+    .tav-item-meta  { font-size: .65rem; color: var(--text-dim); }
+    .tav-pin-dot    { color: var(--gold); font-size: .65rem; flex-shrink: 0; }
     .tav-del-btn {
       background: none; border: none; color: var(--silver-dim); cursor: pointer;
       font-size: .75rem; padding: 2px 6px; border-radius: 2px; flex-shrink: 0;
-      transition: color .2s;
+      transition: color .2s; align-self: flex-start; margin-top: 2px;
     }
     .tav-del-btn:hover { color: var(--danger); }
     .tav-list-empty { padding: 16px; color: var(--text-dim); font-size: .82rem; text-align: center; }
@@ -2868,11 +2874,12 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     el.innerHTML = items.map(a=>`
       <div class="tav-item-row" data-id="${escHtml(a.id)}" onclick="window._tavEditAnn('${escHtml(a.id)}')">
         <div class="tav-item-main">
-          ${a.pinned?'<span style="color:var(--gold);font-size:.7rem;flex-shrink:0">&#x25C6;</span>':''}
-          <span class="badge ${CAT_BADGES[a.category]||'badge-dim'}">${escHtml(CAT_LABELS[a.category]||a.category||'General')}</span>
-          <span class="tav-item-title">${escHtml(a.title)}</span>
+          <span class="tav-item-title">${a.pinned?'<span class="tav-pin-dot">&#x25C6;</span> ':''}${escHtml(a.title||'(untitled)')}</span>
+          <div class="tav-item-sub">
+            <span class="badge ${CAT_BADGES[a.category]||'badge-dim'}">${escHtml(CAT_LABELS[a.category]||'General')}</span>
+            <span class="tav-item-meta">${fmtDate(a.date)}</span>
+          </div>
         </div>
-        <span class="tav-item-meta">${fmtDate(a.date)}</span>
         <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelAnn('${escHtml(a.id)}')">&#x2715;</button>
       </div>`).join('');
   }
@@ -2966,10 +2973,13 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     el.innerHTML = items.map(ev=>`
       <div class="tav-item-row" data-id="${escHtml(ev.id)}" onclick="window._tavEditEvent('${escHtml(ev.id)}')">
         <div class="tav-item-main">
-          <span class="badge ${STATUS_BADGES[ev.status]||'badge-dim'}">${escHtml(ev.status||'upcoming')}</span>
-          <span class="tav-item-title">${escHtml(ev.title)}</span>
+          <span class="tav-item-title">${escHtml(ev.title||'(untitled)')}</span>
+          <div class="tav-item-sub">
+            <span class="badge ${STATUS_BADGES[ev.status]||'badge-dim'}">${escHtml(ev.status||'upcoming')}</span>
+            ${ev.type?`<span class="tav-item-meta">${escHtml(ev.type)}</span>`:''}
+            <span class="tav-item-meta" style="margin-left:auto">${fmtDate(ev.date)}</span>
+          </div>
         </div>
-        <span class="tav-item-meta">${fmtDate(ev.date)}</span>
         <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelEvent('${escHtml(ev.id)}')">&#x2715;</button>
       </div>`).join('');
   }
@@ -3049,10 +3059,12 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     el.innerHTML = items.map(m=>`
       <div class="tav-item-row" data-id="${escHtml(m.id)}" onclick="window._tavEditMedia('${escHtml(m.id)}')">
         <div class="tav-item-main">
-          <span class="badge ${m.type==='video'?'badge-gold':'badge-dim'}">${escHtml(m.type||'screenshot')}</span>
-          <span class="tav-item-title">${escHtml(m.caption||m.url||'(no caption)')}</span>
+          <span class="tav-item-title">${escHtml(m.caption||'(no caption)')}</span>
+          <div class="tav-item-sub">
+            <span class="badge ${m.type==='video'?'badge-gold':'badge-dim'}">${m.type==='video'?'Video':'Screenshot'}</span>
+            <span class="tav-item-meta">${fmtDate(m.date)}</span>
+          </div>
         </div>
-        <span class="tav-item-meta">${fmtDate(m.date)}</span>
         <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelMedia('${escHtml(m.id)}')">&#x2715;</button>
       </div>`).join('');
   }
