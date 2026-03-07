@@ -258,6 +258,18 @@
     .quest-leader-link:hover { color: var(--gold-lt); }
     .quest-leader-avatar { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--b-gold); object-fit: cover; flex-shrink: 0; }
 
+    /* ── Participants Tooltip ── */
+    .quest-participants-tooltip {
+      position: fixed; display: none; pointer-events: none; z-index: 500;
+      background: var(--bg-card2); border: 1px solid var(--b-gold); border-radius: 4px;
+      padding: 11px 14px; min-width: 180px; max-width: 280px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.7);
+    }
+    .qpt-title { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 8px; }
+    .qpt-member { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+    .qpt-avatar { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--b-gold); object-fit: cover; flex-shrink: 0; }
+    .qpt-name { font-size: .72rem; color: var(--silver); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     /* ── Media Gallery ── */
     #media-section { grid-area: media; }
 
@@ -883,7 +895,7 @@
         '<div class="quest-img-placeholder" style="display:none;">' + _questIcon() + '</div>'
       : '<div class="quest-img-placeholder">' + _questIcon() + '</div>';
 
-    var html = '<div class="' + cardClass + '">' + imgHtml;
+    var html = '<div class="' + cardClass + '" data-pid="' + esc(q.id) + '">' + imgHtml;
     html += '<div class="quest-info">';
 
     // Header row
@@ -937,6 +949,7 @@
   var _allCompleted = [];
   var _completedPage = 15;
   var _completedShowAll = false;
+  var _questDataMap = {}; // patrol ID → quest object, for hover tooltip
 
   function _renderCompletedPage() {
     var el = document.getElementById('quests-completed');
@@ -956,6 +969,9 @@
     var data = buildQuestMap(rows);
     _allCompleted = data.completed;
     _completedShowAll = false;
+    _questDataMap = {};
+    data.active.forEach(function(q)    { _questDataMap[q.id] = q; });
+    data.completed.forEach(function(q) { _questDataMap[q.id] = q; });
 
     var activeEl = document.getElementById('quests-active');
     activeEl.innerHTML = data.active.length === 0
@@ -1180,6 +1196,47 @@
       _allMediaItems = localTav.media || [];
       renderMedia(_allMediaItems, 'all');
       renderPersonalWidget(session, questData);
+    });
+  }());
+
+  // ── Participants hover tooltip ────────────────────────────────────────────
+  (function () {
+    var el = document.createElement('div');
+    el.className = 'quest-participants-tooltip';
+    document.body.appendChild(el);
+
+    document.addEventListener('mousemove', function (e) {
+      if (el.style.display === 'block') {
+        var x = e.clientX + 16, y = e.clientY + 16;
+        if (x + 290 > window.innerWidth)  x = e.clientX - 290;
+        if (y + el.offsetHeight + 10 > window.innerHeight) y = e.clientY - el.offsetHeight - 8;
+        el.style.left = x + 'px';
+        el.style.top  = y + 'px';
+      }
+    });
+
+    document.addEventListener('mouseover', function (e) {
+      var card = e.target.closest('.quest-card[data-pid]');
+      if (!card) return;
+      var q = _questDataMap[card.dataset.pid];
+      if (!q || !q.participants.length) return;
+      var html = '<div class="qpt-title">Participants (' + q.participants.length + ')</div>';
+      q.participants.forEach(function (pid, i) {
+        var name   = q.participantNames[i] || pid;
+        var player = window.OFSData ? OFSData.getPlayerById(pid) : null;
+        var avatar = (player && player.avatarUrl) ? player.avatarUrl : 'ofs_logo.png';
+        html += '<div class="qpt-member">';
+        html += '<img class="qpt-avatar" src="' + avatar.replace(/"/g,'&quot;') + '" onerror="this.src=\'ofs_logo.png\'">';
+        html += '<span class="qpt-name">' + name.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+        html += '</div>';
+      });
+      el.innerHTML = html;
+      el.style.display = 'block';
+    });
+
+    document.addEventListener('mouseout', function (e) {
+      var card = e.target.closest('.quest-card[data-pid]');
+      if (card && !card.contains(e.relatedTarget)) el.style.display = 'none';
     });
   }());
 </script>
