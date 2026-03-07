@@ -816,8 +816,6 @@
 <script>
 /* ── Public detail modal (disabled when in admin iframe) ── */
 (function(){
-  if(window.parent !== window) return;
-
   var DETAILS = {
     'The Fracture — Birth of the Order': {
       tag: 'Prologue · Age I — The Age of Severance',
@@ -936,6 +934,10 @@
     }
   };
 
+  // Expose DETAILS for the block-edit IIFE (runs in both public and iframe contexts)
+  window._tlDETAILS = DETAILS;
+  if(window.parent !== window) return; // skip modal UI when in admin iframe
+
   /* Build modal */
   var modal = document.createElement('div');
   modal.id = 'tl-detail-modal';
@@ -976,8 +978,6 @@
       card.addEventListener('click', function(){ openModal(titleText); });
     }
   });
-  // Expose for the block-edit IIFE (different scope)
-  window._tlDETAILS = DETAILS;
 })();
 </script>
 
@@ -1167,7 +1167,9 @@ document.querySelectorAll('.event').forEach(ev => {
         var numText = numEl.textContent.trim();
         if(titleText.startsWith(numText)) titleText = titleText.slice(numText.length).trim();
       }
+      console.log('[TL] _tlDETAILS defined:', !!window._tlDETAILS, 'titleText:', JSON.stringify(titleText));
       var detail = (window._tlDETAILS && window._tlDETAILS[titleText]) || {};
+      console.log('[TL] detail found:', !!window._tlDETAILS && !!window._tlDETAILS[titleText]);
       msg = { type:'ofs-timeline-block-edit', kind:'card', tlId:tlId,
               tag:tagText, tagColor:tagColor, title:titleText, body:bodyHtml,
               detailTag:detail.tag||'', detailTitle:detail.title||'', detailBody:detail.body||'' };

@@ -2152,7 +2152,19 @@ window.addEventListener('message', function(e){
   if(e.data && e.data.type === 'ofs-edit')                scrollToField(e.data.key);
   if(e.data && e.data.type === 'ofs-codex-edit')          openCodexEditorFromIframe(e.data.id);
   if(e.data && e.data.type === 'ofs-timeline-edit')       openTimelineEditorFromIframe(e.data.id);
-  if(e.data && e.data.type === 'ofs-timeline-block-edit') openTimelineBlockEditor(e.data);
+  if(e.data && e.data.type === 'ofs-timeline-block-edit'){
+    const d = Object.assign({}, e.data);
+    try {
+      const iframeWin = document.querySelector('#pages-preview-frame').contentWindow;
+      const tldet = iframeWin._tlDETAILS;
+      console.log('[Detail] iframeWin._tlDETAILS:', tldet ? Object.keys(tldet).length + ' keys' : 'UNDEFINED');
+      console.log('[Detail] d.title:', JSON.stringify(d.title));
+      const det = tldet && tldet[d.title];
+      console.log('[Detail] lookup result:', det);
+      if(det){ d.detailTag = det.tag||''; d.detailTitle = det.title||''; d.detailBody = det.body||''; }
+    } catch(ex){ console.error('[Detail] Exception:', ex); }
+    openTimelineBlockEditor(d);
+  }
 });
 
 /* ── Dynamic Banner Blocks ─────────────────────────────── */
@@ -2976,7 +2988,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       document.querySelectorAll('.tav-stab').forEach(b=>b.classList.remove('active'));
       document.querySelectorAll('.tav-subpanel').forEach(p=>p.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById(btn.dataset.stab).classList.add('active');
+      const sp = document.getElementById(btn.dataset.stab); if(sp) sp.classList.add('active');
     });
   });
 
