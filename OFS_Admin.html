@@ -538,6 +538,18 @@
       transition: border-color .2s; box-sizing: border-box; min-height: 80px;
     }
     .hf-textarea:focus { border-color: var(--b-gold); }
+    /* ── Rich-text editor (block editor body fields) ── */
+    .ofs-rte { border: 1px solid var(--b-dim); border-radius: 3px; overflow: hidden; transition: border-color .2s; }
+    .ofs-rte:focus-within { border-color: var(--b-gold); }
+    .ofs-rte-toolbar { display: flex; align-items: center; gap: 3px; padding: 4px 8px; background: rgba(201,168,76,.03); border-bottom: 1px solid var(--b-dim); }
+    .ofs-rte-btn { font-size: .82rem; line-height: 1; color: var(--silver); background: none; border: 1px solid transparent; border-radius: 2px; padding: 2px 7px; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+    .ofs-rte-btn:hover { border-color: var(--b-gold); color: var(--gold); background: rgba(201,168,76,.08); }
+    .ofs-rte-sep { width: 1px; height: 13px; background: var(--b-dim); margin: 0 3px; flex-shrink: 0; }
+    .ofs-rte-editor { padding: 9px 12px; color: var(--text); outline: none; font-family: 'Crimson Text', serif; font-size: .95rem; line-height: 1.65; background: var(--bg-card2); overflow-y: auto; caret-color: var(--gold); }
+    .ofs-rte-editor p { margin: 0 0 .65em; }
+    .ofs-rte-editor p:last-child { margin-bottom: 0; }
+    .ofs-rte-editor em, .ofs-rte-editor i { color: var(--gold-lt); font-style: italic; }
+    .ofs-rte-editor blockquote { border-left: 2px solid var(--b-gold); margin: .5em 0 .5em 1em; padding-left: .8em; color: var(--text-dim); }
     .hf-save-row { display: flex; justify-content: flex-end; }
     .hf-section-head {
       font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .18em;
@@ -1128,8 +1140,16 @@
                     <input id="tlb-title" class="hf-input" type="text">
                   </div>
                   <div>
-                    <div class="hf-label">Card Body <span style="color:var(--text-dim);font-size:.7rem">(HTML — use &lt;em&gt; for italic, &lt;p&gt; for paragraphs)</span></div>
-                    <textarea id="tlb-body" class="hf-textarea" rows="5"></textarea>
+                    <div class="hf-label">Card Body</div>
+                    <div class="ofs-rte">
+                      <div class="ofs-rte-toolbar">
+                        <button class="ofs-rte-btn" onmousedown="event.preventDefault();rteCmd('tlb-body','bold')" title="Bold"><b>B</b></button>
+                        <button class="ofs-rte-btn" onmousedown="event.preventDefault();rteCmd('tlb-body','italic')" title="Italic"><i>I</i></button>
+                        <span class="ofs-rte-sep"></span>
+                        <button class="ofs-rte-btn" style="font-size:.68rem;letter-spacing:.04em" onmousedown="event.preventDefault();rteCmd('tlb-body','removeFormat')" title="Clear formatting">Clear</button>
+                      </div>
+                      <div id="rte-tlb-body" class="ofs-rte-editor" contenteditable="true" spellcheck="true" style="min-height:90px"></div>
+                    </div>
                   </div>
                   <div style="border-top:1px solid var(--b-dim);margin-top:14px;padding-top:14px;">
                     <div class="editor-meta-label" style="margin-bottom:10px;">Detail / Lore Modal</div>
@@ -1142,8 +1162,16 @@
                       <input id="tlb-detail-title" class="hf-input" type="text" placeholder="e.g. The Star That Would Not Dim">
                     </div>
                     <div style="margin-top:8px">
-                      <div class="hf-label">Detail Body <span style="color:var(--text-dim);font-size:.7rem">(HTML — &lt;p&gt; for paragraphs, &lt;em&gt; for italic)</span></div>
-                      <textarea id="tlb-detail-body" class="hf-textarea" rows="8" placeholder="Full lore text shown in the popup when the card is clicked…"></textarea>
+                      <div class="hf-label">Detail Body</div>
+                      <div class="ofs-rte">
+                        <div class="ofs-rte-toolbar">
+                          <button class="ofs-rte-btn" onmousedown="event.preventDefault();rteCmd('tlb-detail-body','bold')" title="Bold"><b>B</b></button>
+                          <button class="ofs-rte-btn" onmousedown="event.preventDefault();rteCmd('tlb-detail-body','italic')" title="Italic"><i>I</i></button>
+                          <span class="ofs-rte-sep"></span>
+                          <button class="ofs-rte-btn" style="font-size:.68rem;letter-spacing:.04em" onmousedown="event.preventDefault();rteCmd('tlb-detail-body','removeFormat')" title="Clear formatting">Clear</button>
+                        </div>
+                        <div id="rte-tlb-detail-body" class="ofs-rte-editor" contenteditable="true" spellcheck="true" style="min-height:180px;max-height:320px"></div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2648,6 +2676,42 @@ const TL_COLOR_MAP = {
   '#e8a040': '#e8a040', 'rgb(232, 160, 64)':  '#e8a040'
 };
 
+/* ── Rich-text editor helpers ───────────────────────────── */
+function rteCmd(fieldId, cmd) {
+  var ed = document.getElementById('rte-' + fieldId);
+  if (ed) ed.focus();
+  document.execCommand(cmd, false, null);
+}
+function rteSet(fieldId, html) {
+  var ed = document.getElementById('rte-' + fieldId);
+  if (!ed) return;
+  ed.innerHTML = html || '';
+}
+function rteGet(fieldId) {
+  var ed = document.getElementById('rte-' + fieldId);
+  if (!ed) return '';
+  var h = ed.innerHTML;
+  // Normalize browser-generated tags to semantic equivalents
+  h = h.replace(/<i(\s|>)/gi, '<em$1').replace(/<\/i>/gi, '</em>');
+  h = h.replace(/<b(\s|>)/gi, '<strong$1').replace(/<\/b>/gi, '</strong>');
+  // Remove trailing empty paragraphs / br-only paragraphs
+  h = h.replace(/(<p[^>]*>\s*(<br\s*\/?>\s*)?<\/p>\s*)+$/gi, '').trim();
+  return h;
+}
+/* Handle Enter → paragraph, Shift+Enter → line break in both RTEs */
+(function(){
+  ['tlb-body','tlb-detail-body'].forEach(function(id){
+    var ed = document.getElementById('rte-' + id);
+    if (!ed) return;
+    ed.addEventListener('keydown', function(e){
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        document.execCommand(e.shiftKey ? 'insertLineBreak' : 'insertParagraph');
+      }
+    });
+  });
+})();
+
 function openTimelineBlockEditor(data){
   const panel  = document.getElementById('tl-block-editor');
   const cardF  = document.getElementById('tl-block-card-fields');
@@ -2674,10 +2738,10 @@ function openTimelineBlockEditor(data){
     const sel = document.getElementById('tlb-tag-color');
     sel.value = TL_COLOR_MAP[data.tagColor] || '#e86060';
     document.getElementById('tlb-title').value        = data.title       || '';
-    document.getElementById('tlb-body').value         = data.body        || '';
+    rteSet('tlb-body',        data.body        || '');
     document.getElementById('tlb-detail-tag').value   = data.detailTag   || '';
     document.getElementById('tlb-detail-title').value = data.detailTitle || '';
-    document.getElementById('tlb-detail-body').value  = data.detailBody  || '';
+    rteSet('tlb-detail-body', data.detailBody  || '');
   }
 
   // Scroll the right panel down to the block editor
@@ -2710,10 +2774,10 @@ async function saveBlockEdit(){
     const tag         = document.getElementById('tlb-tag').value.trim();
     const tagColor    = document.getElementById('tlb-tag-color').value;
     const title       = document.getElementById('tlb-title').value.trim();
-    const body        = document.getElementById('tlb-body').value;
+    const body        = rteGet('tlb-body');
     const detailTag   = document.getElementById('tlb-detail-tag').value.trim();
     const detailTitle = document.getElementById('tlb-detail-title').value.trim();
-    const detailBody  = document.getElementById('tlb-detail-body').value;
+    const detailBody  = rteGet('tlb-detail-body');
     msg = { type:'ofs-timeline-block-update', kind:'card', blockId, tag, tagColor, title, body, detailTag, detailTitle, detailBody };
     storageKey = blockId;
     storageVal = { kind:'card', tag, tagColor, title, body, detailTag, detailTitle, detailBody };
