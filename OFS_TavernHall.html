@@ -254,8 +254,9 @@
       cursor: pointer; transition: color .2s, border-color .2s;
     }
     .quest-load-more:hover { color: var(--gold); border-color: var(--b-gold); }
-    .quest-leader-link { color: var(--silver); text-decoration: none; transition: color .15s; }
+    .quest-leader-link { color: var(--silver); text-decoration: none; transition: color .15s; display: inline-flex; align-items: center; gap: 6px; }
     .quest-leader-link:hover { color: var(--gold-lt); }
+    .quest-leader-avatar { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--b-gold); object-fit: cover; flex-shrink: 0; }
 
     /* ── Media Gallery ── */
     #media-section { grid-area: media; }
@@ -900,14 +901,16 @@
 
     // Footer row
     html += '<div class="quest-footer-row">';
-    if (q.leaderName) {
+    if (q.leaderName || q.leaderId) {
       var rankPart = q.leaderRank && q.leaderRank !== '❓'
         ? ' <span class="quest-leader-rank">· ' + esc(q.leaderRank) + '</span>' : '';
-      var leaderPlayer = _findPlayerByName(q.leaderName);
-      if (leaderPlayer) {
-        html += '<a class="quest-leader quest-leader-link" href="OFS_PlayerSheet.html?player=' + encodeURIComponent(leaderPlayer.id) + '">&#9670; ' + esc(q.leaderName) + rankPart + '</a>';
+      var leaderPlayer = (window.OFSData && q.leaderId) ? OFSData.getPlayerById(q.leaderId) : null;
+      var avatarSrc = (leaderPlayer && leaderPlayer.avatarUrl) ? leaderPlayer.avatarUrl : 'ofs_logo.png';
+      var avatarImg = '<img class="quest-leader-avatar" src="' + esc(avatarSrc) + '" onerror="this.src=\'ofs_logo.png\'">';
+      if (q.leaderId) {
+        html += '<a class="quest-leader quest-leader-link" href="OFS_PlayerSheet.html?player=' + encodeURIComponent(q.leaderId) + '">' + avatarImg + esc(q.leaderName) + rankPart + '</a>';
       } else {
-        html += '<span class="quest-leader">&#9670; ' + esc(q.leaderName) + rankPart + '</span>';
+        html += '<span class="quest-leader" style="display:inline-flex;align-items:center;gap:6px;">' + avatarImg + esc(q.leaderName) + rankPart + '</span>';
       }
     }
     if (q.participants.length > 0) {
@@ -1179,15 +1182,6 @@
       renderPersonalWidget(session, questData);
     });
   }());
-  function _findPlayerByName(name) {
-    if (!window.OFSData || typeof OFSData.getPlayers !== 'function') return null;
-    var players = OFSData.getPlayers();
-    var nl = name.toLowerCase();
-    return players.find(function (p) { return p.username.toLowerCase() === nl; }) ||
-           players.find(function (p) { return p.username.toLowerCase().includes(nl) || nl.includes(p.username.toLowerCase()); }) ||
-           null;
-  }
-
-  </script>
+</script>
 </body>
 </html>
