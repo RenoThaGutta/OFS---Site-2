@@ -807,8 +807,27 @@
 
     <!-- ── Banners ── -->
     <div class="tab-panel" id="tab-banners">
-      <div class="sec-head"><h2>Banner Population</h2><div class="sec-line"></div></div>
-      <div class="banner-pop-grid" id="banner-pop-grid"></div>
+      <div class="sec-head"><h2>Banners</h2><div class="sec-line"></div></div>
+      <div class="tav-subtabs" id="ban-subtabs">
+        <button class="tav-stab active" data-bstab="ban-pop">Population</button>
+        <button class="tav-stab"        data-bstab="ban-manage">Manage Banners</button>
+      </div>
+      <div id="ban-pop">
+        <div class="banner-pop-grid" id="banner-pop-grid"></div>
+      </div>
+      <div id="ban-manage" style="display:none">
+        <div class="tav-split" style="grid-template-columns:280px 1fr">
+          <div class="tav-list">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+              <button class="add-btn" onclick="banManageNew()">+ Add Banner</button>
+            </div>
+            <div id="ban-manage-list"><div class="tav-list-empty">Loading…</div></div>
+          </div>
+          <div class="tav-form" id="ban-manage-form">
+            <div class="tav-form-empty">Select a banner to edit, or add a new one.</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- ── Audit Log ── -->
@@ -1359,7 +1378,7 @@ function logout() {
 /* ══════════════════════════════════════════════════════════
    DATA
 ══════════════════════════════════════════════════════════ */
-const BANNER_NAMES = [
+let BANNER_NAMES = [
   'The Artificer','The Astraeus','The Engineer','The Explorer','The Fang',
   'The Forager','The Guardian','The Healer','The Merchant','The Privateer','The Talon'
 ];
@@ -1472,13 +1491,21 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('tab-'+t.dataset.tab).classList.add('active');
-    if(t.dataset.tab==='banners')      renderBannerPop();
+    if(t.dataset.tab==='banners'){
+      renderBannerPop();
+      renderBanManageList();
+    }
     if(t.dataset.tab==='audit')        renderAudit();
   });
 });
 
 
-function renderAll(){ renderRoster(); }
+function renderAll(){
+  // Sync BANNER_NAMES from sheet if available
+  const defs = window.OFSSheets && OFSSheets.getBannerDefs ? OFSSheets.getBannerDefs() : [];
+  if(defs.length) BANNER_NAMES = defs.map(d=>d.name);
+  renderRoster();
+}
 
 /* ══════════════════════════════════════════════════════════
    ROSTER
@@ -1557,7 +1584,8 @@ function renderBannerPop(){
       return bp>bb?p:best;
     }) : null;
     const pct=Math.round((members.length/maxCount)*100);
-    const medalSrc=MEDAL_IMGS[bn]||'';
+    const banDef=(OFSSheets.getBannerDefs()||[]).find(d=>d.name===bn);
+    const medalSrc=(banDef&&banDef.medalUrl)||MEDAL_IMGS[bn]||'';
 
     const card=document.createElement('div');
     card.className='banner-pop-card'+(members.length===0?' bp-empty-card':'');
@@ -1579,7 +1607,8 @@ function renderBannerPop(){
 }
 
 function openBannerPopup(bn, members){
-  const medalSrc=MEDAL_IMGS[bn]||'';
+  const banDef2=(OFSSheets.getBannerDefs()||[]).find(d=>d.name===bn);
+  const medalSrc=(banDef2&&banDef2.medalUrl)||MEDAL_IMGS[bn]||'';
   const ranks=BANNER_RANKS[bn]||['Apprentice','Sub 1','Sub 2','Master'];
 
   // Header
@@ -3129,6 +3158,128 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     document.getElementById('tav-media-form').innerHTML='<div class="tav-form-empty">Select a media item to edit, or add a new one.</div>';
   };
   window.tavNewMedia = window._tavNewMedia;
+
+  /* ════════════════════════
+     BANNER SUB-TABS
+  ════════════════════════ */
+  document.getElementById('ban-subtabs').addEventListener('click', function(e){
+    const btn = e.target.closest('.tav-stab'); if(!btn) return;
+    document.querySelectorAll('#ban-subtabs .tav-stab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const stab = btn.dataset.bstab;
+    document.getElementById('ban-pop').style.display     = stab==='ban-pop'    ? '' : 'none';
+    document.getElementById('ban-manage').style.display  = stab==='ban-manage' ? '' : 'none';
+  });
+
+  /* ════════════════════════
+     MANAGE BANNERS
+  ════════════════════════ */
+  function renderBanManageList(){
+    const defs = (OFSSheets.getBannerDefs && OFSSheets.getBannerDefs()) || [];
+    const el = document.getElementById('ban-manage-list');
+    if(!el) return;
+    if(!defs.length){ el.innerHTML='<div class="tav-list-empty">No banners loaded yet.</div>'; return; }
+    el.innerHTML = defs.map(d=>`
+      <div class="tav-item-row" data-id="${escHtml(d.name)}" onclick="banManageEdit(${JSON.stringify(d.name)})">
+        <div class="tav-item-main">
+          <span class="tav-item-title">${escHtml(d.name)}</span>
+          <div class="tav-item-sub">
+            ${d.medalName?`<span class="tav-item-meta">${escHtml(d.medalName)}</span>`:''}
+          </div>
+        </div>
+        <button class="tav-del-btn" onclick="event.stopPropagation();banManageDel(${JSON.stringify(d.name)})">&#x2715;</button>
+      </div>`).join('');
+  }
+
+  function showBanForm(def, isNew){
+    document.getElementById('ban-manage-form').innerHTML = `
+      <div class="tf-section-head">${isNew?'New Banner':'Edit Banner'}</div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Banner Name *</div>
+          <input id="bf-name" class="hf-input" type="text" value="${escHtml(def.name)}"${isNew?'':' readonly style="opacity:.6;cursor:default"'} placeholder="e.g. The Artificer"></div>
+        <div class="tf-row"><div class="hf-label">Medal Name</div>
+          <input id="bf-medalname" class="hf-input" type="text" value="${escHtml(def.medalName)}" placeholder="e.g. Medal of the Artificer"></div>
+      </div>
+      <div class="tf-row"><div class="hf-label">Medal Image URL</div>
+        <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://…">
+        ${def.medalUrl?`<img src="${escHtml(def.medalUrl)}" id="bf-medal-preview" style="margin-top:8px;max-height:80px;object-fit:contain;" onerror="this.style.display='none'">`:''}
+      </div>
+      <div class="tf-row"><div class="hf-label">Description</div>
+        <textarea id="bf-desc" class="hf-textarea" rows="3" placeholder="Short description of the banner's focus…">${escHtml(def.description)}</textarea>
+      </div>
+      <div class="tf-section-head" style="margin-top:4px">Sub-Rank Titles</div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Sub Rank 0 (0 pts)</div><input id="bf-r0" class="hf-input" value="${escHtml(def.subRank0)}" placeholder="Apprentice"></div>
+        <div class="tf-row"><div class="hf-label">Sub Rank 1 (15 pts)</div><input id="bf-r1" class="hf-input" value="${escHtml(def.subRank1)}" placeholder="Sub Rank 1"></div>
+      </div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Sub Rank 2 (30 pts)</div><input id="bf-r2" class="hf-input" value="${escHtml(def.subRank2)}" placeholder="Sub Rank 2"></div>
+        <div class="tf-row"><div class="hf-label">Master (60 pts + medal)</div><input id="bf-rm" class="hf-input" value="${escHtml(def.subRankMaster)}" placeholder="Master"></div>
+      </div>
+      <div class="tf-save-row">
+        ${!isNew?`<button class="tf-del-full-btn" onclick="banManageDel('${escHtml(def.name)}')">Delete</button>`:''}
+        <button class="tf-save-btn" onclick="banManageSave(${isNew})">Save Banner</button>
+      </div>`;
+    // Live medal preview
+    const urlInput = document.getElementById('bf-medalurl');
+    if(urlInput) urlInput.addEventListener('input', function(){
+      let img = document.getElementById('bf-medal-preview');
+      if(!img){
+        img = document.createElement('img');
+        img.id = 'bf-medal-preview';
+        img.style.cssText = 'margin-top:8px;max-height:80px;object-fit:contain;display:block;';
+        img.onerror = function(){ this.style.display='none'; };
+        urlInput.parentNode.appendChild(img);
+      }
+      img.style.display = this.value ? '' : 'none';
+      img.src = this.value;
+    });
+    highlightActive('ban-manage-list', def.name);
+  }
+
+  window.banManageNew = function(){
+    showBanForm({name:'',subRank0:'Apprentice',subRank1:'',subRank2:'',subRankMaster:'',medalName:'',medalUrl:'',description:''},true);
+  };
+  window.banManageEdit = function(name){
+    const defs=(OFSSheets.getBannerDefs&&OFSSheets.getBannerDefs())||[];
+    const def=defs.find(d=>d.name===name);
+    if(!def) return;
+    showBanForm(def,false);
+  };
+  window.banManageSave = async function(isNew){
+    const name = (document.getElementById('bf-name')||{}).value?.trim();
+    if(!name){ showToast('Banner name is required'); return; }
+    const def={
+      name, subRank0:document.getElementById('bf-r0').value.trim()||'Apprentice',
+      subRank1:document.getElementById('bf-r1').value.trim(),
+      subRank2:document.getElementById('bf-r2').value.trim(),
+      subRankMaster:document.getElementById('bf-rm').value.trim(),
+      medalName:document.getElementById('bf-medalname').value.trim(),
+      medalUrl:document.getElementById('bf-medalurl').value.trim(),
+      description:document.getElementById('bf-desc').value.trim(),
+    };
+    showToast('Saving…');
+    try { await OFSSheets.saveBannerDef(def, isNew); } catch(e){ showToast('Sheet sync failed'); return; }
+    // Update local cache
+    const defs=(OFSSheets.getBannerDefs&&OFSSheets.getBannerDefs())||[];
+    const idx=defs.findIndex(d=>d.name===name);
+    if(idx>=0) defs[idx]=def; else defs.push(def);
+    if(isNew && !BANNER_NAMES.includes(name)) BANNER_NAMES.push(name);
+    showToast('Banner saved');
+    renderBanManageList();
+    showBanForm(def,false);
+  };
+  window.banManageDel = async function(name){
+    if(!confirm('Delete banner "'+name+'"? This cannot be undone.')) return;
+    showToast('Deleting…');
+    try { await OFSSheets.deleteBannerDef(name); } catch(e){ showToast('Sheet sync failed'); return; }
+    const defs=(OFSSheets.getBannerDefs&&OFSSheets.getBannerDefs())||[];
+    const i=defs.findIndex(d=>d.name===name); if(i>=0) defs.splice(i,1);
+    BANNER_NAMES=BANNER_NAMES.filter(n=>n!==name);
+    showToast('Banner deleted');
+    renderBanManageList();
+    document.getElementById('ban-manage-form').innerHTML='<div class="tav-form-empty">Select a banner to edit, or add a new one.</div>';
+  };
 
   /* ════════════════════════
      LIVE PREVIEW HELPERS

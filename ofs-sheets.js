@@ -165,6 +165,31 @@
     return players;
   }
 
+  /* ── Banner definitions cache (in-memory) ─────────── */
+  let _bannerDefs = [];
+
+  function parseBannerDefs(rows) {
+    if (!rows || rows.length < 3) return [];
+    return rows.slice(2)
+      .map(function (row) { return String(row[0] || '').trim(); })
+      .filter(Boolean)
+      .map(function (_, i) {
+        var row = rows[i + 2];
+        return {
+          name:          String(row[0] || '').trim(),
+          subRank0:      String(row[1] || '').trim() || 'Apprentice',
+          subRank1:      String(row[2] || '').trim() || 'Sub Rank 1',
+          subRank2:      String(row[3] || '').trim() || 'Sub Rank 2',
+          subRankMaster: String(row[4] || '').trim() || 'Sub Rank Master',
+          medalName:     String(row[5] || '').trim(),
+          medalUrl:      String(row[6] || '').trim(),
+          description:   String(row[7] || '').trim(),
+        };
+      });
+  }
+
+  function getBannerDefs() { return _bannerDefs; }
+
   /* ── Tavern data cache (in-memory, set on each load) ─ */
   let _tavernData = null;
 
@@ -230,6 +255,11 @@
           global.localStorage.setItem('ofs_level_xp', JSON.stringify(xpThresholds));
         }
       } catch (e) { /* ignore */ }
+    }
+
+    // Parse banner definitions
+    if (data.bannerRef) {
+      _bannerDefs = parseBannerDefs(data.bannerRef);
     }
 
     // Cache tavern data for OFS_TavernHall.html to consume
@@ -425,9 +455,38 @@
     return res.json();
   }
 
+  /**
+   * Save a banner definition to the Banners sheet.
+   * @param {object} def  { name, subRank0, subRank1, subRank2, subRankMaster, medalName, medalUrl, description }
+   * @param {boolean} isNew  true = append new row, false = overwrite existing by name
+   */
+  async function saveBannerDef(def, isNew) {
+    const row = [
+      def.name, def.subRank0, def.subRank1, def.subRank2,
+      def.subRankMaster, def.medalName, def.medalUrl, def.description
+    ];
+    if (isNew) {
+      const res = await fetch(WORKER_URL + '/write', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ op: 'append', sheet: 'Banners', row }),
+      });
+      return res.json();
+    }
+    return overwriteTavernRow('Banners', def.name, row);
+  }
+
+  /** Delete a banner row from the Banners sheet by name. */
+  async function deleteBannerDef(name) {
+    return deleteTavernRow('Banners', name);
+  }
+
   global.OFSSheets = {
     load,
     getTavernData,
+    getBannerDefs,
+    saveBannerDef,
+    deleteBannerDef,
     appendStatAdjustment,
     updateWallet,
     appendBankLog,
