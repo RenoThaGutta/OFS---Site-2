@@ -168,6 +168,9 @@
   /* ── Banner definitions cache (in-memory) ─────────── */
   let _bannerDefs = [];
 
+  /* ── Timeline block overrides cache (in-memory) ───── */
+  let _timelineBlocks = {};
+
   function parseBannerDefs(rows) {
     if (!rows || rows.length < 3) return [];
     return rows.slice(2)
@@ -270,6 +273,24 @@
       tavEvents:        data.tavEvents        || [],
       tavMedia:         data.tavMedia         || [],
     };
+
+    // Fetch /content for timeline block overrides (optional — non-fatal)
+    try {
+      const cRes = await fetch(WORKER_URL + '/content');
+      if (cRes.ok) {
+        const cData = await cRes.json();
+        if (cData.ok && cData.data) {
+          _timelineBlocks = {};
+          Object.keys(cData.data).forEach(function (key) {
+            if (key.startsWith('tl-block:')) {
+              const blockId = key.slice(9); // 'tl-block:'.length
+              const val = cData.data[key];
+              _timelineBlocks[blockId] = (val && typeof val === 'object') ? val : {};
+            }
+          });
+        }
+      }
+    } catch (e) { /* content fetch is optional */ }
 
     // Push through OFSData normalization + localStorage
     if (global.OFSData) {
@@ -482,6 +503,26 @@
     return deleteTavernRow('Banners', name);
   }
 
+  /** Return the cached timeline block overrides keyed by original block title/id. */
+  function getTimelineBlocks() {
+    return _timelineBlocks;
+  }
+
+  /**
+   * Persist a timeline block edit to the /content store.
+   * Key: "tl-block:<blockId>", Value: block data object.
+   * Also updates the local cache.
+   */
+  async function saveTimelineBlock(blockId, data) {
+    _timelineBlocks[blockId] = data;
+    const res = await fetch(WORKER_URL + '/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: 'tl-block:' + blockId, value: data }),
+    });
+    return res.json();
+  }
+
   global.OFSSheets = {
     load,
     getTavernData,
@@ -495,6 +536,8 @@
     updateMedals,
     overwriteTavernRow,
     deleteTavernRow,
+    getTimelineBlocks,
+    saveTimelineBlock,
     WORKER_URL
   };
 

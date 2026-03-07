@@ -1176,12 +1176,27 @@ document.querySelectorAll('.event').forEach(ev => {
       applyBlockEdit(e.data);
     }
   });
+
+  /* Expose for Sheets-based block loading (called after external scripts load) */
+  window._tlApplyBlockEdit = applyBlockEdit;
 })();
 </script>
 <script src="header_bar.js"></script>
 <script src="ofs-data.js"></script>
 <script src="ofs-sheets.js"></script>
 <script src="ofs-nav.js"></script>
-<script>OFSSheets.load().then(function() { if (window.OFSNav) OFSNav.refresh(); });</script>
+<script>
+OFSSheets.load().then(function() {
+  if (window.OFSNav) OFSNav.refresh();
+  // Apply any admin-saved block overrides stored in Sheets
+  var blocks = OFSSheets.getTimelineBlocks();
+  var apply = window._tlApplyBlockEdit;
+  if (apply) {
+    Object.keys(blocks).forEach(function(blockId) {
+      apply(Object.assign({ blockId: blockId }, blocks[blockId]));
+    });
+  }
+});
+</script>
 </body>
 </html>

@@ -2679,7 +2679,7 @@ function openTimelineBlockEditor(data){
   }, 30);
 }
 
-function saveBlockEdit(){
+async function saveBlockEdit(){
   const panel  = document.getElementById('tl-block-editor');
   const isAge  = panel.dataset.blockKind === 'age';
   const iframe = document.querySelector('#pages-preview-frame');
@@ -2713,10 +2713,19 @@ function saveBlockEdit(){
   // Send live update to iframe
   if(iframe && iframe.contentWindow) iframe.contentWindow.postMessage(msg, '*');
 
-  // Persist to localStorage
+  // Persist to localStorage (local preview cache)
   const blocks = JSON.parse(localStorage.getItem(STORAGE_TIMELINE_BLOCKS) || '{}');
   blocks[storageKey] = storageVal;
   localStorage.setItem(STORAGE_TIMELINE_BLOCKS, JSON.stringify(blocks));
+
+  // Persist to Sheets via Worker (visible to all users)
+  showToast('Saving…');
+  try {
+    await OFSSheets.saveTimelineBlock(storageKey, storageVal);
+  } catch(e) {
+    showToast('Sheet sync failed — saved locally only');
+    return;
+  }
 
   // Flash "Saved!"
   const indicator = document.getElementById('tlb-saved');
