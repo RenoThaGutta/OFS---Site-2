@@ -14,7 +14,7 @@
     { href: 'OFS_Codex.html',       label: 'Codex'        },
     { href: 'OFS_Timeline.html',    label: 'Chronicles'   },
     { href: 'OFS_Roster.html',      label: 'Roster'       },
-    { href: 'OFS_PlayerSheet.html', label: 'Player Sheet' },
+    { href: 'OFS_TavernHall.html',  label: 'Tavern Hall'  },
     { href: 'OFS_Admin.html',       label: 'Admin'        },
   ];
 

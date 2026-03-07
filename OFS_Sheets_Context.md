@@ -730,6 +730,80 @@ https://docs.google.com/spreadsheets/d/1YW5A_gk5WwmKbwxqrhIut3JUBSjaTO8vEf09F5Qj
 
 ---
 
+## Column Map — Patrols (gid: 1963239464)
+
+> **Individual quest/crusade instances.** One row per participant per quest. Multiple rows share the same `Patrol ID`.
+> The leader always creates the first row. Only the leader's row will have `Quest Completed` filled in.
+> UI terminology: "Patrols" in the sheet = **"Quests"** visible to end users on the website.
+
+| # | Column Header | Type | Description | Notes |
+|---|---|---|---|---|
+| — | `Patrol ID` | String | Unique ID per quest — shared across all participant rows | Group rows by this to reconstruct a quest |
+| — | `Patrol Leader` | String | Display name of the quest leader | |
+| — | `Patrol Leader ID` | String (Discord ID) | Discord User ID of the leader | On the leader's row this matches `Player ID` |
+| — | `Patrol Name` | String | Quest/event name shown to users | |
+| — | `Patrol Description` | String | Full description text | |
+| — | `Patrol Image` | String (URL) | Optional image URL for the quest card | |
+| — | `Patrol Start Time` | String (timestamp) | When the quest began | |
+| — | `Player ID` | String (Discord ID) | Discord User ID of this participant | One row per participant; leader's row = first row created |
+| — | `Joined Quest TS` | String (timestamp) | When this player joined the quest | |
+| — | `Quest Completed` | String (timestamp) | When quest was marked complete | **Only populated on the leader's row.** Empty = active quest. |
+| — | `Type` | String (enum) | `Quest` or `Crusade` | Determines display label and icon on site |
+
+**Key logic for Tavern Hall quest board:**
+- Group all rows by `Patrol ID` → each group = one quest
+- Find the leader's row: `Patrol Leader ID === Player ID` (or the row that has `Quest Completed` cell, even if empty)
+- **Active quest:** leader's row `Quest Completed` is empty/blank
+- **Completed quest:** leader's row `Quest Completed` has a timestamp
+- **Participant count:** number of rows in the group
+
+**Note:** Column indices are not hardcoded here — read the header row at runtime since column order may vary.
+
+---
+
+## Tavern Hall — New Sheet Tabs (to be created)
+
+> These tabs must be created manually in the Google Sheet. Once created, add their GIDs here.
+
+### Tavern_Announcements (gid: 1402239615)
+
+| Col | Header | Type | Description |
+|---|---|---|---|
+| A | `ID` | String | e.g. `ANN-001` |
+| B | `Title` | String | Announcement headline |
+| C | `Body` | String | Full announcement text |
+| D | `Date` | String | e.g. `2026-03-06` |
+| E | `Author` | String | Display name of poster |
+| F | `Pinned` | String | `TRUE` or `FALSE` — pinned announcements float to top |
+
+---
+
+### Tavern_Events (gid: 140765302)
+
+| Col | Header | Type | Description |
+|---|---|---|---|
+| A | `ID` | String | e.g. `EVT-001` |
+| B | `Title` | String | Event name |
+| C | `Date` | String | ISO date e.g. `2026-03-10` |
+| D | `Type` | String | `Patrol` / `Crusade` / `Meeting` / `Other` |
+| E | `Description` | String | Full event details |
+| F | `Status` | String | `upcoming` / `ongoing` / `past` |
+
+---
+
+### Tavern_Media (gid: 1319783039)
+
+| Col | Header | Type | Description |
+|---|---|---|---|
+| A | `ID` | String | e.g. `MED-001` |
+| B | `Type` | String | `screenshot` or `video` |
+| C | `URL` | String | Image URL or YouTube/video embed URL |
+| D | `Caption` | String | Short description |
+| E | `Date` | String | ISO date |
+| F | `Author` | String | Who posted it |
+
+---
+
 ## Sheets Summary
 
 | Tab Name | GID | Read/Write | Purpose |
@@ -737,12 +811,16 @@ https://docs.google.com/spreadsheets/d/1YW5A_gk5WwmKbwxqrhIut3JUBSjaTO8vEf09F5Qj
 | Member Log | `2052923864` | Read | Player identity + profile data |
 | Patrols_User_Totals | `1245860458` | Read | Aggregated stats per player |
 | Patrols_User_Adjustments | `1158591087` | Read + **Write (append)** | Stat edit audit log |
+| Patrols | `1963239464` | Read | Individual quest/crusade instances (Tavern Hall) |
 | Reputation | `708840198` | Read | Level → XP threshold lookup table |
 | Bank | `1552687505` | Read + **Write (find+update)** | Live wallet balances |
 | The bank (logs) | `1158834297` | Read + **Write (append)** | Transaction history / pay audit log |
 | White list Admin | `1724779249` | Read | Admin access control list |
 | Banners points per user | `1528788105` | Read | Per-player banner points + dynamic banner list |
 | Banners | `1083027486` | Read | Banner sub-rank title + threshold lookup table |
+| Tavern_Announcements | `1402239615` | Read | Org announcements feed |
+| Tavern_Events | `140765302` | Read | Upcoming/past events |
+| Tavern_Media | `1319783039` | Read | Screenshots + video gallery |
 
 ---
 

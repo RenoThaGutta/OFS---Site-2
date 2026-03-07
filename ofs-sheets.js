@@ -165,6 +165,9 @@
     return players;
   }
 
+  /* ── Tavern data cache (in-memory, set on each load) ─ */
+  let _tavernData = null;
+
   /* ── Cache ───────────────────────────────────────── */
   function saveCache(players) {
     try {
@@ -229,6 +232,14 @@
       } catch (e) { /* ignore */ }
     }
 
+    // Cache tavern data for OFS_TavernHall.html to consume
+    _tavernData = {
+      quests:           data.quests           || [],
+      tavAnnouncements: data.tavAnnouncements || [],
+      tavEvents:        data.tavEvents        || [],
+      tavMedia:         data.tavMedia         || [],
+    };
+
     // Push through OFSData normalization + localStorage
     if (global.OFSData) {
       const normalized = global.OFSData.savePlayers(raw);
@@ -238,6 +249,11 @@
 
     saveCache(raw);
     return raw;
+  }
+
+  /** Return the last-fetched tavern data (quests, announcements, events, media). */
+  function getTavernData() {
+    return _tavernData;
   }
 
   function _fallbackToCache() {
@@ -382,6 +398,7 @@
 
   global.OFSSheets = {
     load,
+    getTavernData,
     appendStatAdjustment,
     updateWallet,
     appendBankLog,
