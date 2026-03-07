@@ -589,6 +589,94 @@
       .banner-edit-grid { grid-template-columns: 1fr 1fr; }
       .lb-bar-bg { display: none; }
     }
+
+    /* ══════════════════════════════════════════════
+       TAVERN HALL MANAGER
+    ══════════════════════════════════════════════ */
+    .tav-subtabs {
+      display: flex; gap: 4px; margin-bottom: 24px;
+      border-bottom: 1px solid var(--b-dim); padding-bottom: 0;
+    }
+    .tav-stab {
+      padding: 10px 20px;
+      font-family: 'Cinzel', serif; font-size: .68rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--text-dim); background: none; border: none;
+      border-bottom: 2px solid transparent; cursor: pointer;
+      transition: color .2s, border-color .2s;
+      margin-bottom: -1px;
+    }
+    .tav-stab:hover  { color: var(--silver); }
+    .tav-stab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    .tav-subpanel { display: none; }
+    .tav-subpanel.active { display: block; }
+
+    .tav-split {
+      display: grid; grid-template-columns: 340px 1fr; gap: 24px; align-items: start;
+    }
+    .tav-list {
+      background: var(--bg-card); border: 1px solid var(--b-gold);
+      border-radius: 4px; overflow: hidden;
+    }
+    .tav-form {
+      background: var(--bg-card); border: 1px solid var(--b-gold);
+      border-radius: 4px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;
+      min-height: 300px;
+    }
+    .tav-form-empty {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 260px; color: var(--text-dim); font-size: .82rem;
+      font-family: 'Crimson Text', serif; font-style: italic;
+    }
+
+    .tav-item-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; border-bottom: 1px solid var(--b-dim);
+      cursor: pointer; transition: background .2s;
+    }
+    .tav-item-row:last-child { border-bottom: none; }
+    .tav-item-row:hover, .tav-item-row.active { background: rgba(201,168,76,.05); }
+    .tav-item-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+    .tav-item-title { font-size: .82rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tav-item-meta  { font-size: .68rem; color: var(--text-dim); flex-shrink: 0; }
+    .tav-del-btn {
+      background: none; border: none; color: var(--silver-dim); cursor: pointer;
+      font-size: .75rem; padding: 2px 6px; border-radius: 2px; flex-shrink: 0;
+      transition: color .2s;
+    }
+    .tav-del-btn:hover { color: var(--danger); }
+    .tav-list-empty { padding: 16px; color: var(--text-dim); font-size: .82rem; text-align: center; }
+
+    /* Tavern form elements reuse hf-* where possible; add new ones: */
+    .tf-section-head {
+      font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .18em;
+      text-transform: uppercase; color: var(--gold); padding-bottom: 10px;
+      border-bottom: 1px solid var(--b-dim); margin-bottom: 2px;
+    }
+    .tf-row { display: flex; flex-direction: column; gap: 4px; }
+    .tf-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .tf-save-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--b-dim); }
+    .tf-save-btn {
+      background: transparent; border: 1px solid var(--gold);
+      border-radius: 3px; padding: 9px 20px;
+      font-family: 'Cinzel', serif; font-size: .68rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold); cursor: pointer; transition: background .2s, box-shadow .2s;
+    }
+    .tf-save-btn:hover { background: rgba(201,168,76,.1); box-shadow: 0 0 14px var(--glow); }
+    .tf-del-full-btn {
+      background: none; border: 1px solid var(--b-dim); border-radius: 3px;
+      padding: 9px 16px; color: var(--silver-dim);
+      font-family: 'Cinzel', serif; font-size: .68rem;
+      letter-spacing: .14em; text-transform: uppercase;
+      cursor: pointer; margin-right: auto; transition: all .2s;
+    }
+    .tf-del-full-btn:hover { border-color: var(--danger); color: var(--danger); }
+    .tf-toggle { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: var(--text-dim); cursor: pointer; padding-top: 6px; }
+    .tf-toggle input { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+    .tf-radio { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--text-dim); cursor: pointer; }
+    .tf-radio input { accent-color: var(--gold); cursor: pointer; }
   </style>
 </head>
 <body>
@@ -630,6 +718,7 @@
       <div class="nav-tab"        data-tab="banners">Banners</div>
       <div class="nav-tab"        data-tab="audit">Audit Log</div>
       <div class="nav-tab"        data-tab="pages">Pages</div>
+      <div class="nav-tab"        data-tab="tavern">Tavern</div>
     </div>
     <a href="OFS_Home.html" class="nav-back">← Site</a>
     <div class="nav-logout" onclick="logout()">Logout</div>
@@ -1061,6 +1150,64 @@
       </div><!-- /pages-master-split -->
 
     </div>
+
+    <!-- ── Tavern Hall Manager ── -->
+    <div class="tab-panel" id="tab-tavern">
+      <div class="sec-head"><h2>Tavern Hall Manager</h2><div class="sec-line"></div></div>
+
+      <!-- Sub-tabs -->
+      <div class="tav-subtabs">
+        <button class="tav-stab active" data-stab="tav-ann">Announcements</button>
+        <button class="tav-stab"        data-stab="tav-events">Events</button>
+        <button class="tav-stab"        data-stab="tav-media">Media</button>
+      </div>
+
+      <!-- Announcements sub-panel -->
+      <div class="tav-subpanel active" id="tav-ann">
+        <div class="tav-split">
+          <div class="tav-list">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+              <button class="add-btn" onclick="tavNewAnn()">+ New Announcement</button>
+            </div>
+            <div id="tav-ann-list"><div class="tav-list-empty">Loading…</div></div>
+          </div>
+          <div class="tav-form" id="tav-ann-form">
+            <div class="tav-form-empty">Select an announcement to edit, or create a new one.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Events sub-panel -->
+      <div class="tav-subpanel" id="tav-events">
+        <div class="tav-split">
+          <div class="tav-list">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+              <button class="add-btn" onclick="tavNewEvent()">+ New Event</button>
+            </div>
+            <div id="tav-events-list"><div class="tav-list-empty">Loading…</div></div>
+          </div>
+          <div class="tav-form" id="tav-events-form">
+            <div class="tav-form-empty">Select an event to edit, or create a new one.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Media sub-panel -->
+      <div class="tav-subpanel" id="tav-media">
+        <div class="tav-split">
+          <div class="tav-list">
+            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+              <button class="add-btn" onclick="tavNewMedia()">+ Add Media</button>
+            </div>
+            <div id="tav-media-list"><div class="tav-list-empty">Loading…</div></div>
+          </div>
+          <div class="tav-form" id="tav-media-form">
+            <div class="tav-form-empty">Select a media item to edit, or add a new one.</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /tab-tavern -->
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -2559,6 +2706,278 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   renderCodexList();
   renderTimelineList();
 });
+
+/* ══════════════════════════════════════════════════════════
+   TAVERN HALL MANAGER
+══════════════════════════════════════════════════════════ */
+(function(){
+
+  const TAV_KEY = 'ofs_tavern_data';
+
+  function fmtDate(str){
+    if(!str) return '';
+    const d = new Date(str);
+    if(isNaN(d.getTime())) return str;
+    return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
+
+  function genId(prefix){ return prefix+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,6); }
+
+  function loadTav(){ try{ return JSON.parse(localStorage.getItem(TAV_KEY)||'{}'); }catch(e){ return {}; } }
+  function saveTav(data){ localStorage.setItem(TAV_KEY, JSON.stringify(data)); }
+  function getSection(sec){ const d=loadTav(); return d[sec]||[]; }
+  function setSection(sec, items){ const d=loadTav(); d[sec]=items; saveTav(d); }
+
+  /* ── Sub-tab switching ── */
+  document.querySelectorAll('.tav-stab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.tav-stab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tav-subpanel').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.stab).classList.add('active');
+    });
+  });
+
+  /* ════════════════════════
+     ANNOUNCEMENTS
+  ════════════════════════ */
+  const CAT_LABELS  = {general:'General', ops:'Operations', important:'Important', lore:'Lore'};
+  const CAT_BADGES  = {general:'badge-dim', ops:'badge-silver', important:'badge-gold', lore:'badge-silver'};
+
+  function renderAnnList(){
+    const items = getSection('announcements').sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const el = document.getElementById('tav-ann-list');
+    if(!items.length){ el.innerHTML='<div class="tav-list-empty">No announcements yet.</div>'; return; }
+    el.innerHTML = items.map(a=>`
+      <div class="tav-item-row" onclick="window._tavEditAnn('${escHtml(a.id)}')">
+        <div class="tav-item-main">
+          ${a.pinned?'<span style="color:var(--gold);font-size:.7rem;flex-shrink:0">&#x25C6;</span>':''}
+          <span class="badge ${CAT_BADGES[a.category]||'badge-dim'}">${escHtml(CAT_LABELS[a.category]||a.category||'General')}</span>
+          <span class="tav-item-title">${escHtml(a.title)}</span>
+        </div>
+        <span class="tav-item-meta">${fmtDate(a.date)}</span>
+        <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelAnn('${escHtml(a.id)}')">&#x2715;</button>
+      </div>`).join('');
+  }
+
+  function showAnnForm(item, isNew){
+    const catOpts = ['general','ops','important','lore'].map(c=>
+      `<option value="${c}"${item.category===c?' selected':''}>${CAT_LABELS[c]}</option>`).join('');
+    document.getElementById('tav-ann-form').innerHTML = `
+      <div class="tf-section-head">${isNew?'New Announcement':'Edit Announcement'}</div>
+      <div class="tf-row">
+        <div class="hf-label">Title *</div>
+        <input id="tf-ann-title" class="hf-input" type="text" value="${escHtml(item.title)}" placeholder="Announcement title">
+      </div>
+      <div class="tf-row">
+        <div class="hf-label">Body</div>
+        <textarea id="tf-ann-body" class="hf-textarea" rows="5" placeholder="Announcement content…">${escHtml(item.body)}</textarea>
+      </div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Date</div><input id="tf-ann-date" class="hf-input" type="date" value="${escHtml(item.date)}"></div>
+        <div class="tf-row"><div class="hf-label">Author</div><input id="tf-ann-author" class="hf-input" type="text" value="${escHtml(item.author)}" placeholder="e.g. Vanderan"></div>
+      </div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Category</div><select id="tf-ann-cat" class="hf-input">${catOpts}</select></div>
+        <div class="tf-row"><div class="hf-label">Pinned</div>
+          <label class="tf-toggle"><input id="tf-ann-pinned" type="checkbox"${item.pinned?' checked':''}><span>Pin to top of Tavern Hall</span></label>
+        </div>
+      </div>
+      <div class="tf-save-row">
+        ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelAnn('${escHtml(item.id)}')">Delete</button>`:''}
+        <button class="tf-save-btn" onclick="window._tavSaveAnn('${escHtml(item.id)}')">Save Announcement</button>
+      </div>`;
+    highlightActive('tav-ann-list', item.id);
+  }
+
+  window._tavNewAnn = function(){
+    const item={id:genId('ann'),title:'',body:'',date:new Date().toISOString().slice(0,10),author:'',pinned:false,category:'general'};
+    showAnnForm(item,true);
+  };
+  window._tavEditAnn = function(id){
+    const item=getSection('announcements').find(a=>a.id===id); if(!item) return; showAnnForm(item,false);
+  };
+  window._tavSaveAnn = function(id){
+    const title=document.getElementById('tf-ann-title').value.trim();
+    if(!title){ showToast('Title is required'); return; }
+    const items=getSection('announcements');
+    const idx=items.findIndex(a=>a.id===id);
+    const item={id,title,body:document.getElementById('tf-ann-body').value.trim(),
+      date:document.getElementById('tf-ann-date').value,
+      author:document.getElementById('tf-ann-author').value.trim(),
+      category:document.getElementById('tf-ann-cat').value,
+      pinned:document.getElementById('tf-ann-pinned').checked};
+    if(idx>=0) items[idx]=item; else items.push(item);
+    setSection('announcements',items);
+    logChange('Admin','Tavern/Announcement','—',title);
+    showToast('Announcement saved'); renderAnnList(); showAnnForm(item,false);
+  };
+  window._tavDelAnn = function(id){
+    if(!confirm('Delete this announcement?')) return;
+    setSection('announcements',getSection('announcements').filter(a=>a.id!==id));
+    logChange('Admin','Tavern/Announcement',id,'DELETED');
+    showToast('Deleted'); renderAnnList();
+    document.getElementById('tav-ann-form').innerHTML='<div class="tav-form-empty">Select an announcement to edit, or create a new one.</div>';
+  };
+  // expose for inline onclick
+  window.tavNewAnn = window._tavNewAnn;
+
+  /* ════════════════════════
+     EVENTS
+  ════════════════════════ */
+  const EVT_TYPES = ['Fleet Op','Meeting','Training','Social','Campaign','Other'];
+  const STATUS_BADGES = {ongoing:'badge-gold', upcoming:'badge-dim', past:'badge-silver'};
+
+  function renderEventList(){
+    const items = getSection('events').sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const el = document.getElementById('tav-events-list');
+    if(!items.length){ el.innerHTML='<div class="tav-list-empty">No events yet.</div>'; return; }
+    el.innerHTML = items.map(ev=>`
+      <div class="tav-item-row" onclick="window._tavEditEvent('${escHtml(ev.id)}')">
+        <div class="tav-item-main">
+          <span class="badge ${STATUS_BADGES[ev.status]||'badge-dim'}">${escHtml(ev.status||'upcoming')}</span>
+          <span class="tav-item-title">${escHtml(ev.title)}</span>
+        </div>
+        <span class="tav-item-meta">${fmtDate(ev.date)}</span>
+        <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelEvent('${escHtml(ev.id)}')">&#x2715;</button>
+      </div>`).join('');
+  }
+
+  function showEventForm(item, isNew){
+    const typeOpts = ['','Fleet Op','Meeting','Training','Social','Campaign','Other'].map(t=>
+      `<option value="${t}"${item.type===t?' selected':''}>${t||'— Select Type —'}</option>`).join('');
+    const statOpts = ['upcoming','ongoing','past'].map(s=>
+      `<option value="${s}"${item.status===s?' selected':''}>${s==='ongoing'?'Ongoing / Live':s==='past'?'Past / Ended':'Upcoming'}</option>`).join('');
+    document.getElementById('tav-events-form').innerHTML = `
+      <div class="tf-section-head">${isNew?'New Event':'Edit Event'}</div>
+      <div class="tf-row"><div class="hf-label">Title *</div><input id="tf-evt-title" class="hf-input" type="text" value="${escHtml(item.title)}" placeholder="Event name"></div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Date</div><input id="tf-evt-date" class="hf-input" type="date" value="${escHtml(item.date)}"></div>
+        <div class="tf-row"><div class="hf-label">Type</div><select id="tf-evt-type" class="hf-input">${typeOpts}</select></div>
+      </div>
+      <div class="tf-row"><div class="hf-label">Status</div><select id="tf-evt-status" class="hf-input">${statOpts}</select></div>
+      <div class="tf-row"><div class="hf-label">Description</div><textarea id="tf-evt-desc" class="hf-textarea" rows="4" placeholder="Event details…">${escHtml(item.description)}</textarea></div>
+      <div class="tf-save-row">
+        ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelEvent('${escHtml(item.id)}')">Delete</button>`:''}
+        <button class="tf-save-btn" onclick="window._tavSaveEvent('${escHtml(item.id)}')">Save Event</button>
+      </div>`;
+    highlightActive('tav-events-list', item.id);
+  }
+
+  window._tavNewEvent = function(){
+    const item={id:genId('evt'),title:'',date:new Date().toISOString().slice(0,10),type:'',status:'upcoming',description:''};
+    showEventForm(item,true);
+  };
+  window._tavEditEvent = function(id){
+    const item=getSection('events').find(e=>e.id===id); if(!item) return; showEventForm(item,false);
+  };
+  window._tavSaveEvent = function(id){
+    const title=document.getElementById('tf-evt-title').value.trim();
+    if(!title){ showToast('Title is required'); return; }
+    const items=getSection('events');
+    const idx=items.findIndex(e=>e.id===id);
+    const item={id,title,date:document.getElementById('tf-evt-date').value,
+      type:document.getElementById('tf-evt-type').value,
+      status:document.getElementById('tf-evt-status').value,
+      description:document.getElementById('tf-evt-desc').value.trim()};
+    if(idx>=0) items[idx]=item; else items.push(item);
+    setSection('events',items);
+    logChange('Admin','Tavern/Event','—',title);
+    showToast('Event saved'); renderEventList(); showEventForm(item,false);
+  };
+  window._tavDelEvent = function(id){
+    if(!confirm('Delete this event?')) return;
+    setSection('events',getSection('events').filter(e=>e.id!==id));
+    showToast('Deleted'); renderEventList();
+    document.getElementById('tav-events-form').innerHTML='<div class="tav-form-empty">Select an event to edit, or create a new one.</div>';
+  };
+  window.tavNewEvent = window._tavNewEvent;
+
+  /* ════════════════════════
+     MEDIA
+  ════════════════════════ */
+  function renderMediaList(){
+    const items = getSection('media').sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const el = document.getElementById('tav-media-list');
+    if(!items.length){ el.innerHTML='<div class="tav-list-empty">No media items yet.</div>'; return; }
+    el.innerHTML = items.map(m=>`
+      <div class="tav-item-row" onclick="window._tavEditMedia('${escHtml(m.id)}')">
+        <div class="tav-item-main">
+          <span class="badge ${m.type==='video'?'badge-gold':'badge-dim'}">${escHtml(m.type||'screenshot')}</span>
+          <span class="tav-item-title">${escHtml(m.caption||m.url||'(no caption)')}</span>
+        </div>
+        <span class="tav-item-meta">${fmtDate(m.date)}</span>
+        <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelMedia('${escHtml(m.id)}')">&#x2715;</button>
+      </div>`).join('');
+  }
+
+  function showMediaForm(item, isNew){
+    document.getElementById('tav-media-form').innerHTML = `
+      <div class="tf-section-head">${isNew?'Add Media':'Edit Media'}</div>
+      <div class="tf-row">
+        <div class="hf-label">Type</div>
+        <div style="display:flex;gap:16px;padding-top:2px;">
+          <label class="tf-radio"><input type="radio" name="tf-med-type" value="screenshot"${item.type!=='video'?' checked':''}> Screenshot / Image</label>
+          <label class="tf-radio"><input type="radio" name="tf-med-type" value="video"${item.type==='video'?' checked':''}> YouTube Video</label>
+        </div>
+      </div>
+      <div class="tf-row"><div class="hf-label">URL *</div><input id="tf-med-url" class="hf-input" type="text" value="${escHtml(item.url)}" placeholder="Image URL or YouTube link"></div>
+      <div class="tf-row"><div class="hf-label">Caption</div><input id="tf-med-caption" class="hf-input" type="text" value="${escHtml(item.caption)}" placeholder="Short description"></div>
+      <div class="tf-2col">
+        <div class="tf-row"><div class="hf-label">Date</div><input id="tf-med-date" class="hf-input" type="date" value="${escHtml(item.date)}"></div>
+        <div class="tf-row"><div class="hf-label">Author</div><input id="tf-med-author" class="hf-input" type="text" value="${escHtml(item.author)}" placeholder="e.g. Kraz"></div>
+      </div>
+      <div class="tf-save-row">
+        ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelMedia('${escHtml(item.id)}')">Delete</button>`:''}
+        <button class="tf-save-btn" onclick="window._tavSaveMedia('${escHtml(item.id)}')">Save Media</button>
+      </div>`;
+    highlightActive('tav-media-list', item.id);
+  }
+
+  window._tavNewMedia = function(){
+    const item={id:genId('med'),type:'screenshot',url:'',caption:'',date:new Date().toISOString().slice(0,10),author:''};
+    showMediaForm(item,true);
+  };
+  window._tavEditMedia = function(id){
+    const item=getSection('media').find(m=>m.id===id); if(!item) return; showMediaForm(item,false);
+  };
+  window._tavSaveMedia = function(id){
+    const url=document.getElementById('tf-med-url').value.trim();
+    if(!url){ showToast('URL is required'); return; }
+    const typeEl=document.querySelector('input[name="tf-med-type"]:checked');
+    const items=getSection('media');
+    const idx=items.findIndex(m=>m.id===id);
+    const item={id,type:typeEl?typeEl.value:'screenshot',url,
+      caption:document.getElementById('tf-med-caption').value.trim(),
+      date:document.getElementById('tf-med-date').value,
+      author:document.getElementById('tf-med-author').value.trim()};
+    if(idx>=0) items[idx]=item; else items.push(item);
+    setSection('media',items);
+    logChange('Admin','Tavern/Media','—',item.caption||url);
+    showToast('Media saved'); renderMediaList(); showMediaForm(item,false);
+  };
+  window._tavDelMedia = function(id){
+    if(!confirm('Delete this media item?')) return;
+    setSection('media',getSection('media').filter(m=>m.id!==id));
+    showToast('Deleted'); renderMediaList();
+    document.getElementById('tav-media-form').innerHTML='<div class="tav-form-empty">Select a media item to edit, or add a new one.</div>';
+  };
+  window.tavNewMedia = window._tavNewMedia;
+
+  /* ── Helper: highlight active row ── */
+  function highlightActive(listId, id){
+    document.querySelectorAll('#'+listId+' .tav-item-row').forEach(r=>r.classList.remove('active'));
+    // Row onclick uses _tav* functions so we can't easily target by id here; no-op is fine.
+  }
+
+  /* ── Init on tab open ── */
+  document.querySelector('[data-tab="tavern"]').addEventListener('click',()=>{
+    renderAnnList();
+    renderEventList();
+    renderMediaList();
+  });
+
+})();
 
 window.addEventListener('storage', event => {
   if (event.key === window.OFSData.STORAGE_PLAYERS) {
