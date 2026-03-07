@@ -554,17 +554,24 @@
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  function parseDate(str) {
+    if (!str) return null;
+    // Handle "2026-03-06 18:25:04" (space instead of T)
+    var iso = String(str).replace(' ', 'T');
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
   function fmtDate(str) {
-    if (!str) return '';
-    var d = new Date(str);
-    if (isNaN(d.getTime())) return String(str);
+    var d = parseDate(str);
+    if (!d) return String(str || '');
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   function fmtRelative(str) {
     if (!str) return '';
-    var d = new Date(str);
-    if (isNaN(d.getTime())) return String(str);
+    var d = parseDate(str);
+    if (!d) return String(str);
     var diff = Date.now() - d.getTime();
     if (diff < 60000)    return 'just now';
     if (diff < 3600000)  return Math.floor(diff / 60000) + 'm ago';
@@ -868,11 +875,14 @@
       html += '<span class="quest-pcount">' + q.participants.length + ' member' + (q.participants.length !== 1 ? 's' : '') + '</span>';
     }
     if (!isDone && q.startTime) {
-      var mins = Math.round((Date.now() - new Date(q.startTime)) / 60000);
-      var dur = mins < 60 ? mins + 'm' : mins < 1440 ? Math.round(mins / 60) + 'h' : Math.floor(mins / 1440) + 'd';
-      html += '<span class="quest-duration">' + esc(dur) + ' running</span>';
-    } else if (isDone && q.completed) {
-      html += '<span class="quest-date">' + esc(fmtRelative(q.completed)) + '</span>';
+      var startD = parseDate(q.startTime);
+      if (startD) {
+        var mins = Math.round((Date.now() - startD.getTime()) / 60000);
+        var dur = mins < 60 ? mins + 'm' : mins < 1440 ? Math.round(mins / 60) + 'h' : Math.floor(mins / 1440) + 'd';
+        html += '<span class="quest-duration">' + esc(dur) + ' running</span>';
+      }
+    } else if (isDone && q.startTime) {
+      html += '<span class="quest-date">' + esc(fmtRelative(q.startTime)) + '</span>';
     }
     html += '</div></div></div>';
     return html;
