@@ -113,8 +113,7 @@
             token:     data.token,
             isAdmin:   data.isAdmin || false
           }));
-          var dest = data.isAdmin ? PAGE_ADMIN : PAGE_HOME;
-          showSuccess(data.username, dest);
+          showSuccess(data.username, PAGE_HOME);
         } else {
           showError('Authentication Failed', data.reason || 'Discord authentication failed.');
         }
