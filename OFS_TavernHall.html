@@ -807,12 +807,17 @@
           name:             String(row[4]  || '').trim(),   // col E: Patrol Name
           description:      String(row[5]  || ''),          // col F: Patrol Description
           image:            String(row[6]  || ''),          // col G: Patrol Image
-          startTime:        String(row[7]  || ''),          // col H: Patrol Start Time
+          startTime:        '',
           completed:        '',
           type:             'Quest',
           participants:     [],
           participantNames: []
         };
+      }
+      // col H (row[7]): Patrol Start Time — scan all rows, keep first valid date found
+      if (!map[pid].startTime) {
+        var ts = String(row[7] || '');
+        if (parseDate(ts)) map[pid].startTime = ts;
       }
       // col J (row[9]): completion timestamp
       if (row[9] && !map[pid].completed) map[pid].completed = String(row[9]);
@@ -830,8 +835,8 @@
       var q = map[pid]; if (!q.name) return;
       if (q.completed) completed.push(q); else active.push(q);
     });
-    active.sort(function (a, b)    { return new Date(b.startTime) - new Date(a.startTime); });
-    completed.sort(function (a, b) { return new Date(b.completed) - new Date(a.completed); });
+    active.sort(function (a, b)    { return (parseDate(b.startTime)||0) - (parseDate(a.startTime)||0); });
+    completed.sort(function (a, b) { return (parseDate(b.startTime)||0) - (parseDate(a.startTime)||0); });
     return { active: active, completed: completed };
   }
 
