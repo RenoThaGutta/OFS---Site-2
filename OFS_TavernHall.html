@@ -1219,11 +1219,18 @@
       var card = e.target.closest('.quest-card[data-pid]');
       if (!card) return;
       var q = _questDataMap[card.dataset.pid];
-      if (!q || !q.participants.length) return;
-      var html = '<div class="qpt-title">Participants (' + q.participants.length + ')</div>';
+      if (!q) return;
+      // Build combined list: leader first, then any additional participants
+      var allPids   = [];
+      var allNames  = [];
+      if (q.leaderId) { allPids.push(q.leaderId); allNames.push(q.leaderName || ''); }
       q.participants.forEach(function (pid, i) {
+        if (allPids.indexOf(pid) === -1) { allPids.push(pid); allNames.push(q.participantNames[i] || ''); }
+      });
+      var html = '<div class="qpt-title">Participants (' + allPids.length + ')</div>';
+      allPids.forEach(function (pid, i) {
         var player = window.OFSData ? OFSData.getPlayerById(pid) : null;
-        var name   = q.participantNames[i] || (player && player.username) || pid;
+        var name   = allNames[i] || (player && player.username) || pid;
         var avatar = (player && player.avatarUrl) ? player.avatarUrl : 'ofs_logo.png';
         html += '<div class="qpt-member">';
         html += '<img class="qpt-avatar" src="' + avatar.replace(/"/g,'&quot;') + '" onerror="this.src=\'ofs_logo.png\'">';
