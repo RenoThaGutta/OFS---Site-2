@@ -190,7 +190,7 @@
     .announce-author { font-size: .7rem; color: var(--silver-dim); margin-left: auto; }
     .announce-title  { font-family: 'Cinzel', serif; font-size: .86rem; letter-spacing: .04em; color: var(--text); margin-bottom: 6px; }
     .announce-body   { font-size: .82rem; color: var(--text-dim); line-height: 1.65; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-    .announce-img    { width: 100%; max-height: 220px; object-fit: cover; border-radius: 3px; margin: 8px 0 4px; display: block; }
+    .announce-img    { width: 100%; height: auto; border-radius: 3px; margin: 8px 0 4px; display: block; }
 
     /* ── Quest Board ── */
     #quests-section { grid-area: quests; }
@@ -752,7 +752,7 @@
     if (a.author) html += '<span class="featured-author">— ' + esc(a.author) + '</span>';
     html += '</div>';
     html += '<div class="featured-title">' + esc(a.title) + '</div>';
-    if (a.image) html += '<img class="announce-img" src="' + esc(a.image) + '" alt="" loading="lazy" style="max-height:320px;">';
+    if (a.image) html += '<img class="announce-img" src="' + esc(a.image) + '" alt="" loading="lazy">';
     if (a.body)  html += '<div class="featured-body">' + esc(a.body) + '</div>';
     html += '</div>';
 
