@@ -132,7 +132,7 @@
       padding: 32px 40px 80px;
       display: grid;
       grid-template-columns: 1fr 340px;
-      grid-template-areas: "media media" "announce sidebar" "quests sidebar";
+      grid-template-areas: "announce sidebar" "quests sidebar" "media media";
       gap: 32px; align-items: start;
     }
 
@@ -363,7 +363,7 @@
 
     /* ── Responsive ── */
     @media (max-width: 1024px) {
-      .tavern-container { grid-template-columns: 1fr; grid-template-areas: "media" "announce" "sidebar" "quests"; padding: 32px 24px 60px; }
+      .tavern-container { grid-template-columns: 1fr; grid-template-areas: "announce" "sidebar" "quests" "media"; padding: 32px 24px 60px; }
       .tavern-sidebar { position: static; }
       #stats-bar { flex-wrap: wrap; }
       .stat-item { flex: 1 1 120px; }
