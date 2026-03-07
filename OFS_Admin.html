@@ -1129,7 +1129,22 @@
                   </div>
                   <div>
                     <div class="hf-label">Card Body <span style="color:var(--text-dim);font-size:.7rem">(HTML — use &lt;em&gt; for italic, &lt;p&gt; for paragraphs)</span></div>
-                    <textarea id="tlb-body" class="hf-textarea" rows="7"></textarea>
+                    <textarea id="tlb-body" class="hf-textarea" rows="5"></textarea>
+                  </div>
+                  <div style="border-top:1px solid var(--b-dim);margin-top:14px;padding-top:14px;">
+                    <div class="editor-meta-label" style="margin-bottom:10px;">Detail / Lore Modal</div>
+                    <div>
+                      <div class="hf-label">Detail Tag <span style="color:var(--text-dim);font-size:.7rem">(breadcrumb path shown above modal title)</span></div>
+                      <input id="tlb-detail-tag" class="hf-input" type="text" placeholder="e.g. Prologue · Age I — The Age of Severance">
+                    </div>
+                    <div style="margin-top:8px">
+                      <div class="hf-label">Detail Title</div>
+                      <input id="tlb-detail-title" class="hf-input" type="text" placeholder="e.g. The Star That Would Not Dim">
+                    </div>
+                    <div style="margin-top:8px">
+                      <div class="hf-label">Detail Body <span style="color:var(--text-dim);font-size:.7rem">(HTML — &lt;p&gt; for paragraphs, &lt;em&gt; for italic)</span></div>
+                      <textarea id="tlb-detail-body" class="hf-textarea" rows="8" placeholder="Full lore text shown in the popup when the card is clicked…"></textarea>
+                    </div>
                   </div>
                 </div>
                 <div id="tl-block-age-fields" style="display:none">
@@ -2646,8 +2661,11 @@ function openTimelineBlockEditor(data){
     // Normalise color to a known option value; fall back to first option
     const sel = document.getElementById('tlb-tag-color');
     sel.value = TL_COLOR_MAP[data.tagColor] || '#e86060';
-    document.getElementById('tlb-title').value = data.title || '';
-    document.getElementById('tlb-body').value  = data.body  || '';
+    document.getElementById('tlb-title').value        = data.title       || '';
+    document.getElementById('tlb-body').value         = data.body        || '';
+    document.getElementById('tlb-detail-tag').value   = data.detailTag   || '';
+    document.getElementById('tlb-detail-title').value = data.detailTitle || '';
+    document.getElementById('tlb-detail-body').value  = data.detailBody  || '';
   }
 
   // Scroll the right panel down to the block editor
@@ -2676,14 +2694,17 @@ function saveBlockEdit(){
     storageKey = tlId;
     storageVal = { kind:'age', tlId, ageLabel:label, ageColor:color };
   } else {
-    const blockId  = panel.dataset.blockId;
-    const tag      = document.getElementById('tlb-tag').value.trim();
-    const tagColor = document.getElementById('tlb-tag-color').value;
-    const title    = document.getElementById('tlb-title').value.trim();
-    const body     = document.getElementById('tlb-body').value;
-    msg = { type:'ofs-timeline-block-update', kind:'card', blockId, tag, tagColor, title, body };
+    const blockId     = panel.dataset.blockId;
+    const tag         = document.getElementById('tlb-tag').value.trim();
+    const tagColor    = document.getElementById('tlb-tag-color').value;
+    const title       = document.getElementById('tlb-title').value.trim();
+    const body        = document.getElementById('tlb-body').value;
+    const detailTag   = document.getElementById('tlb-detail-tag').value.trim();
+    const detailTitle = document.getElementById('tlb-detail-title').value.trim();
+    const detailBody  = document.getElementById('tlb-detail-body').value;
+    msg = { type:'ofs-timeline-block-update', kind:'card', blockId, tag, tagColor, title, body, detailTag, detailTitle, detailBody };
     storageKey = blockId;
-    storageVal = { kind:'card', tag, tagColor, title, body };
+    storageVal = { kind:'card', tag, tagColor, title, body, detailTag, detailTitle, detailBody };
     // Update panel identifier if title was changed
     panel.dataset.blockId = title || blockId;
     document.getElementById('tlb-id').value = title || blockId;
