@@ -1222,8 +1222,8 @@
       if (!q || !q.participants.length) return;
       var html = '<div class="qpt-title">Participants (' + q.participants.length + ')</div>';
       q.participants.forEach(function (pid, i) {
-        var name   = q.participantNames[i] || pid;
         var player = window.OFSData ? OFSData.getPlayerById(pid) : null;
+        var name   = q.participantNames[i] || (player && player.username) || pid;
         var avatar = (player && player.avatarUrl) ? player.avatarUrl : 'ofs_logo.png';
         html += '<div class="qpt-member">';
         html += '<img class="qpt-avatar" src="' + avatar.replace(/"/g,'&quot;') + '" onerror="this.src=\'ofs_logo.png\'">';
