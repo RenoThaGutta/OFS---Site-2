@@ -3202,9 +3202,17 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <div class="tf-row"><div class="hf-label">Medal Name</div>
           <input id="bf-medalname" class="hf-input" type="text" value="${escHtml(def.medalName)}" placeholder="e.g. Medal of the Artificer"></div>
       </div>
-      <div class="tf-row"><div class="hf-label">Medal Image URL</div>
-        <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://…">
-        ${def.medalUrl?`<img src="${escHtml(def.medalUrl)}" id="bf-medal-preview" style="margin-top:8px;max-height:80px;object-fit:contain;" onerror="this.style.display='none'">`:''}
+      <div class="tf-row" style="display:flex;gap:16px;align-items:flex-start">
+        <div style="flex:1">
+          <div class="hf-label">Medal Image URL</div>
+          <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://…">
+        </div>
+        <div id="bf-medal-preview-box" style="flex-shrink:0;width:110px;height:110px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
+          ${def.medalUrl
+            ? `<img id="bf-medal-preview" src="${escHtml(def.medalUrl)}" style="max-width:96px;max-height:96px;object-fit:contain;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
+            : ''}
+          <span id="bf-medal-placeholder" style="font-size:.65rem;color:var(--silver-dim);text-align:center;${def.medalUrl?'display:none':''}">No image</span>
+        </div>
       </div>
       <div class="tf-row"><div class="hf-label">Description</div>
         <textarea id="bf-desc" class="hf-textarea" rows="3" placeholder="Short description of the banner's focus…">${escHtml(def.description)}</textarea>
@@ -3225,16 +3233,24 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     // Live medal preview
     const urlInput = document.getElementById('bf-medalurl');
     if(urlInput) urlInput.addEventListener('input', function(){
+      const box = document.getElementById('bf-medal-preview-box');
+      const placeholder = document.getElementById('bf-medal-placeholder');
       let img = document.getElementById('bf-medal-preview');
       if(!img){
         img = document.createElement('img');
         img.id = 'bf-medal-preview';
-        img.style.cssText = 'margin-top:8px;max-height:80px;object-fit:contain;display:block;';
-        img.onerror = function(){ this.style.display='none'; };
-        urlInput.parentNode.appendChild(img);
+        img.style.cssText = 'max-width:96px;max-height:96px;object-fit:contain;';
+        img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
+        if(box) box.insertBefore(img, placeholder);
       }
-      img.style.display = this.value ? '' : 'none';
-      img.src = this.value;
+      if(this.value){
+        img.src = this.value;
+        img.style.display = '';
+        if(placeholder) placeholder.style.display = 'none';
+      } else {
+        img.style.display = 'none';
+        if(placeholder) placeholder.style.display = '';
+      }
     });
     highlightActive('ban-manage-list', def.name);
   }
