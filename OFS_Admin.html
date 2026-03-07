@@ -3182,14 +3182,14 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     if(!el) return;
     if(!defs.length){ el.innerHTML='<div class="tav-list-empty">No banners loaded yet.</div>'; return; }
     el.innerHTML = defs.map(d=>`
-      <div class="tav-item-row" data-id="${escHtml(d.name)}" onclick="banManageEdit(${JSON.stringify(d.name)})">
+      <div class="tav-item-row" data-id="${escHtml(d.name)}" onclick="banManageEdit('${escHtml(d.name)}')">
         <div class="tav-item-main">
           <span class="tav-item-title">${escHtml(d.name)}</span>
           <div class="tav-item-sub">
             ${d.medalName?`<span class="tav-item-meta">${escHtml(d.medalName)}</span>`:''}
           </div>
         </div>
-        <button class="tav-del-btn" onclick="event.stopPropagation();banManageDel(${JSON.stringify(d.name)})">&#x2715;</button>
+        <button class="tav-del-btn" onclick="event.stopPropagation();banManageDel('${escHtml(d.name)}')">&#x2715;</button>
       </div>`).join('');
   }
 
