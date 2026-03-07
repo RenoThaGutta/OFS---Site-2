@@ -2728,6 +2728,68 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   function getSection(sec){ const d=loadTav(); return d[sec]||[]; }
   function setSection(sec, items){ const d=loadTav(); d[sec]=items; saveTav(d); }
 
+  /* Normalize raw sheet rows into the same shape the admin UI uses */
+  function normFromSheet(sec, rawRows) {
+    if(!rawRows || !rawRows.length) return [];
+    return rawRows.map(row => {
+      if(sec === 'announcements') return {
+        id: String(row[0]||''), title: String(row[1]||''), body: String(row[2]||''),
+        date: String(row[3]||''), author: String(row[4]||''),
+        pinned: String(row[5]||'').toLowerCase()==='true',
+        category: String(row[6]||'general').toLowerCase()
+      };
+      if(sec === 'events') return {
+        id: String(row[0]||''), title: String(row[1]||''), date: String(row[2]||''),
+        type: String(row[3]||''), description: String(row[4]||''),
+        status: String(row[5]||'upcoming').toLowerCase()
+      };
+      return { // media
+        id: String(row[0]||''), type: String(row[1]||'screenshot').toLowerCase(),
+        url: String(row[2]||''), caption: String(row[3]||''),
+        date: String(row[4]||''), author: String(row[5]||'')
+      };
+    }).filter(item => item.id && item.id.length > 2); // skip blank/header rows
+  }
+
+  /* Seed localStorage from Sheet data (Sheet is source of truth) */
+  function seedFromSheet() {
+    const td = window.OFSSheets && OFSSheets.getTavernData();
+    if(!td) return;
+    saveTav({
+      announcements: normFromSheet('announcements', td.tavAnnouncements || []),
+      events:        normFromSheet('events',        td.tavEvents        || []),
+      media:         normFromSheet('media',         td.tavMedia         || []),
+    });
+  }
+
+  /* Sheet write helpers — fire-and-report */
+  async function sheetSaveAnn(item) {
+    if(!window.OFSSheets) return;
+    try {
+      await OFSSheets.overwriteTavernRow('Tavern_Announcements', item.id,
+        [item.id, item.title, item.body, item.date, item.author, String(item.pinned), item.category]);
+    } catch(e) { showToast('Local save OK — Sheet sync failed'); }
+  }
+  async function sheetSaveEvent(item) {
+    if(!window.OFSSheets) return;
+    try {
+      await OFSSheets.overwriteTavernRow('Tavern_Events', item.id,
+        [item.id, item.title, item.date, item.type, item.description, item.status]);
+    } catch(e) { showToast('Local save OK — Sheet sync failed'); }
+  }
+  async function sheetSaveMedia(item) {
+    if(!window.OFSSheets) return;
+    try {
+      await OFSSheets.overwriteTavernRow('Tavern_Media', item.id,
+        [item.id, item.type, item.url, item.caption, item.date, item.author]);
+    } catch(e) { showToast('Local save OK — Sheet sync failed'); }
+  }
+  async function sheetDelete(sheetName, id) {
+    if(!window.OFSSheets) return;
+    try { await OFSSheets.deleteTavernRow(sheetName, id); }
+    catch(e) { showToast('Local delete OK — Sheet sync failed'); }
+  }
+
   /* ── Sub-tab switching ── */
   document.querySelectorAll('.tav-stab').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -2797,7 +2859,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   window._tavEditAnn = function(id){
     const item=getSection('announcements').find(a=>a.id===id); if(!item) return; showAnnForm(item,false);
   };
-  window._tavSaveAnn = function(id){
+  window._tavSaveAnn = async function(id){
     const title=document.getElementById('tf-ann-title').value.trim();
     if(!title){ showToast('Title is required'); return; }
     const items=getSection('announcements');
@@ -2810,12 +2872,14 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     if(idx>=0) items[idx]=item; else items.push(item);
     setSection('announcements',items);
     logChange('Admin','Tavern/Announcement','—',title);
+    showToast('Saving…'); await sheetSaveAnn(item);
     showToast('Announcement saved'); renderAnnList(); showAnnForm(item,false);
   };
-  window._tavDelAnn = function(id){
+  window._tavDelAnn = async function(id){
     if(!confirm('Delete this announcement?')) return;
     setSection('announcements',getSection('announcements').filter(a=>a.id!==id));
     logChange('Admin','Tavern/Announcement',id,'DELETED');
+    showToast('Deleting…'); await sheetDelete('Tavern_Announcements', id);
     showToast('Deleted'); renderAnnList();
     document.getElementById('tav-ann-form').innerHTML='<div class="tav-form-empty">Select an announcement to edit, or create a new one.</div>';
   };
@@ -2871,7 +2935,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   window._tavEditEvent = function(id){
     const item=getSection('events').find(e=>e.id===id); if(!item) return; showEventForm(item,false);
   };
-  window._tavSaveEvent = function(id){
+  window._tavSaveEvent = async function(id){
     const title=document.getElementById('tf-evt-title').value.trim();
     if(!title){ showToast('Title is required'); return; }
     const items=getSection('events');
@@ -2883,11 +2947,13 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     if(idx>=0) items[idx]=item; else items.push(item);
     setSection('events',items);
     logChange('Admin','Tavern/Event','—',title);
+    showToast('Saving…'); await sheetSaveEvent(item);
     showToast('Event saved'); renderEventList(); showEventForm(item,false);
   };
-  window._tavDelEvent = function(id){
+  window._tavDelEvent = async function(id){
     if(!confirm('Delete this event?')) return;
     setSection('events',getSection('events').filter(e=>e.id!==id));
+    showToast('Deleting…'); await sheetDelete('Tavern_Events', id);
     showToast('Deleted'); renderEventList();
     document.getElementById('tav-events-form').innerHTML='<div class="tav-form-empty">Select an event to edit, or create a new one.</div>';
   };
@@ -2941,7 +3007,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   window._tavEditMedia = function(id){
     const item=getSection('media').find(m=>m.id===id); if(!item) return; showMediaForm(item,false);
   };
-  window._tavSaveMedia = function(id){
+  window._tavSaveMedia = async function(id){
     const url=document.getElementById('tf-med-url').value.trim();
     if(!url){ showToast('URL is required'); return; }
     const typeEl=document.querySelector('input[name="tf-med-type"]:checked');
@@ -2954,11 +3020,13 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     if(idx>=0) items[idx]=item; else items.push(item);
     setSection('media',items);
     logChange('Admin','Tavern/Media','—',item.caption||url);
+    showToast('Saving…'); await sheetSaveMedia(item);
     showToast('Media saved'); renderMediaList(); showMediaForm(item,false);
   };
-  window._tavDelMedia = function(id){
+  window._tavDelMedia = async function(id){
     if(!confirm('Delete this media item?')) return;
     setSection('media',getSection('media').filter(m=>m.id!==id));
+    showToast('Deleting…'); await sheetDelete('Tavern_Media', id);
     showToast('Deleted'); renderMediaList();
     document.getElementById('tav-media-form').innerHTML='<div class="tav-form-empty">Select a media item to edit, or add a new one.</div>';
   };
@@ -2972,6 +3040,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
 
   /* ── Init on tab open ── */
   document.querySelector('[data-tab="tavern"]').addEventListener('click',()=>{
+    seedFromSheet();
     renderAnnList();
     renderEventList();
     renderMediaList();

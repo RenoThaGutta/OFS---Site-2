@@ -396,6 +396,35 @@
     return res.json();
   }
 
+  /**
+   * Overwrite (or append) a Tavern row in the sheet.
+   * @param {string} sheetName  e.g. 'Tavern_Announcements'
+   * @param {string} id         Value in column A (used to find existing row)
+   * @param {any[]}  row        Full row array to write
+   */
+  async function overwriteTavernRow(sheetName, id, row) {
+    const res = await fetch(WORKER_URL + '/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'overwrite', sheet: sheetName, keyCol: 0, keyVal: id, row }),
+    });
+    return res.json();
+  }
+
+  /**
+   * Delete a Tavern row from the sheet by its ID.
+   * @param {string} sheetName  e.g. 'Tavern_Announcements'
+   * @param {string} id         Value in column A (used to find the row)
+   */
+  async function deleteTavernRow(sheetName, id) {
+    const res = await fetch(WORKER_URL + '/write', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ op: 'deleteRow', sheet: sheetName, keyCol: 0, keyVal: id }),
+    });
+    return res.json();
+  }
+
   global.OFSSheets = {
     load,
     getTavernData,
@@ -404,6 +433,8 @@
     appendBankLog,
     updateBannerPoints,
     updateMedals,
+    overwriteTavernRow,
+    deleteTavernRow,
     WORKER_URL
   };
 
