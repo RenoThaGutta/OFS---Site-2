@@ -752,7 +752,8 @@
     if (a.author) html += '<span class="featured-author">— ' + esc(a.author) + '</span>';
     html += '</div>';
     html += '<div class="featured-title">' + esc(a.title) + '</div>';
-    if (a.body) html += '<div class="featured-body">' + esc(a.body) + '</div>';
+    if (a.image) html += '<img class="announce-img" src="' + esc(a.image) + '" alt="" loading="lazy" style="max-height:320px;">';
+    if (a.body)  html += '<div class="featured-body">' + esc(a.body) + '</div>';
     html += '</div>';
 
     section.innerHTML = html;
