@@ -3241,32 +3241,36 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <div class="tf-row"><div class="hf-label">Medal Name</div>
           <input id="bf-medalname" class="hf-input" type="text" value="${escHtml(def.medalName)}" placeholder="e.g. Medal of the Artificer"></div>
       </div>
-      <div class="tf-row" style="display:flex;gap:16px;align-items:flex-start">
-        <div style="flex:1">
-          <div class="hf-label">Medal Image URL</div>
-          <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://… or Google Drive share link">
+      <div class="tf-row" style="display:grid;grid-template-columns:1fr 1.8fr;gap:20px;align-items:start">
+        <!-- Medal Image (left) -->
+        <div>
+          <div style="display:flex;gap:10px;align-items:flex-start">
+            <div style="flex:1">
+              <div class="hf-label">Medal Image URL</div>
+              <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://… or Drive link">
+            </div>
+            <div id="bf-medal-preview-box" style="flex-shrink:0;width:96px;height:96px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
+              ${def.medalUrl
+                ? `<img id="bf-medal-preview" src="${escHtml(driveDirect(def.medalUrl))}" data-zoom="${escHtml(driveDirect(def.medalUrl))}" style="max-width:84px;max-height:84px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
+                : ''}
+              <span id="bf-medal-placeholder" style="font-size:.6rem;color:var(--silver-dim);text-align:center;${def.medalUrl?'display:none':''}">No image</span>
+            </div>
+          </div>
         </div>
-        <div id="bf-medal-preview-box" style="flex-shrink:0;width:110px;height:110px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
-          ${def.medalUrl
-            ? `<img id="bf-medal-preview" src="${escHtml(driveDirect(def.medalUrl))}" data-zoom="${escHtml(driveDirect(def.medalUrl))}" style="max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
-            : ''}
-          <span id="bf-medal-placeholder" style="font-size:.65rem;color:var(--silver-dim);text-align:center;${def.medalUrl?'display:none':''}">No image</span>
+        <!-- Banner Image (right, wide) -->
+        <div>
+          <div class="hf-label">Banner Image URL</div>
+          <input id="bf-bannerurl" class="hf-input" type="url" value="${escHtml(def.bannerImageUrl||'')}" placeholder="https://… or Drive link">
+          <div id="bf-banner-preview-box" style="margin-top:8px;width:100%;height:88px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);overflow:hidden;display:flex;align-items:center;justify-content:center">
+            ${def.bannerImageUrl
+              ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" data-zoom="${escHtml(driveDirect(def.bannerImageUrl))}" style="width:100%;height:100%;object-fit:cover;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
+              : ''}
+            <span id="bf-banner-placeholder" style="font-size:.6rem;color:var(--silver-dim);${def.bannerImageUrl?'display:none':''}">No image</span>
+          </div>
         </div>
       </div>
       <div class="tf-row"><div class="hf-label">Description</div>
         <textarea id="bf-desc" class="hf-textarea" rows="3" placeholder="Short description of the banner's focus…">${escHtml(def.description)}</textarea>
-      </div>
-      <div class="tf-row" style="display:flex;gap:16px;align-items:flex-start">
-        <div style="flex:1">
-          <div class="hf-label">Banner Image URL</div>
-          <input id="bf-bannerurl" class="hf-input" type="url" value="${escHtml(def.bannerImageUrl||'')}" placeholder="https://… or Google Drive share link">
-        </div>
-        <div id="bf-banner-preview-box" style="flex-shrink:0;width:110px;height:110px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
-          ${def.bannerImageUrl
-            ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" data-zoom="${escHtml(driveDirect(def.bannerImageUrl))}" style="max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
-            : ''}
-          <span id="bf-banner-placeholder" style="font-size:.65rem;color:var(--silver-dim);text-align:center;${def.bannerImageUrl?'display:none':''}">No image</span>
-        </div>
       </div>
       <div class="tf-section-head" style="margin-top:4px">Sub-Rank Titles</div>
       <div class="tf-2col">
@@ -3316,7 +3320,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       if(!img){
         img = document.createElement('img');
         img.id = 'bf-banner-preview';
-        img.style.cssText = 'max-width:96px;max-height:96px;object-fit:contain;cursor:zoom-in;';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;cursor:zoom-in;';
         img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
         if(box) box.insertBefore(img, placeholder);
       }
