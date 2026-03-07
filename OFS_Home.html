@@ -1425,6 +1425,11 @@
   var NUM_WORDS = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
                    'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen','Twenty'];
 
+  function driveDirect(url){
+    if(!url) return url;
+    var m = url.match(/\/file\/d\/([^/?#]+)/);
+    return m ? 'https://drive.google.com/thumbnail?id='+m[1]+'&sz=w400' : url;
+  }
   function renderBannersFromSheet(defs){
     if(!defs || !defs.length) return;
     var grid = document.getElementById('js-banners-grid');
@@ -1434,8 +1439,9 @@
     if(labelEl) labelEl.textContent = 'The ' + (NUM_WORDS[defs.length] || defs.length) + ' Banners';
     // Render tiles
     grid.innerHTML = defs.map(function(d, i){
-      var icon = d.medalUrl
-        ? '<img class="banner-medal-img" src="'+d.medalUrl+'" alt="'+d.name+' medal" loading="lazy" onerror="this.style.display=\'none\'">'
+      var imgSrc = driveDirect(d.medalUrl);
+      var icon = imgSrc
+        ? '<img class="banner-medal-img" src="'+imgSrc+'" alt="'+d.name+' medal" loading="lazy" onerror="this.style.display=\'none\'">'
         : '<div class="banner-icon">&#x2605;</div>';
       return '<div class="banner-tile" id="js-banner-'+i+'" data-edit-key="banner-'+i+'">'
         + icon

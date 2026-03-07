@@ -1586,7 +1586,7 @@ function renderBannerPop(){
     }) : null;
     const pct=Math.round((members.length/maxCount)*100);
     const banDef=(OFSSheets.getBannerDefs()||[]).find(d=>d.name===bn);
-    const medalSrc=(banDef&&banDef.medalUrl)||MEDAL_IMGS[bn]||'';
+    const medalSrc=driveDirect((banDef&&banDef.medalUrl)||MEDAL_IMGS[bn]||'');
 
     const card=document.createElement('div');
     card.className='banner-pop-card'+(members.length===0?' bp-empty-card':'');
@@ -1609,7 +1609,7 @@ function renderBannerPop(){
 
 function openBannerPopup(bn, members){
   const banDef2=(OFSSheets.getBannerDefs()||[]).find(d=>d.name===bn);
-  const medalSrc=(banDef2&&banDef2.medalUrl)||MEDAL_IMGS[bn]||'';
+  const medalSrc=driveDirect((banDef2&&banDef2.medalUrl)||MEDAL_IMGS[bn]||'');
   const ranks=BANNER_RANKS[bn]||['Apprentice','Sub 1','Sub 2','Master'];
 
   // Header
@@ -2781,6 +2781,13 @@ function deleteTimelineEntry(id){
    UTILITIES
 ══════════════════════════════════════════════════════════ */
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// Convert Google Drive share links to embeddable thumbnail URLs
+function driveDirect(url){
+  if(!url) return url;
+  const m = url.match(/\/file\/d\/([^/?#]+)/);
+  if(m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400';
+  return url;
+}
 function updateCharCount(countId, textareaId){ document.getElementById(countId).textContent = document.getElementById(textareaId).value.length + ' characters'; }
 
 function showToast(msg){
@@ -3205,11 +3212,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       <div class="tf-row" style="display:flex;gap:16px;align-items:flex-start">
         <div style="flex:1">
           <div class="hf-label">Medal Image URL</div>
-          <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://…">
+          <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://… or Google Drive share link">
         </div>
         <div id="bf-medal-preview-box" style="flex-shrink:0;width:110px;height:110px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
           ${def.medalUrl
-            ? `<img id="bf-medal-preview" src="${escHtml(def.medalUrl)}" style="max-width:96px;max-height:96px;object-fit:contain;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
+            ? `<img id="bf-medal-preview" src="${escHtml(driveDirect(def.medalUrl))}" style="max-width:96px;max-height:96px;object-fit:contain;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
             : ''}
           <span id="bf-medal-placeholder" style="font-size:.65rem;color:var(--silver-dim);text-align:center;${def.medalUrl?'display:none':''}">No image</span>
         </div>
@@ -3243,8 +3250,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
         if(box) box.insertBefore(img, placeholder);
       }
-      if(this.value){
-        img.src = this.value;
+      const direct = driveDirect(this.value);
+      // Auto-rewrite Drive share links to embeddable URLs
+      if(direct !== this.value) this.value = direct;
+      if(direct){
+        img.src = direct;
         img.style.display = '';
         if(placeholder) placeholder.style.display = 'none';
       } else {
