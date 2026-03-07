@@ -3261,9 +3261,9 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <div>
           <div class="hf-label">Banner Image URL</div>
           <input id="bf-bannerurl" class="hf-input" type="url" value="${escHtml(def.bannerImageUrl||'')}" placeholder="https://… or Drive link">
-          <div id="bf-banner-preview-box" style="margin-top:8px;width:100%;height:88px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);overflow:hidden;display:flex;align-items:center;justify-content:center">
+          <div id="bf-banner-preview-box" style="margin-top:8px;width:100%;height:176px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);overflow:hidden;display:flex;align-items:center;justify-content:center">
             ${def.bannerImageUrl
-              ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" data-zoom="${escHtml(driveDirect(def.bannerImageUrl))}" style="max-width:100%;max-height:88px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
+              ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" data-zoom="${escHtml(driveDirect(def.bannerImageUrl))}" style="max-width:100%;max-height:176px;object-fit:contain;cursor:zoom-in;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
               : ''}
             <span id="bf-banner-placeholder" style="font-size:.6rem;color:var(--silver-dim);${def.bannerImageUrl?'display:none':''}">No image</span>
           </div>
@@ -3320,7 +3320,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       if(!img){
         img = document.createElement('img');
         img.id = 'bf-banner-preview';
-        img.style.cssText = 'max-width:100%;max-height:88px;object-fit:contain;cursor:zoom-in;';
+        img.style.cssText = 'max-width:100%;max-height:176px;object-fit:contain;cursor:zoom-in;';
         img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
         if(box) box.insertBefore(img, placeholder);
       }
