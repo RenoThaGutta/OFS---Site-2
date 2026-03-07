@@ -800,29 +800,42 @@
       var pid = String(row[0] || '').trim();
       // Skip blank rows and guide/header rows (real patrol IDs start with P + digits)
       if (!pid || !/^P\d/.test(pid)) return;
-      if (!map[pid]) {
+
+      var isLeaderRow = !map[pid];
+      if (isLeaderRow) {
+        // col H of the LEADER (first) row determines active vs completed:
+        //   "Quest Completed" text → done
+        //   a real timestamp       → active
+        var colH = String(row[7] || '').trim();
+        var isDone = /quest completed/i.test(colH);
         map[pid] = {
           id:               pid,
-          leaderName:       String(row[1]  || ''),
-          leaderId:         String(row[2]  || '').trim(),
-          leaderRank:       String(row[3]  || ''),
-          name:             String(row[4]  || '').trim(),   // col E: Patrol Name
-          description:      String(row[5]  || ''),          // col F: Patrol Description
-          image:            String(row[6]  || ''),          // col G: Patrol Image
-          startTime:        '',
-          completed:        '',
+          leaderName:       String(row[1] || ''),
+          leaderId:         String(row[2] || '').trim(),
+          leaderRank:       String(row[3] || ''),
+          name:             String(row[4] || '').trim(),   // col E
+          description:      String(row[5] || ''),          // col F
+          image:            String(row[6] || ''),          // col G
+          // Active quests: leader row col H is the real start time.
+          // Done quests: col H says "Quest Completed" — pick up timestamp from participant rows.
+          startTime:        (!isDone && parseDate(colH)) ? colH : '',
+          completed:        isDone ? 'Quest Completed' : '',
           type:             'Quest',
           participants:     [],
           participantNames: []
         };
+      } else {
+        // Participant rows: fill startTime if still empty (needed for done quests)
+        if (!map[pid].startTime) {
+          var ts = String(row[7] || '');
+          if (parseDate(ts)) map[pid].startTime = ts;
+        }
+        // Backfill metadata in case leader row was missing it
+        if (!map[pid].name        && row[4]) map[pid].name        = String(row[4]).trim();
+        if (!map[pid].description && row[5]) map[pid].description = String(row[5]);
+        if (!map[pid].image       && row[6]) map[pid].image       = String(row[6]);
       }
-      // col H (row[7]): Patrol Start Time — scan all rows, keep first valid date found
-      if (!map[pid].startTime) {
-        var ts = String(row[7] || '');
-        if (parseDate(ts)) map[pid].startTime = ts;
-      }
-      // col J (row[9]): completion timestamp
-      if (row[9] && !map[pid].completed) map[pid].completed = String(row[9]);
+
       // col K (row[10]): participant Discord ID, col L (row[11]): participant name
       var playerId   = String(row[10] || '').trim();
       var playerName = String(row[11] || '').trim();
