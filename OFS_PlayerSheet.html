@@ -737,6 +737,133 @@
 })();
 
 /* ═══════════════════════════════════════════════════════
+   QUEST HELPERS — mirrors Tavern Hall buildQuestMap logic
+═══════════════════════════════════════════════════════ */
+function _parseDate(str) {
+  if (!str) return null;
+  var iso = String(str).replace(' ', 'T');
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(iso)) iso += 'Z';
+  var d = new Date(iso);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function _buildPlayerQuests(rows, playerId) {
+  if (!rows || rows.length < 2 || !playerId) return { active: null, lastCompleted: null };
+
+  // Build quest map (same as Tavern buildQuestMap)
+  var map = {};
+  rows.slice(1).forEach(function (row) {
+    var pid = String(row[0] || '').trim();
+    if (!pid || !/^P\d/.test(pid)) return;
+
+    if (!map[pid]) {
+      var colH = String(row[7] || '').trim();
+      var isDone = /quest completed/i.test(colH);
+      map[pid] = {
+        id:          pid,
+        leaderName:  String(row[1] || ''),
+        leaderId:    String(row[2] || '').trim(),
+        name:        String(row[4] || '').trim(),
+        description: String(row[5] || ''),
+        startTime:   (!isDone && _parseDate(colH)) ? colH : '',
+        completed:   isDone ? 'Quest Completed' : '',
+        type:        String(row[32] || 'Quest').trim(),
+        participants: []
+      };
+    } else {
+      if (!map[pid].startTime) {
+        var ts = String(row[7] || '');
+        if (_parseDate(ts)) map[pid].startTime = ts;
+      }
+      if (!map[pid].name        && row[4]) map[pid].name        = String(row[4]).trim();
+      if (!map[pid].description && row[5]) map[pid].description = String(row[5]);
+    }
+
+    var partId = String(row[10] || '').trim();
+    if (partId && partId !== '❓' && map[pid].participants.indexOf(partId) === -1) {
+      map[pid].participants.push(partId);
+    }
+  });
+
+  // Classify active vs completed, filter to this player
+  var now = Date.now();
+  var MAX_ACTIVE_MS = 24 * 60 * 60 * 1000;
+  var myActive = [], myCompleted = [];
+
+  Object.keys(map).forEach(function (pid) {
+    var q = map[pid];
+    if (!q.name) return;
+    // Only include quests this player participated in
+    if (q.participants.indexOf(playerId) === -1) return;
+
+    if (q.completed) {
+      myCompleted.push(q);
+    } else {
+      var startD = _parseDate(q.startTime);
+      if (startD && (now - startD.getTime()) > MAX_ACTIVE_MS) {
+        q.completed = 'Expired';
+        myCompleted.push(q);
+      } else {
+        myActive.push(q);
+      }
+    }
+  });
+
+  // Sort by start time descending (most recent first)
+  var sortFn = function (a, b) { return (_parseDate(b.startTime)||0) - (_parseDate(a.startTime)||0); };
+  myActive.sort(sortFn);
+  myCompleted.sort(sortFn);
+
+  return { active: myActive[0] || null, lastCompleted: myCompleted[0] || null };
+}
+
+function renderPlayerQuests(p, section, container) {
+  var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+  var questRows = (tavData && tavData.quests) || [];
+  var result = _buildPlayerQuests(questRows, p.id);
+
+  var aq = result.active;
+  var lq = result.lastCompleted;
+
+  if (!aq && !lq) { section.style.display = 'none'; return; }
+
+  section.style.display = '';
+  var html = '';
+
+  // Active quest card
+  html += '<div class="quest-card active">';
+  html += '<div class="quest-card-label">Active Quest</div>';
+  if (aq) {
+    html += '<div class="quest-card-name">' + _esc(aq.name) + '</div>';
+    if (aq.description) html += '<div class="quest-card-desc">' + _esc(aq.description) + '</div>';
+    if (aq.leaderName)  html += '<div class="quest-card-leader">Led by <span>' + _esc(aq.leaderName) + '</span></div>';
+  } else {
+    html += '<div class="quest-card-none">No active quest</div>';
+  }
+  html += '</div>';
+
+  // Last completed quest card
+  html += '<div class="quest-card">';
+  html += '<div class="quest-card-label">Last Completed Quest</div>';
+  if (lq) {
+    html += '<div class="quest-card-name">' + _esc(lq.name) + '</div>';
+    if (lq.description) html += '<div class="quest-card-desc">' + _esc(lq.description) + '</div>';
+    if (lq.leaderName)  html += '<div class="quest-card-leader">Led by <span>' + _esc(lq.leaderName) + '</span></div>';
+  } else {
+    html += '<div class="quest-card-none">No completed quests</div>';
+  }
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+function _esc(s) {
+  var el = document.createElement('span');
+  el.textContent = s;
+  return el.innerHTML;
+}
+
+/* ═══════════════════════════════════════════════════════
    STATIC LOOKUP TABLES
 ═══════════════════════════════════════════════════════ */
 const STAT_LABELS = {
@@ -998,40 +1125,10 @@ function render(p) {
       <div class="rep-bar-fill${rep.isMax ? ' maxed' : ''}" style="width:${rep.pct.toFixed(1)}%"></div>
     </div>`;
 
-  // Quests
+  // Quests — use same data source as Tavern Hall (quest sheet rows)
   const questsSection = document.getElementById('js-quests-section');
   const questsEl = document.getElementById('js-quests');
-  const hasActive = !!(p.activeQuest);
-  const hasLast = !!(p.lastQuest);
-  if (hasActive || hasLast) {
-    questsSection.style.display = '';
-    let html = '';
-    // Active quest card
-    html += `<div class="quest-card active">
-      <div class="quest-card-label">Active Quest</div>`;
-    if (hasActive) {
-      html += `<div class="quest-card-name">${p.activeQuest}</div>`;
-      if (p.activeQuestDesc) html += `<div class="quest-card-desc">${p.activeQuestDesc}</div>`;
-      if (p.activeQuestLeader) html += `<div class="quest-card-leader">Led by <span>${p.activeQuestLeader}</span></div>`;
-    } else {
-      html += `<div class="quest-card-none">No active quest</div>`;
-    }
-    html += `</div>`;
-    // Last completed quest card
-    html += `<div class="quest-card">
-      <div class="quest-card-label">Last Completed Quest</div>`;
-    if (hasLast) {
-      html += `<div class="quest-card-name">${p.lastQuest}</div>`;
-      if (p.lastQuestDesc) html += `<div class="quest-card-desc">${p.lastQuestDesc}</div>`;
-      if (p.lastQuestLeader) html += `<div class="quest-card-leader">Led by <span>${p.lastQuestLeader}</span></div>`;
-    } else {
-      html += `<div class="quest-card-none">No completed quests</div>`;
-    }
-    html += `</div>`;
-    questsEl.innerHTML = html;
-  } else {
-    questsSection.style.display = 'none';
-  }
+  renderPlayerQuests(p, questsSection, questsEl);
 
   // Stats
   const statsGrid = document.getElementById('js-stats');
