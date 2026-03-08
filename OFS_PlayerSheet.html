@@ -731,21 +731,22 @@ function rankInfo(name, pts, medal) {
   return { title: r[idx], idx };
 }
 
-function progressInfo(pts, medal) {
+function progressInfo(pts, medal, bannerName) {
+  const ranks = BANNER_RANKS[bannerName] || ['Apprentice','Rank 2','Rank 3','Master'];
   if (pts >= 60 && medal)
-    return { pct: 100, cur: "Master", nxt: null, locked: false, maxed: true };
+    return { pct: 100, cur: `${pts} pts`, nxt: null, locked: false, maxed: true };
   if (pts >= 30) {
     if (!medal)
-      return { pct: 100, cur: `${pts} pts`, nxt: "Medal required for Master", locked: true, maxed: false };
+      return { pct: 100, cur: `${pts} pts`, nxt: `Medal required for ${ranks[3]}`, locked: true, maxed: false };
     const pct = Math.min(((pts - 30) / 30) * 100, 100);
-    return { pct, cur: `${pts} / 60 pts`, nxt: "→ Master", locked: false, maxed: false };
+    return { pct, cur: `${pts} / 60 pts`, nxt: `→ ${ranks[3]}`, locked: false, maxed: false };
   }
   if (pts >= 15) {
     const pct = ((pts - 15) / 15) * 100;
-    return { pct, cur: `${pts} / 30 pts`, nxt: "→ Sub Rank 2", locked: false, maxed: false };
+    return { pct, cur: `${pts} / 30 pts`, nxt: `→ ${ranks[2]}`, locked: false, maxed: false };
   }
   const pct = (pts / 15) * 100;
-  return { pct, cur: `${pts} / 15 pts`, nxt: "→ Sub Rank 1", locked: false, maxed: false };
+  return { pct, cur: `${pts} / 15 pts`, nxt: `→ ${ranks[1]}`, locked: false, maxed: false };
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -938,15 +939,26 @@ function render(p) {
     const pts   = bData.p || 0;
     const medal = bData.m || false;
     const { title, idx } = rankInfo(name, pts, medal);
-    const prog           = progressInfo(pts, medal);
+    const prog           = progressInfo(pts, medal, name);
     const hasMedalImg    = name in MEDAL_IMGS;
 
     const medalWrap = document.createElement('div');
     medalWrap.className = 'medal-wrap';
-    if (medal && hasMedalImg) {
+    // Try sheet defs first, then local MEDAL_IMGS
+    const sheetDefs = (window.OFSSheets && OFSSheets.getBannerDefs) ? OFSSheets.getBannerDefs() : [];
+    const sheetDef = sheetDefs.find(d => d.name === name);
+    let medalSrc = '';
+    if (sheetDef && sheetDef.medalUrl) {
+      const mm = sheetDef.medalUrl.match(/\/file\/d\/([^/?#]+)/);
+      medalSrc = mm ? 'https://drive.google.com/thumbnail?id=' + mm[1] + '&sz=w400' : sheetDef.medalUrl;
+    } else if (MEDAL_IMGS[name]) {
+      medalSrc = MEDAL_IMGS[name];
+    }
+    if (medalSrc) {
       const img = document.createElement('img');
-      img.src = MEDAL_IMGS[name];
+      img.src = medalSrc;
       img.alt = `Medal — ${name}`;
+      if (!medal) img.style.filter = 'grayscale(1) brightness(.35)';
       img.addEventListener('error', () => { medalWrap.innerHTML = ''; medalWrap.appendChild(buildLocked()); });
       medalWrap.appendChild(img);
     } else {
