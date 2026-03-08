@@ -1459,6 +1459,11 @@
     grid.style.opacity = '1';
   }
 
+  // Render immediately from cache if available (no network wait)
+  var cachedDefs = OFSSheets.getBannerDefs();
+  if(cachedDefs && cachedDefs.length) renderBannersFromSheet(cachedDefs);
+
+  // Then fetch fresh data in the background and re-render if changed
   OFSSheets.load().then(function(){
     renderBannersFromSheet(OFSSheets.getBannerDefs());
     if(window.OFSNav) OFSNav.refresh();

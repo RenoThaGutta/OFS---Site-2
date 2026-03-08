@@ -12,9 +12,10 @@
 (function (global) {
   'use strict';
 
-  const WORKER_URL   = 'https://ofs-api.orderofthefallenstar.workers.dev';
-  const CACHE_KEY    = 'ofs_sheets_cache';
-  const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  const WORKER_URL        = 'https://ofs-api.orderofthefallenstar.workers.dev';
+  const CACHE_KEY         = 'ofs_sheets_cache';
+  const BANNER_CACHE_KEY  = 'ofs_banner_defs_cache';
+  const CACHE_TTL_MS      = 5 * 60 * 1000; // 5 minutes
 
   /* ── Column indices ───────────────────────────────── */
   const ML = {
@@ -165,8 +166,8 @@
     return players;
   }
 
-  /* ── Banner definitions cache (in-memory) ─────────── */
-  let _bannerDefs = [];
+  /* ── Banner definitions cache (in-memory + localStorage) ── */
+  let _bannerDefs = loadBannerDefsCache() || [];
 
   /* ── Timeline block overrides cache (in-memory) ───── */
   let _timelineBlocks = {};
@@ -220,6 +221,23 @@
     }
   }
 
+  function saveBannerDefsCache(defs) {
+    try {
+      global.localStorage.setItem(BANNER_CACHE_KEY, JSON.stringify({ ts: Date.now(), defs }));
+    } catch (e) { /* storage full */ }
+  }
+
+  function loadBannerDefsCache() {
+    try {
+      const raw = global.localStorage.getItem(BANNER_CACHE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !Array.isArray(obj.defs)) return null;
+      if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
+      return obj.defs;
+    } catch (e) { return null; }
+  }
+
   /* ── Public API ──────────────────────────────────── */
 
   /**
@@ -264,6 +282,7 @@
     // Parse banner definitions
     if (data.bannerRef) {
       _bannerDefs = parseBannerDefs(data.bannerRef);
+      saveBannerDefsCache(_bannerDefs);
     }
 
     // Cache tavern data for OFS_TavernHall.html to consume
