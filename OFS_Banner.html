@@ -22,6 +22,16 @@
       --b-dim:     rgba(201,168,76,.09);
     }
 
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb {
+      background: var(--gold-dim);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+    * { scrollbar-width: thin; scrollbar-color: var(--gold-dim) var(--bg); }
+
     html { font-size: 16px; scroll-behavior: smooth; background: #07070f; }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
