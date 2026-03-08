@@ -240,13 +240,25 @@
       width: 460px; max-height: 75vh; display: flex; flex-direction: column;
       box-shadow: 0 16px 48px rgba(0,0,0,.7);
     }
+    .bp-popup-hero {
+      width: 100%; height: 120px; background-size: cover; background-position: center;
+      border-radius: 4px 4px 0 0; display: none;
+    }
+    .bp-popup-hero.has-img { display: block; }
     .bp-popup-head {
       padding: 16px 22px; border-bottom: 1px solid var(--b-dim);
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      display: flex; align-items: center; gap: 12px;
     }
-    .bp-popup-title { font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+    .bp-popup-title { font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); flex: 1; }
     .bp-popup-medal { width: 28px; height: 28px; object-fit: contain; }
-    .bp-popup-close { background: none; border: none; color: var(--silver-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; margin-left: auto; }
+    .bp-view-page-btn {
+      flex-shrink: 0; font-family: 'Cinzel', serif; font-size: .56rem;
+      letter-spacing: .1em; text-transform: uppercase; text-decoration: none;
+      color: var(--gold); border: 1px solid var(--b-gold); border-radius: 3px;
+      padding: 5px 12px; transition: background .2s;
+    }
+    .bp-view-page-btn:hover { background: rgba(201,168,76,.12); }
+    .bp-popup-close { background: none; border: none; color: var(--silver-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
     .bp-popup-close:hover { color: var(--gold); }
     .bp-stats-bar { display: flex; border-bottom: 1px solid var(--b-dim); }
     .bp-stat { flex: 1; padding: 10px 0; text-align: center; border-right: 1px solid var(--b-dim); }
@@ -1391,9 +1403,11 @@
 <!-- ── Banner Popup ── -->
 <div id="bp-popup-overlay">
   <div class="bp-popup">
+    <div class="bp-popup-hero" id="bp-popup-hero"></div>
     <div class="bp-popup-head">
       <img class="bp-popup-medal" id="bp-popup-medal" src="" alt="">
       <div class="bp-popup-title" id="bp-popup-title"></div>
+      <a class="bp-view-page-btn" id="bp-view-page-btn" href="#" target="_blank">View Page &rarr;</a>
       <button class="bp-popup-close" onclick="document.getElementById('bp-popup-overlay').classList.remove('open')">&#x2715;</button>
     </div>
     <div class="bp-stats-bar" id="bp-stats-bar"></div>
@@ -1710,8 +1724,15 @@ function openBannerPopup(bn, members){
   const medalSrc=driveDirect((banDef2&&banDef2.medalUrl)||MEDAL_IMGS[bn]||'');
   const ranks=BANNER_RANKS[bn]||['Apprentice','Sub 1','Sub 2','Master'];
 
+  // Hero image
+  const heroEl=document.getElementById('bp-popup-hero');
+  const heroSrc=driveDirect((banDef2&&banDef2.bannerImageUrl)||'');
+  if(heroSrc){ heroEl.style.backgroundImage='url('+heroSrc+')'; heroEl.classList.add('has-img'); }
+  else { heroEl.style.backgroundImage=''; heroEl.classList.remove('has-img'); }
+
   // Header
   document.getElementById('bp-popup-title').textContent=bn;
+  document.getElementById('bp-view-page-btn').href='OFS_Banner.html?banner='+encodeURIComponent(bn);
   const medalEl=document.getElementById('bp-popup-medal');
   if(medalSrc){ medalEl.src=medalSrc; medalEl.style.display=''; }
   else medalEl.style.display='none';
