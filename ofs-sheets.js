@@ -106,13 +106,16 @@
       }
     }
 
-    // Build player list from Member Log rows
+    // Build player list from Member Log rows (deduplicate by User ID)
     const players = [];
+    const seenUids = {};
     for (const row of data.memberLog.slice(1)) {
       const uid = cell(row, ML.USER_ID).trim();
       if (!uid) continue;
+      if (seenUids[uid]) continue; // skip duplicate rows for same member
       const rank = cell(row, ML.RANK).trim();
       if (!rank) continue; // skip bots and unranked users
+      seenUids[uid] = true;
 
       const patrolRow = patrolMap[uid] || [];
       const walletRow = walletMap[uid] || [];
