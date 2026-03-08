@@ -1724,9 +1724,12 @@ function openBannerPopup(bn, members){
   const medalSrc=driveDirect((banDef2&&banDef2.medalUrl)||MEDAL_IMGS[bn]||'');
   const ranks=BANNER_RANKS[bn]||['Apprentice','Sub 1','Sub 2','Master'];
 
-  // Hero image
+  // Hero image — use full-res for Drive links
   const heroEl=document.getElementById('bp-popup-hero');
-  const heroSrc=driveDirect((banDef2&&banDef2.bannerImageUrl)||'');
+  var heroRaw=(banDef2&&banDef2.bannerImageUrl)||'';
+  var heroSrc=heroRaw;
+  var driveMatch=heroRaw.match(/\/file\/d\/([^/?#]+)/);
+  if(driveMatch) heroSrc='https://lh3.googleusercontent.com/d/'+driveMatch[1];
   if(heroSrc){ heroEl.style.backgroundImage='url('+heroSrc+')'; heroEl.classList.add('has-img'); }
   else { heroEl.style.backgroundImage=''; heroEl.classList.remove('has-img'); }
 
