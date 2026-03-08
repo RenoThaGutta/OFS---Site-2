@@ -1802,11 +1802,12 @@ function openModal(id){
     <!-- Identity -->
     <div class="modal-section">
       <h4>Identity</h4>
+      <div class="field-discord-note" style="margin-bottom:8px;">⚠ Identity fields are not fully wired in yet. Rank &amp; banner changes update the record only — apply Discord roles manually. Username, faction, and avatar editing are future features.</div>
       <div class="field-group">
-        <div class="field-row"><label>Username</label><input id="f-username" value="${p?p.username:''}"><div class="field-discord-note">⚠ Editing username is not a current feature.</div></div>
-        <div class="field-row"><label>Org Rank</label><select id="f-rank">${rankOpts}</select><div class="field-discord-note">⚠ Changing rank here updates the record only. To apply the Discord role you must change it manually in Discord — a bot connection is not yet set up.</div></div>
-        <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}"><div class="field-discord-note">⚠ Faction assignment is a future feature — not yet active.</div></div>
-        <div class="field-row"><label>Active Banner</label><select id="f-activeBanner">${activeBannerOpts}</select><div class="field-discord-note">⚠ Changing the banner here updates the record only. To apply the Discord role you must change it manually in Discord — a bot connection is not yet set up.</div></div>
+        <div class="field-row"><label>Username</label><input id="f-username" value="${p?p.username:''}"></div>
+        <div class="field-row"><label>Org Rank</label><select id="f-rank">${rankOpts}</select></div>
+        <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}"></div>
+        <div class="field-row"><label>Active Banner</label><select id="f-activeBanner">${activeBannerOpts}</select></div>
         <div class="field-row"><label>Avatar URL</label><input id="f-avatar" value="${p?p.avatarUrl:''}" placeholder="https://…"></div>
       </div>
     </div>
