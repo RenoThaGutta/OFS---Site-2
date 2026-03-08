@@ -405,7 +405,13 @@
         silver: Number(wallet.silver) || 0,
         copper: Number(wallet.copper) || 0
       },
-      avatarUrl: String(source.avatarUrl || '')
+      avatarUrl: String(source.avatarUrl || ''),
+      activeQuest:       String(source.activeQuest || ''),
+      activeQuestDesc:   String(source.activeQuestDesc || ''),
+      activeQuestLeader: String(source.activeQuestLeader || ''),
+      lastQuest:         String(source.lastQuest || ''),
+      lastQuestLeader:   String(source.lastQuestLeader || ''),
+      lastQuestDesc:     String(source.lastQuestDesc || '')
     };
   }
 
