@@ -368,10 +368,10 @@
 
   var RANK_THRESHOLDS = [0, 15, 30, 60];
 
-  function driveDirect(url) {
+  function driveDirect(url, size) {
     if (!url) return '';
     var m = url.match(/\/file\/d\/([^/?#]+)/);
-    return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400' : url;
+    return m ? 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=' + (size || 'w400') : url;
   }
 
   function getParam(name) {
@@ -384,7 +384,7 @@
   function renderBanner(def, players) {
     // Hero background
     var hero = document.getElementById('banner-hero');
-    var heroImg = driveDirect(def.bannerImageUrl);
+    var heroImg = driveDirect(def.bannerImageUrl, 'w1600');
     if (heroImg) hero.style.backgroundImage = 'url(' + heroImg + ')';
 
     // Medal
