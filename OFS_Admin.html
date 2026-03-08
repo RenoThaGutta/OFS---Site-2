@@ -741,6 +741,26 @@
       white-space: nowrap;
     }
     .tf-upload-btn:hover { background: rgba(201,168,76,.18); }
+    .tf-img-upload-row {
+      display: flex; align-items: center; gap: 10px; padding-top: 4px;
+    }
+    .tf-img-thumb {
+      width: 56px; height: 56px; flex-shrink: 0;
+      border: 1px solid var(--b-gold); border-radius: 4px;
+      background: var(--bg-card2); overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .tf-img-thumb img {
+      max-width: 100%; max-height: 100%; object-fit: contain;
+    }
+    .tf-remove-img-btn {
+      flex-shrink: 0; background: none; border: 1px solid var(--b-dim);
+      border-radius: 3px; padding: 5px 10px;
+      font-family: 'Cinzel', serif; font-size: .58rem;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--silver-dim); cursor: pointer; transition: color .2s, border-color .2s;
+    }
+    .tf-remove-img-btn:hover { color: #e44; border-color: #e44; }
     .tf-del-full-btn {
       background: none; border: 1px solid var(--b-dim); border-radius: 3px;
       padding: 9px 16px; color: var(--silver-dim);
@@ -1822,9 +1842,13 @@ function openModal(id){
         <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}" disabled></div>
         <div class="field-row"><label>Active Banner</label><select id="f-activeBanner" disabled>${activeBannerOpts}</select></div>
         <div class="field-row"><label>Avatar</label>
-          <div style="display:flex;gap:6px">
-            <input id="f-avatar" style="flex:1" value="${p?p.avatarUrl:''}" placeholder="uploads/avatars/… or URL" disabled>
+          <input id="f-avatar" type="hidden" value="${p?p.avatarUrl:''}">
+          <div class="tf-img-upload-row">
+            <div class="tf-img-thumb" id="f-avatar-thumb" style="width:48px;height:48px;border-radius:50%">
+              ${p&&p.avatarUrl?`<img src="${escHtml(resolveImg(p.avatarUrl))}" style="border-radius:50%" onerror="this.style.display='none'">`:''}
+            </div>
             <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('f-avatar','avatars','${escHtml(p?p.username:'player')}')">Upload</button>
+            ${p&&p.avatarUrl?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('f-avatar').value='';this.parentNode.querySelector('.tf-img-thumb').innerHTML=''">Remove</button>`:''}
           </div>
         </div>
       </div>
@@ -2957,11 +2981,15 @@ function ofsFileUpload(urlInputId, folder, nameHint){
       showToast('Image too large (max 10 MB)'); return;
     }
     const inp = document.getElementById(urlInputId);
-    const btn = inp ? inp.parentNode.querySelector('.tf-upload-btn') : null;
+    // Find the upload button near the hidden input
+    const row = inp ? inp.closest('.tf-row, .field-row, div') : null;
+    const btn = row ? row.querySelector('.tf-upload-btn') : null;
+    const thumb = row ? row.querySelector('.tf-img-thumb') : null;
     if(btn){ btn.disabled = true; btn.textContent = 'Uploading…'; }
 
     // Instant blob preview while uploading
     const blobUrl = URL.createObjectURL(file);
+    if(thumb){ thumb.innerHTML = '<img src="' + blobUrl + '">'; }
     if(inp){ inp.value = blobUrl; inp.dispatchEvent(new Event('input', {bubbles:true})); }
 
     try {
@@ -2982,15 +3010,17 @@ function ofsFileUpload(urlInputId, folder, nameHint){
       const url = data.secure_url;
 
       if(inp){ inp.value = url; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      if(thumb){ thumb.innerHTML = '<img src="' + url + '">'; }
       URL.revokeObjectURL(blobUrl);
       showToast('Image uploaded');
     } catch(e){
       console.error('Cloudinary upload error:', e);
       showToast('Upload failed — ' + e.message);
       if(inp){ inp.value = ''; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      if(thumb){ thumb.innerHTML = ''; }
       URL.revokeObjectURL(blobUrl);
     } finally {
-      if(btn){ btn.disabled = false; btn.textContent = 'Upload'; }
+      if(btn){ btn.disabled = false; btn.textContent = 'Upload Image'; }
     }
   };
   pick.click();
@@ -3207,9 +3237,13 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       </div>
       <div class="tf-row">
         <div class="hf-label">Image</div>
-        <div style="display:flex;gap:6px">
-          <input id="tf-ann-image" class="hf-input" style="flex:1" type="text" value="${escHtml(item.image||'')}" placeholder="uploads/tavern/… or URL (optional)">
-          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-ann-image','tavern','ann-${escHtml(item.id)}')">Upload</button>
+        <input id="tf-ann-image" type="hidden" value="${escHtml(item.image||'')}">
+        <div class="tf-img-upload-row">
+          <div class="tf-img-thumb" id="tf-ann-image-thumb">
+            ${item.image?`<img src="${escHtml(resolveImg(item.image))}" onerror="this.style.display='none'">`:''}
+          </div>
+          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-ann-image','tavern','ann-${escHtml(item.id)}')">Upload Image</button>
+          ${item.image?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('tf-ann-image').value='';document.getElementById('tf-ann-image').dispatchEvent(new Event('input',{bubbles:true}));this.parentNode.querySelector('.tf-img-thumb').innerHTML=''">Remove</button>`:''}
         </div>
       </div>
       <div class="tf-save-row">
@@ -3301,9 +3335,13 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       <div class="tf-row"><div class="hf-label">Description</div><textarea id="tf-evt-desc" class="hf-textarea" rows="4" placeholder="Event details…">${escHtml(item.description)}</textarea></div>
       <div class="tf-row">
         <div class="hf-label">Image</div>
-        <div style="display:flex;gap:6px">
-          <input id="tf-evt-image" class="hf-input" style="flex:1" type="text" value="${escHtml(item.image||'')}" placeholder="uploads/tavern/… or URL (optional)">
-          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-evt-image','tavern','evt-${escHtml(item.id)}')">Upload</button>
+        <input id="tf-evt-image" type="hidden" value="${escHtml(item.image||'')}">
+        <div class="tf-img-upload-row">
+          <div class="tf-img-thumb" id="tf-evt-image-thumb">
+            ${item.image?`<img src="${escHtml(resolveImg(item.image))}" onerror="this.style.display='none'">`:''}
+          </div>
+          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-evt-image','tavern','evt-${escHtml(item.id)}')">Upload Image</button>
+          ${item.image?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('tf-evt-image').value='';document.getElementById('tf-evt-image').dispatchEvent(new Event('input',{bubbles:true}));this.parentNode.querySelector('.tf-img-thumb').innerHTML=''">Remove</button>`:''}
         </div>
       </div>
       <div class="tf-save-row">
@@ -3383,10 +3421,21 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
           <label class="tf-radio"><input type="radio" name="tf-med-type" value="video"${item.type==='video'?' checked':''}> YouTube Video</label>
         </div>
       </div>
-      <div class="tf-row"><div class="hf-label">URL *</div>
-        <div style="display:flex;gap:6px">
-          <input id="tf-med-url" class="hf-input" style="flex:1" type="text" value="${escHtml(item.url)}" placeholder="uploads/tavern/… , URL, or YouTube link">
-          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-med-url','tavern','med-${escHtml(item.id)}')">Upload</button>
+      <div class="tf-row" id="tf-med-url-row">
+        <input id="tf-med-url" type="hidden" value="${escHtml(item.url)}">
+        <div id="tf-med-upload-ui" style="${item.type==='video'?'display:none':''}">
+          <div class="hf-label">Image *</div>
+          <div class="tf-img-upload-row">
+            <div class="tf-img-thumb" id="tf-med-url-thumb">
+              ${item.url&&item.type!=='video'?`<img src="${escHtml(resolveImg(item.url))}" onerror="this.style.display='none'">`:''}
+            </div>
+            <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-med-url','tavern','med-${escHtml(item.id)}')">Upload Image</button>
+            ${item.url&&item.type!=='video'?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('tf-med-url').value='';document.getElementById('tf-med-url').dispatchEvent(new Event('input',{bubbles:true}));this.parentNode.querySelector('.tf-img-thumb').innerHTML=''">Remove</button>`:''}
+          </div>
+        </div>
+        <div id="tf-med-yt-ui" style="${item.type==='video'?'':'display:none'}">
+          <div class="hf-label">YouTube URL *</div>
+          <input id="tf-med-yt-input" class="hf-input" type="text" value="${item.type==='video'?escHtml(item.url):''}" placeholder="https://youtube.com/watch?v=…">
         </div>
       </div>
       <div class="tf-row"><div class="hf-label">Caption</div><input id="tf-med-caption" class="hf-input" type="text" value="${escHtml(item.caption)}" placeholder="Short description"></div>
@@ -3403,7 +3452,19 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     ['tf-med-url','tf-med-caption'].forEach(id=>{
       const el=document.getElementById(id); if(el) el.addEventListener('input', updateMediaPreview);
     });
-    document.querySelectorAll('input[name="tf-med-type"]').forEach(r=>r.addEventListener('change', updateMediaPreview));
+    // Toggle upload vs YouTube input based on type radio
+    document.querySelectorAll('input[name="tf-med-type"]').forEach(r=>r.addEventListener('change', function(){
+      const isVideo = this.value === 'video';
+      document.getElementById('tf-med-upload-ui').style.display = isVideo ? 'none' : '';
+      document.getElementById('tf-med-yt-ui').style.display = isVideo ? '' : 'none';
+      updateMediaPreview();
+    }));
+    // Sync YouTube text input → hidden url field
+    const ytInput = document.getElementById('tf-med-yt-input');
+    if(ytInput) ytInput.addEventListener('input', function(){
+      document.getElementById('tf-med-url').value = this.value;
+      document.getElementById('tf-med-url').dispatchEvent(new Event('input', {bubbles:true}));
+    });
     updateMediaPreview();
   }
 
@@ -3484,34 +3545,34 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       <div class="tf-row" style="display:grid;grid-template-columns:1fr 1.8fr;gap:20px;align-items:start">
         <!-- Medal Image (left) -->
         <div>
-          <div style="display:flex;gap:10px;align-items:flex-start">
-            <div style="flex:1">
-              <div class="hf-label">Medal Image</div>
-              <div style="display:flex;gap:6px">
-                <input id="bf-medalurl" class="hf-input" style="flex:1" type="text" value="${escHtml(def.medalUrl)}" placeholder="uploads/banners/… or URL">
-                <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('bf-medalurl','banners', '${escHtml(def.name||'banner')}'+'-medal')">Upload</button>
-              </div>
-            </div>
-            <div id="bf-medal-preview-box" style="flex-shrink:0;width:96px;height:96px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
+          <div class="hf-label">Medal Image</div>
+          <input id="bf-medalurl" type="hidden" value="${escHtml(def.medalUrl)}">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div id="bf-medal-preview-box" style="flex-shrink:0;width:96px;height:96px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden">
               ${def.medalUrl
                 ? `<img id="bf-medal-preview" src="${escHtml(driveDirect(def.medalUrl))}" onclick="openImgLightbox(this.src)" style="max-width:84px;max-height:84px;object-fit:contain;cursor:pointer;" onerror="this.style.display='none';document.getElementById('bf-medal-placeholder').style.display=''">`
                 : ''}
               <span id="bf-medal-placeholder" style="font-size:.6rem;color:var(--silver-dim);text-align:center;${def.medalUrl?'display:none':''}">No image</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('bf-medalurl','banners', '${escHtml(def.name||'banner')}'+'-medal')">Upload</button>
+              ${def.medalUrl?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('bf-medalurl').value='';document.getElementById('bf-medalurl').dispatchEvent(new Event('input',{bubbles:true}))">Remove</button>`:''}
             </div>
           </div>
         </div>
         <!-- Banner Image (right, wide) -->
         <div>
           <div class="hf-label">Banner Image</div>
-          <div style="display:flex;gap:6px">
-            <input id="bf-bannerurl" class="hf-input" style="flex:1" type="text" value="${escHtml(def.bannerImageUrl||'')}" placeholder="uploads/banners/… or URL">
-            <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('bf-bannerurl','banners', '${escHtml(def.name||'banner')}'+'-hero')">Upload</button>
-          </div>
-          <div id="bf-banner-preview-box" style="margin-top:8px;width:100%;height:176px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);overflow:hidden;display:flex;align-items:center;justify-content:center">
+          <input id="bf-bannerurl" type="hidden" value="${escHtml(def.bannerImageUrl||'')}">
+          <div id="bf-banner-preview-box" style="width:100%;height:176px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative">
             ${def.bannerImageUrl
               ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" onclick="openImgLightbox(this.src)" style="max-width:100%;max-height:176px;object-fit:contain;cursor:pointer;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
               : ''}
             <span id="bf-banner-placeholder" style="font-size:.6rem;color:var(--silver-dim);${def.bannerImageUrl?'display:none':''}">No image</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('bf-bannerurl','banners', '${escHtml(def.name||'banner')}'+'-hero')">Upload</button>
+            ${def.bannerImageUrl?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('bf-bannerurl').value='';document.getElementById('bf-bannerurl').dispatchEvent(new Event('input',{bubbles:true}))">Remove</button>`:''}
           </div>
         </div>
       </div>
