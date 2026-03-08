@@ -127,7 +127,19 @@
       padding: 32px 36px;
       margin-bottom: 44px;
       box-shadow: 0 0 48px rgba(201,168,76,.04), inset 0 1px 0 rgba(201,168,76,.08);
+      position: relative;
+      overflow: hidden;
     }
+    .identity-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background-size: cover; background-position: center;
+      pointer-events: none;
+    }
+    .identity-bg::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(14,14,28,.95) 35%, rgba(14,14,28,.6));
+    }
+    .identity > * { position: relative; z-index: 1; }
     .avatar {
       flex-shrink: 0;
       width: 114px; height: 114px;
@@ -640,6 +652,19 @@ function render(p) {
       `<span class="ident-banner-name">${p.activeBanner}</span>` +
       `<span class="ident-banner-sep">·</span>` +
       `<span class="ident-banner-rank">${bTitle}</span>`;
+
+    // Set banner hero as identity background
+    const defs = (window.OFSSheets && OFSSheets.getBannerDefs) ? OFSSheets.getBannerDefs() : [];
+    const banDef = defs.find(d => d.name === p.activeBanner);
+    if (banDef && banDef.bannerImageUrl) {
+      const m = banDef.bannerImageUrl.match(/\/file\/d\/([^/?#]+)/);
+      const heroUrl = m ? 'https://lh3.googleusercontent.com/d/' + m[1] : banDef.bannerImageUrl;
+      const identityEl = document.querySelector('.identity');
+      const bg = document.createElement('div');
+      bg.className = 'identity-bg';
+      bg.style.backgroundImage = 'url(' + heroUrl + ')';
+      identityEl.insertBefore(bg, identityEl.firstChild);
+    }
   } else {
     bannerEl.innerHTML = '';
   }
