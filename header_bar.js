@@ -81,16 +81,20 @@
       'display:flex;align-items:center;gap:10px;text-decoration:none;' +
       'padding:10px 12px;position:relative;overflow:hidden;' +
       'border:1px solid rgba(201,168,76,.12);border-radius:4px;' +
-      'background-size:cover;background-position:center;' +
-      'transition:border-color .25s,box-shadow .25s;' +
+      'background:#07070f;' +
+      'transition:border-color .25s;' +
     '}' +
-    '.nav-dd-card::before{' +
+    '.nav-dd-card-bg{' +
+      'position:absolute;inset:0;z-index:0;' +
+      'background-size:cover;background-position:center;' +
+      'pointer-events:none;' +
+    '}' +
+    '.nav-dd-card-bg::after{' +
       'content:"";position:absolute;inset:0;' +
       'background:linear-gradient(90deg,rgba(7,7,15,.92) 40%,rgba(7,7,15,.5));' +
-      'z-index:0;' +
     '}' +
     '.nav-dd-card:hover{' +
-      'border-color:rgba(201,168,76,.45);box-shadow:0 0 12px rgba(201,168,76,.1);' +
+      'border-color:rgba(201,168,76,.45);' +
     '}' +
     '.nav-dd-medal{' +
       'width:28px;height:28px;object-fit:contain;flex-shrink:0;' +
@@ -230,9 +234,14 @@
       card.className = 'nav-dd-card';
       card.href = 'OFS_Banner.html?banner=' + encodeURIComponent(b.name);
 
-      /* Background hero image */
+      /* Background hero image — separate layer so border repaint doesn't flash it */
       var heroSrc = driveHero(b.hero);
-      if (heroSrc) card.style.backgroundImage = 'url(' + heroSrc + ')';
+      if (heroSrc) {
+        var bg = document.createElement('div');
+        bg.className = 'nav-dd-card-bg';
+        bg.style.backgroundImage = 'url(' + heroSrc + ')';
+        card.appendChild(bg);
+      }
 
       /* Medal icon */
       var medalSrc = driveDirect(b.medal);
