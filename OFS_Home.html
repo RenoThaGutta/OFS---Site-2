@@ -1301,7 +1301,11 @@
         var card = document.getElementById('js-page-card-'+i);
         if(!card) return;
         if(c.href) card.href = c.href;
-        setText('js-page-'+i+'-icon',  c.icon);
+        // Only overwrite icon if sheet value is a URL; otherwise keep hardcoded PNG
+        if(c.icon && /\.(png|jpg|jpeg|svg|webp)$/i.test(c.icon)){
+          var iconEl = document.getElementById('js-page-'+i+'-icon');
+          if(iconEl){ iconEl.innerHTML = '<img src="'+c.icon+'" width="64" height="64" style="display:block;object-fit:contain;">'; }
+        }
         setText('js-page-'+i+'-title', c.title);
         setText('js-page-'+i+'-desc',  c.desc);
       });
