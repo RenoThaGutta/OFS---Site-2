@@ -500,6 +500,8 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
       gap: 16px;
+      opacity: 0;
+      transition: opacity .35s;
     }
     .banner-tile {
       background: var(--bg-card);
@@ -1450,6 +1452,7 @@
         + (d.description ? '<div class="banner-focus">'+d.description+'</div>' : '')
         + '</div>';
     }).join('');
+    grid.style.opacity = '1';
   }
 
   OFSSheets.load().then(function(){
