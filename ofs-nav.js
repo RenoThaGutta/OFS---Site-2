@@ -283,7 +283,7 @@
 
   // Expose for external use (e.g. OFS_Auth_Callback.html can call this after setting session)
   window.OFSNav = {
-    refresh: renderZone,
+    refresh: function() { renderZone(); if (window.OFSHeaderBar) OFSHeaderBar.refreshBanners(); },
     clearSession: clearSession,
     SESSION_KEY: SESSION_KEY
   };
