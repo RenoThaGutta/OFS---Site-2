@@ -263,6 +263,82 @@
       box-shadow: 0 0 8px rgba(201,168,76,.5);
     }
 
+    /* ── Banner Progress (identity top-right) ──────────── */
+    .banner-progress {
+      margin-left: auto;
+      flex-shrink: 0;
+      min-width: 200px;
+      max-width: 260px;
+      align-self: center;
+    }
+    .bp-label {
+      font-family: 'Cinzel', serif;
+      font-size: .6rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      white-space: nowrap;
+    }
+    .bp-track {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      position: relative;
+    }
+    .bp-step {
+      flex: 1;
+      height: 5px;
+      background: rgba(255,255,255,.06);
+      position: relative;
+    }
+    .bp-step:first-child { border-radius: 3px 0 0 3px; }
+    .bp-step:last-child { border-radius: 0 3px 3px 0; }
+    .bp-step-fill {
+      position: absolute; inset: 0;
+      background: linear-gradient(to right, var(--gold-dim), var(--gold));
+      border-radius: inherit;
+      transform-origin: left;
+    }
+    .bp-step.complete .bp-step-fill { width: 100%; }
+    .bp-step.partial .bp-step-fill { border-radius: 3px 0 0 3px; }
+    .bp-step-fill.maxed {
+      background: linear-gradient(to right, var(--gold), var(--gold-lt));
+      box-shadow: 0 0 6px rgba(201,168,76,.4);
+    }
+    .bp-markers {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 6px;
+      position: relative;
+    }
+    .bp-marker {
+      font-family: 'Inter', sans-serif;
+      font-size: .55rem;
+      color: var(--silver-dim);
+      text-align: center;
+      flex: 1;
+    }
+    .bp-marker.active {
+      color: var(--gold);
+      font-weight: 500;
+    }
+    .bp-medal-end {
+      width: 22px; height: 22px;
+      object-fit: contain;
+      flex-shrink: 0;
+      margin-left: 6px;
+    }
+    .bp-medal-end.locked {
+      filter: grayscale(1) brightness(.4);
+    }
+    .bp-pts-label {
+      font-size: .6rem;
+      color: var(--silver-dim);
+      margin-top: 2px;
+      text-align: right;
+    }
+
     /* ── Section header ──────────────────────────────────── */
     .sec-head {
       display: flex; align-items: center; gap: 16px;
@@ -409,6 +485,7 @@
     @media (max-width: 700px) {
       .identity { flex-direction: column; text-align: center; }
       .ident-divider { display: none; }
+      .banner-progress { margin-left: 0; min-width: unset; max-width: unset; width: 100%; }
       .banners-grid { grid-template-columns: repeat(2, 1fr); }
       .stats-grid   { grid-template-columns: repeat(2, 1fr); }
     }
@@ -440,6 +517,7 @@
       <div class="ident-ship"     id="js-ship"></div>
       <div class="rep-block"      id="js-rep"></div>
     </div>
+    <div class="banner-progress" id="js-banner-progress" style="display:none"></div>
   </section>
 
   <!-- Stats -->
@@ -669,6 +747,62 @@ function render(p) {
     }
   } else {
     bannerEl.innerHTML = '';
+  }
+
+  // Banner progress bar (top-right of identity)
+  const bpEl = document.getElementById('js-banner-progress');
+  if (p.activeBanner && BANNER_RANKS[p.activeBanner]) {
+    const pts = bData.p || 0;
+    const hasMedal = bData.m || false;
+    const ranks = BANNER_RANKS[p.activeBanner];
+    const thresholds = [0, 15, 30, 60];
+    const { idx } = rankInfo(p.activeBanner, pts, hasMedal);
+
+    // Build 3 step segments (0→15, 15→30, 30→60)
+    let stepsHTML = '';
+    for (let i = 0; i < 3; i++) {
+      const lo = thresholds[i], hi = thresholds[i + 1];
+      let cls = '', fillStyle = '', fillCls = '';
+      if (pts >= hi) {
+        cls = 'complete';
+        fillStyle = 'width:100%';
+        if (i === 2 && hasMedal) fillCls = ' maxed';
+      } else if (pts > lo) {
+        cls = 'partial';
+        const pct = ((pts - lo) / (hi - lo)) * 100;
+        fillStyle = 'width:' + pct.toFixed(1) + '%';
+      }
+      stepsHTML += `<div class="bp-step ${cls}"><div class="bp-step-fill${fillCls}" style="${fillStyle}"></div></div>`;
+    }
+
+    // Medal image at end
+    const defs2 = (window.OFSSheets && OFSSheets.getBannerDefs) ? OFSSheets.getBannerDefs() : [];
+    const banDef2 = defs2.find(d => d.name === p.activeBanner);
+    let medalUrl = '';
+    if (banDef2 && banDef2.medalUrl) {
+      const mm = banDef2.medalUrl.match(/\/file\/d\/([^/?#]+)/);
+      medalUrl = mm ? 'https://drive.google.com/thumbnail?id=' + mm[1] + '&sz=w400' : banDef2.medalUrl;
+    } else if (MEDAL_IMGS[p.activeBanner]) {
+      medalUrl = MEDAL_IMGS[p.activeBanner];
+    }
+    const medalLocked = !hasMedal;
+    const medalImg = medalUrl
+      ? `<img class="bp-medal-end${medalLocked ? ' locked' : ''}" src="${medalUrl}" alt="" onerror="this.style.display='none'">`
+      : '';
+
+    // Rank markers
+    const markersHTML = ranks.map((r, i) =>
+      `<div class="bp-marker${i === idx ? ' active' : ''}">${r}</div>`
+    ).join('');
+
+    bpEl.style.display = '';
+    bpEl.innerHTML =
+      `<div class="bp-label">${p.activeBanner} — Progress</div>` +
+      `<div class="bp-track">${stepsHTML}${medalImg}</div>` +
+      `<div class="bp-markers">${markersHTML}</div>` +
+      `<div class="bp-pts-label">${pts} pts</div>`;
+  } else {
+    bpEl.style.display = 'none';
   }
 
   // Ship on its own line
