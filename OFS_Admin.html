@@ -3010,11 +3010,12 @@ function ofsFileUpload(urlInputId, folder, nameHint){
     try {
       const slug = (nameHint || file.name.replace(/\.[^.]+$/,'')).toLowerCase()
         .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const uniqueId = slug + '-' + Date.now();
       const fd = new FormData();
       fd.append('file', file);
       fd.append('upload_preset', OFS_CLOUDINARY.uploadPreset);
       fd.append('folder', 'ofs/' + folder);
-      fd.append('public_id', slug);
+      fd.append('public_id', uniqueId);
 
       const resp = await fetch(
         'https://api.cloudinary.com/v1_1/' + OFS_CLOUDINARY.cloudName + '/image/upload',
