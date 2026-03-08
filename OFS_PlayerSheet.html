@@ -269,7 +269,8 @@
       flex-shrink: 0;
       min-width: 200px;
       max-width: 260px;
-      align-self: center;
+      align-self: flex-start;
+      margin-top: 4px;
     }
     .bp-label {
       font-family: 'Cinzel', serif;
@@ -283,25 +284,22 @@
     .bp-track {
       display: flex;
       align-items: center;
-      gap: 0;
-      position: relative;
+      gap: 3px;
     }
     .bp-step {
       flex: 1;
       height: 5px;
       background: rgba(255,255,255,.06);
+      border-radius: 2px;
       position: relative;
+      overflow: hidden;
     }
-    .bp-step:first-child { border-radius: 3px 0 0 3px; }
-    .bp-step:last-child { border-radius: 0 3px 3px 0; }
     .bp-step-fill {
-      position: absolute; inset: 0;
+      position: absolute; top: 0; bottom: 0; left: 0;
+      width: 0;
       background: linear-gradient(to right, var(--gold-dim), var(--gold));
       border-radius: inherit;
-      transform-origin: left;
     }
-    .bp-step.complete .bp-step-fill { width: 100%; }
-    .bp-step.partial .bp-step-fill { border-radius: 3px 0 0 3px; }
     .bp-step-fill.maxed {
       background: linear-gradient(to right, var(--gold), var(--gold-lt));
       box-shadow: 0 0 6px rgba(201,168,76,.4);
