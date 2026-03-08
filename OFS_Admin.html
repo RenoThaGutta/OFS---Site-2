@@ -2933,46 +2933,71 @@ function driveDirect(url){
   if(m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400';
   return url;
 }
-/* ── Self-hosted image upload helper ────────────────────────────── */
-// Temporary blob URLs for preview (keyed by relative path)
-var _uploadPreviews = {};
+/* ── Cloudinary image upload ────────────────────────────────────── */
+var OFS_CLOUDINARY = {
+  cloudName:    'YOUR_CLOUD_NAME',      // ← Replace with your Cloudinary cloud name
+  uploadPreset: 'ofs_unsigned'           // ← Unsigned upload preset name (create in Cloudinary settings)
+};
+
 function ofsFileUpload(urlInputId, folder, nameHint){
+  if(OFS_CLOUDINARY.cloudName === 'YOUR_CLOUD_NAME'){
+    showToast('Cloudinary not configured — set cloud name in OFS_CLOUDINARY'); return;
+  }
   const pick = document.createElement('input');
   pick.type = 'file';
   pick.accept = 'image/*';
-  pick.onchange = function(){
+  pick.onchange = async function(){
     const file = pick.files[0];
     if(!file) return;
-    const ext = file.name.split('.').pop().toLowerCase() || 'png';
-    const slug = (nameHint || file.name.replace(/\.[^.]+$/,'')).toLowerCase()
-      .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    const fileName = slug + '.' + ext;
-    const relPath = 'uploads/' + folder + '/' + fileName;
-
-    // Create blob URL for instant preview
-    const blobUrl = URL.createObjectURL(file);
-    _uploadPreviews[relPath] = blobUrl;
-
-    // Auto-download so user has the file with the correct name
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = fileName;
-    a.click();
-
-    // Fill the URL input with the relative path
-    const inp = document.getElementById(urlInputId);
-    if(inp){
-      inp.value = relPath;
-      inp.dispatchEvent(new Event('input', {bubbles:true}));
+    if(!file.type.startsWith('image/')){
+      showToast('Only image files allowed — use a YouTube link for videos'); return;
     }
-    showToast('File downloaded as "' + fileName + '" — move it to uploads/' + folder + '/ and commit');
+    // Max 10MB
+    if(file.size > 10 * 1024 * 1024){
+      showToast('Image too large (max 10 MB)'); return;
+    }
+    const inp = document.getElementById(urlInputId);
+    const btn = inp ? inp.parentNode.querySelector('.tf-upload-btn') : null;
+    if(btn){ btn.disabled = true; btn.textContent = 'Uploading…'; }
+
+    // Instant blob preview while uploading
+    const blobUrl = URL.createObjectURL(file);
+    if(inp){ inp.value = blobUrl; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+
+    try {
+      const slug = (nameHint || file.name.replace(/\.[^.]+$/,'')).toLowerCase()
+        .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', OFS_CLOUDINARY.uploadPreset);
+      fd.append('folder', 'ofs/' + folder);
+      fd.append('public_id', slug);
+
+      const resp = await fetch(
+        'https://api.cloudinary.com/v1_1/' + OFS_CLOUDINARY.cloudName + '/image/upload',
+        { method: 'POST', body: fd }
+      );
+      if(!resp.ok) throw new Error('Upload failed: ' + resp.status);
+      const data = await resp.json();
+      const url = data.secure_url;
+
+      if(inp){ inp.value = url; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      URL.revokeObjectURL(blobUrl);
+      showToast('Image uploaded');
+    } catch(e){
+      console.error('Cloudinary upload error:', e);
+      showToast('Upload failed — ' + e.message);
+      if(inp){ inp.value = ''; inp.dispatchEvent(new Event('input', {bubbles:true})); }
+      URL.revokeObjectURL(blobUrl);
+    } finally {
+      if(btn){ btn.disabled = false; btn.textContent = 'Upload'; }
+    }
   };
   pick.click();
 }
-// Resolve image src: use blob preview if available, otherwise pass through driveDirect
+// Resolve image src: pass through driveDirect for legacy links, otherwise use as-is
 function resolveImg(url){
   if(!url) return url;
-  if(_uploadPreviews[url]) return _uploadPreviews[url];
   return driveDirect(url);
 }
 
