@@ -793,12 +793,35 @@ function render(p) {
       `<div class="bp-marker${i === idx ? ' active' : ''}">${r}</div>`
     ).join('');
 
+    // Points summary line
+    const nextIdx = idx + 1;
+    let ptsLine = '';
+    if (idx === 3 && hasMedal) {
+      ptsLine = `${pts} pts · Max Rank`;
+    } else if (nextIdx < 4) {
+      const nextThresh = thresholds[nextIdx];
+      const toGo = nextThresh - pts;
+      ptsLine = `${pts} / ${nextThresh} pts · ${toGo} to ${ranks[nextIdx]}`;
+    } else {
+      ptsLine = `${pts} pts · Medal required`;
+    }
+
+    // Tooltip with full breakdown
+    const tooltipLines = ranks.map((r, i) => {
+      const th = thresholds[i];
+      const prefix = i === idx ? '▸ ' : '  ';
+      const label = i === 3 ? `${th} pts + Medal` : i === 0 ? 'Start' : `${th} pts`;
+      return `${prefix}${r}: ${label}`;
+    }).join('\n');
+    const tooltip = `${p.activeBanner} Progress\n\nCurrent: ${ranks[idx]} (${pts} pts)\n\n${tooltipLines}`;
+
     bpEl.style.display = '';
+    bpEl.title = tooltip;
     bpEl.innerHTML =
       `<div class="bp-label">${p.activeBanner} — Progress</div>` +
       `<div class="bp-track">${stepsHTML}${medalImg}</div>` +
       `<div class="bp-markers">${markersHTML}</div>` +
-      `<div class="bp-pts-label">${pts} pts</div>`;
+      `<div class="bp-pts-label">${ptsLine}</div>`;
   } else {
     bpEl.style.display = 'none';
   }
