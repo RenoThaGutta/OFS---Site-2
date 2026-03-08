@@ -39,7 +39,12 @@
     // T (19): "Ship Image"     — not imported
     // U (20): "Verified"       — not imported
     // V (21): "RSI User Name"  — not imported
-    // W-AB (22-27): quest tracking — not imported
+    ACTIVE_QUEST:       22,   // W — "Active Quest"
+    ACTIVE_QUEST_DESC:  23,   // X — "Active Quest Desc"
+    ACTIVE_QUEST_LEADER:24,   // Y — "Active Quest Leader"
+    LAST_QUEST:         25,   // Z — "Most Recent Completed Quest"
+    LAST_QUEST_LEADER:  26,   // AA — "Most Recent Quest Leader"
+    LAST_QUEST_DESC:    27,   // AB — "Most Recent Completed Quest Desc"
     BANNER:        28,   // AC — "Banner"
     // AD (29): "Banner Points" — aggregate, use banner sheet instead
     // AE (30): "Banner Medals" — aggregate, use banner sheet instead
@@ -145,6 +150,12 @@
         avatarUrl:     (cell(row, ML.PROFILE_PIC).toLowerCase().indexOf('no avatar') === -1) ? cell(row, ML.PROFILE_PIC) : '',
         ship:          cell(row, ML.SHIP),
         activeBanner:  cell(row, ML.BANNER),
+        activeQuest:      cell(row, ML.ACTIVE_QUEST),
+        activeQuestDesc:  cell(row, ML.ACTIVE_QUEST_DESC),
+        activeQuestLeader:cell(row, ML.ACTIVE_QUEST_LEADER),
+        lastQuest:        cell(row, ML.LAST_QUEST),
+        lastQuestLeader:  cell(row, ML.LAST_QUEST_LEADER),
+        lastQuestDesc:    cell(row, ML.LAST_QUEST_DESC),
         reputationXP:  num(row, ML.REPUTATION_XP),
         stats: {
           PatrolCount:            num(patrolRow, PT.PATROL_COUNT),
