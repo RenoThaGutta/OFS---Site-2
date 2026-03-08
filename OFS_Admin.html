@@ -1645,6 +1645,8 @@ function renderAll(){
   if(defs.length) BANNER_NAMES = defs.map(d=>d.name);
   renderRoster();
   renderBanManageList();
+  // Pre-seed tavern data so it's ready when the tab opens
+  if(window._tavSeedFromSheet) window._tavSeedFromSheet();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -3172,8 +3174,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
 
   /* Normalize raw sheet rows into the same shape the admin UI uses */
   function normFromSheet(sec, rawRows) {
-    if(!rawRows || !rawRows.length) return [];
-    return rawRows.map(row => {
+    if(!rawRows || rawRows.length < 2) return [];
+    return rawRows.slice(1).map(row => {
       if(sec === 'announcements') return {
         id: String(row[0]||''), title: String(row[1]||''), body: String(row[2]||''),
         date: String(row[3]||''), author: String(row[4]||''),
@@ -3192,7 +3194,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         url: String(row[2]||''), caption: String(row[3]||''),
         date: String(row[4]||''), author: String(row[5]||'')
       };
-    }).filter(item => item.id && item.id.length > 2); // skip blank/header rows
+    }).filter(item => item.id);
   }
 
   /* Seed localStorage from Sheet data (Sheet is source of truth) */
@@ -3844,6 +3846,9 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       r.classList.toggle('active', r.dataset.id===id);
     });
   }
+
+  /* Expose so renderAll() can pre-seed after OFSSheets.load() */
+  window._tavSeedFromSheet = seedFromSheet;
 
   /* ── Init on tab open ── */
   document.querySelector('[data-tab="tavern"]').addEventListener('click',()=>{
