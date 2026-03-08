@@ -241,13 +241,14 @@
       box-shadow: 0 16px 48px rgba(0,0,0,.7);
     }
     .bp-popup-hero {
-      width: 100%; height: 120px; background-size: cover; background-position: center;
+      width: 100%; min-height: 120px; height: 120px; flex-shrink: 0;
+      background-size: cover; background-position: center;
       border-radius: 4px 4px 0 0; display: none;
     }
     .bp-popup-hero.has-img { display: block; }
     .bp-popup-head {
       padding: 16px 22px; border-bottom: 1px solid var(--b-dim);
-      display: flex; align-items: center; gap: 12px;
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
     }
     .bp-popup-title { font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); flex: 1; }
     .bp-popup-medal { width: 28px; height: 28px; object-fit: contain; }
@@ -260,12 +261,12 @@
     .bp-view-page-btn:hover { background: rgba(201,168,76,.12); }
     .bp-popup-close { background: none; border: none; color: var(--silver-dim); cursor: pointer; font-size: 1rem; line-height: 1; padding: 0; }
     .bp-popup-close:hover { color: var(--gold); }
-    .bp-stats-bar { display: flex; border-bottom: 1px solid var(--b-dim); }
+    .bp-stats-bar { display: flex; border-bottom: 1px solid var(--b-dim); flex-shrink: 0; }
     .bp-stat { flex: 1; padding: 10px 0; text-align: center; border-right: 1px solid var(--b-dim); }
     .bp-stat:last-child { border-right: none; }
     .bp-stat-val { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 700; color: var(--silver); }
     .bp-stat-lbl { font-size: .6rem; color: var(--text-dim); margin-top: 2px; letter-spacing: .06em; text-transform: uppercase; }
-    .bp-breakdown { padding: 10px 22px; border-bottom: 1px solid var(--b-dim); display: flex; flex-wrap: wrap; gap: 5px; }
+    .bp-breakdown { padding: 10px 22px; border-bottom: 1px solid var(--b-dim); display: flex; flex-wrap: wrap; gap: 5px; flex-shrink: 0; }
     .bp-rchip { font-family: 'Cinzel', serif; font-size: .58rem; letter-spacing: .07em; text-transform: uppercase; padding: 3px 9px; border-radius: 2px; border: 1px solid var(--b-dim); color: var(--text-dim); }
     .bp-rchip.has-n { border-color: var(--b-gold); color: var(--silver); }
     .bp-rchip strong { color: var(--gold); }
