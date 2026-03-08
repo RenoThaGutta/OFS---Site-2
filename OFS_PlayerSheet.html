@@ -139,7 +139,7 @@
       content: ''; position: absolute; inset: 0;
       background: linear-gradient(90deg, rgba(14,14,28,.95) 35%, rgba(14,14,28,.6));
     }
-    .identity > * { position: relative; z-index: 1; }
+    .identity > :not(.identity-bg) { position: relative; z-index: 1; }
     .avatar {
       flex-shrink: 0;
       width: 114px; height: 114px;
@@ -660,10 +660,12 @@ function render(p) {
       const m = banDef.bannerImageUrl.match(/\/file\/d\/([^/?#]+)/);
       const heroUrl = m ? 'https://lh3.googleusercontent.com/d/' + m[1] : banDef.bannerImageUrl;
       const identityEl = document.querySelector('.identity');
+      const oldBg = identityEl.querySelector('.identity-bg');
+      if (oldBg) oldBg.remove();
       const bg = document.createElement('div');
       bg.className = 'identity-bg';
       bg.style.backgroundImage = 'url(' + heroUrl + ')';
-      identityEl.insertBefore(bg, identityEl.firstChild);
+      identityEl.appendChild(bg);
     }
   } else {
     bannerEl.innerHTML = '';
