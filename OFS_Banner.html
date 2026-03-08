@@ -244,6 +244,26 @@
       font-style: italic;
       padding: 12px 0;
     }
+    .show-more-btn {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 12px 0;
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      color: var(--gold);
+      font-family: 'Cinzel', serif;
+      font-size: .85rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .show-more-btn:hover {
+      background: rgba(201,168,76,.08);
+      color: var(--gold-lt);
+    }
 
     /* ── Footer ───────────────────────────────────────── */
     footer {
@@ -442,24 +462,40 @@
       members.length + ' Member' + (members.length !== 1 ? 's' : '');
 
     var list = document.getElementById('member-list');
+    var SHOW_LIMIT = 20;
+    var buildCard = function(p) {
+      var pts = (p.banners && p.banners[bannerName]) ? (p.banners[bannerName].p || 0) : 0;
+      var hasMedal = (p.banners && p.banners[bannerName]) ? !!p.banners[bannerName].m : false;
+      var avatarSrc = driveDirect(p.avatarUrl) || 'ofs_logo.png';
+      return '<a class="member-card" href="OFS_PlayerSheet.html?player=' + encodeURIComponent(p.id) + '">' +
+        '<img class="member-avatar" src="' + avatarSrc + '" alt="' + p.username + '" onerror="this.src=\'ofs_logo.png\'">' +
+        '<div class="member-info">' +
+          '<div class="member-name">' + p.username + '</div>' +
+          '<div class="member-rank">' + p.rank + '</div>' +
+        '</div>' +
+        '<div class="member-pts">' +
+          (hasMedal ? '<span>★ ' + pts + ' pts</span>' : '<span>' + pts + ' pts</span>') +
+        '</div>' +
+      '</a>';
+    };
     if (!members.length) {
       list.innerHTML = '<div class="no-members">No members currently enlisted in this banner.</div>';
     } else {
-      list.innerHTML = members.map(function(p) {
-        var pts = (p.banners && p.banners[bannerName]) ? (p.banners[bannerName].p || 0) : 0;
-        var hasMedal = (p.banners && p.banners[bannerName]) ? !!p.banners[bannerName].m : false;
-        var avatarSrc = driveDirect(p.avatarUrl) || 'ofs_logo.png';
-        return '<a class="member-card" href="OFS_PlayerSheet.html?player=' + encodeURIComponent(p.id) + '">' +
-          '<img class="member-avatar" src="' + avatarSrc + '" alt="' + p.username + '" onerror="this.src=\'ofs_logo.png\'">' +
-          '<div class="member-info">' +
-            '<div class="member-name">' + p.username + '</div>' +
-            '<div class="member-rank">' + p.rank + '</div>' +
-          '</div>' +
-          '<div class="member-pts">' +
-            (hasMedal ? '<span>★ ' + pts + ' pts</span>' : '<span>' + pts + ' pts</span>') +
-          '</div>' +
-        '</a>';
-      }).join('');
+      var visible = members.slice(0, SHOW_LIMIT);
+      var hidden = members.slice(SHOW_LIMIT);
+      list.innerHTML = visible.map(buildCard).join('');
+      if (hidden.length > 0) {
+        var showBtn = document.createElement('button');
+        showBtn.className = 'show-more-btn';
+        showBtn.textContent = 'Show ' + hidden.length + ' More Members';
+        showBtn.onclick = function() {
+          showBtn.parentNode.removeChild(showBtn);
+          var tmp = document.createElement('div');
+          tmp.innerHTML = hidden.map(buildCard).join('');
+          while (tmp.firstChild) { list.appendChild(tmp.firstChild); }
+        };
+        list.appendChild(showBtn);
+      }
     }
 
     // Prev/next buttons
