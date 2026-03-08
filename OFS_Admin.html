@@ -647,30 +647,40 @@
        TAVERN HALL MANAGER
     ══════════════════════════════════════════════ */
     .tav-subtabs {
-      display: flex; gap: 4px; margin-bottom: 24px;
+      display: flex; gap: 0; margin-bottom: 24px;
       border-bottom: 1px solid var(--b-dim); padding-bottom: 0;
     }
     .tav-stab {
-      padding: 10px 20px;
-      font-family: 'Cinzel', serif; font-size: .68rem;
+      padding: 11px 24px;
+      font-family: 'Cinzel', serif; font-size: .66rem;
       letter-spacing: .14em; text-transform: uppercase;
       color: var(--text-dim); background: none; border: none;
       border-bottom: 2px solid transparent; cursor: pointer;
-      transition: color .2s, border-color .2s;
+      transition: color .2s, border-color .2s, background .2s;
       margin-bottom: -1px;
+      display: flex; align-items: center; gap: 8px;
     }
-    .tav-stab:hover  { color: var(--silver); }
+    .tav-stab:hover  { color: var(--silver); background: rgba(201,168,76,.03); }
     .tav-stab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .tav-stab-count {
+      font-family: 'Inter', sans-serif; font-size: .56rem;
+      background: rgba(201,168,76,.1); color: var(--gold-dim);
+      padding: 1px 7px; border-radius: 10px; min-width: 18px; text-align: center;
+      letter-spacing: 0;
+    }
+    .tav-stab.active .tav-stab-count { background: rgba(201,168,76,.18); color: var(--gold); }
 
     .tav-subpanel { display: none; }
     .tav-subpanel.active { display: block; }
 
     .tav-split {
-      display: grid; grid-template-columns: 280px 1fr 300px; gap: 20px; align-items: start;
+      display: grid; grid-template-columns: 300px 1fr 280px; gap: 16px; align-items: start;
+      min-height: calc(100vh - 260px);
     }
+
     .tav-preview {
       background: var(--bg-card); border: 1px solid var(--b-dim);
-      border-radius: 4px; padding: 16px 18px; position: sticky; top: 76px;
+      border-radius: 6px; padding: 16px 18px; position: sticky; top: 76px;
     }
     .tav-preview-head {
       display: flex; align-items: center; justify-content: space-between;
@@ -680,7 +690,8 @@
     }
     .prev-pin-on  { font-size: .56rem; letter-spacing: .1em; color: var(--gold); border: 1px solid var(--b-gold); border-radius: 2px; padding: 1px 6px; }
     .prev-pin-off { font-size: .56rem; letter-spacing: .1em; color: var(--text-dim); border: 1px solid var(--b-dim); border-radius: 2px; padding: 1px 6px; }
-    .tav-preview-empty { color: var(--text-dim); font-size: .78rem; text-align: center; padding: 20px 0; font-family: 'Crimson Text',serif; font-style: italic; }
+    .tav-preview-empty { color: var(--text-dim); font-size: .78rem; text-align: center; padding: 30px 0; font-family: 'Crimson Text',serif; font-style: italic; }
+    .tav-preview-empty svg { display: block; margin: 0 auto 10px; opacity: .18; }
     /* ── announcement preview ── */
     .prev-ann-card { display: flex; flex-direction: column; gap: 7px; }
     .prev-ann-pinned { border-left: 2px solid var(--gold); padding-left: 10px; }
@@ -710,49 +721,71 @@
     .prev-media-video iframe { width: 100%; aspect-ratio: 16/9; border-radius: 4px; border: none; display: block; }
     .prev-media-caption { font-size: .74rem; color: var(--text-dim); margin-top: 8px; text-align: center; font-style: italic; }
     .tav-list {
-      background: var(--bg-card); border: 1px solid var(--b-gold);
-      border-radius: 4px; overflow: hidden;
+      background: var(--bg-card); border: 1px solid var(--b-dim);
+      border-radius: 6px; overflow: hidden;
+      display: flex; flex-direction: column;
     }
+    .tav-list-header {
+      padding: 12px 16px; border-bottom: 1px solid var(--b-dim);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .tav-list-scroll {
+      max-height: calc(100vh - 340px); overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent;
+    }
+    .tav-list-scroll::-webkit-scrollbar { width: 5px; }
+    .tav-list-scroll::-webkit-scrollbar-track { background: transparent; }
+    .tav-list-scroll::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 4px; }
     .tav-form {
-      background: var(--bg-card); border: 1px solid var(--b-gold);
-      border-radius: 4px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;
-      min-height: 300px;
+      background: var(--bg-card); border: 1px solid var(--b-dim);
+      border-radius: 6px; padding: 22px 26px; display: flex; flex-direction: column; gap: 14px;
+      min-height: 340px;
     }
     .tav-form-empty {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 260px; color: var(--text-dim); font-size: .82rem;
-      font-family: 'Crimson Text', serif; font-style: italic;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      flex: 1; min-height: 280px; color: var(--text-dim); font-size: .82rem;
+      font-family: 'Crimson Text', serif; font-style: italic; gap: 12px;
     }
+    .tav-form-empty svg { opacity: .15; }
 
     .tav-item-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 14px; border-bottom: 1px solid var(--b-dim);
-      cursor: pointer; transition: background .2s;
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 16px; border-bottom: 1px solid var(--b-dim);
+      cursor: pointer; transition: background .2s, border-left .15s;
+      border-left: 3px solid transparent;
     }
     .tav-item-row:last-child { border-bottom: none; }
-    .tav-item-row:hover, .tav-item-row.active { background: rgba(201,168,76,.07); }
+    .tav-item-row:hover { background: rgba(201,168,76,.04); }
+    .tav-item-row.active { background: rgba(201,168,76,.08); border-left-color: var(--gold); }
     .tav-item-row.active .tav-item-title { color: var(--gold-lt); }
     .tav-item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
     .tav-item-title {
-      font-size: .84rem; color: var(--text);
+      font-size: .82rem; color: var(--text);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family: 'Inter', sans-serif;
     }
     .tav-item-sub   { display: flex; align-items: center; gap: 6px; }
-    .tav-item-meta  { font-size: .65rem; color: var(--text-dim); }
-    .tav-pin-dot    { color: var(--gold); font-size: .65rem; flex-shrink: 0; }
+    .tav-item-meta  { font-size: .62rem; color: var(--text-dim); }
+    .tav-pin-dot    { color: var(--gold); font-size: .6rem; flex-shrink: 0; }
     .tav-del-btn {
       background: none; border: none; color: var(--silver-dim); cursor: pointer;
-      font-size: .75rem; padding: 2px 6px; border-radius: 2px; flex-shrink: 0;
-      transition: color .2s; align-self: flex-start; margin-top: 2px;
+      font-size: .72rem; padding: 4px 6px; border-radius: 3px; flex-shrink: 0;
+      transition: color .2s, background .2s; align-self: center;
+      opacity: 0; transition: opacity .2s, color .2s;
     }
-    .tav-del-btn:hover { color: var(--danger); }
-    .tav-list-empty { padding: 16px; color: var(--text-dim); font-size: .82rem; text-align: center; }
+    .tav-item-row:hover .tav-del-btn { opacity: 1; }
+    .tav-del-btn:hover { color: var(--danger); background: rgba(220,50,50,.08); }
+    .tav-list-empty { padding: 24px 16px; color: var(--text-dim); font-size: .78rem; text-align: center; font-family: 'Crimson Text', serif; font-style: italic; }
 
     /* Tavern form elements reuse hf-* where possible; add new ones: */
     .tf-section-head {
       font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .18em;
-      text-transform: uppercase; color: var(--gold); padding-bottom: 10px;
-      border-bottom: 1px solid var(--b-dim); margin-bottom: 2px;
+      text-transform: uppercase; color: var(--gold); padding-bottom: 12px;
+      border-bottom: 1px solid var(--b-dim); margin-bottom: 4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .tf-section-head::before {
+      content: ''; width: 3px; height: 16px; background: var(--gold); border-radius: 2px; flex-shrink: 0;
     }
     .tf-row { display: flex; flex-direction: column; gap: 4px; }
     .tf-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -1354,26 +1387,32 @@
 
       <!-- Sub-tabs -->
       <div class="tav-subtabs">
-        <button class="tav-stab active" data-stab="tav-ann">Announcements</button>
-        <button class="tav-stab"        data-stab="tav-events">Events</button>
-        <button class="tav-stab"        data-stab="tav-media">Media</button>
+        <button class="tav-stab active" data-stab="tav-ann">Announcements <span class="tav-stab-count" id="tav-count-ann">0</span></button>
+        <button class="tav-stab"        data-stab="tav-events">Events <span class="tav-stab-count" id="tav-count-events">0</span></button>
+        <button class="tav-stab"        data-stab="tav-media">Media <span class="tav-stab-count" id="tav-count-media">0</span></button>
       </div>
 
       <!-- Announcements sub-panel -->
       <div class="tav-subpanel active" id="tav-ann">
         <div class="tav-split">
           <div class="tav-list">
-            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+            <div class="tav-list-header">
               <button class="add-btn" onclick="tavNewAnn()">+ New Announcement</button>
             </div>
-            <div id="tav-ann-list"><div class="tav-list-empty">Loading…</div></div>
+            <div class="tav-list-scroll" id="tav-ann-list"><div class="tav-list-empty">Loading…</div></div>
           </div>
           <div class="tav-form" id="tav-ann-form">
-            <div class="tav-form-empty">Select an announcement to edit, or create a new one.</div>
+            <div class="tav-form-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+              Select an announcement to edit, or create a new one.
+            </div>
           </div>
           <div class="tav-preview" id="tav-ann-preview">
             <div class="tav-preview-head">Preview</div>
-            <div class="tav-preview-empty">Open an item to see a preview.</div>
+            <div class="tav-preview-empty">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Open an item to see a preview.
+            </div>
           </div>
         </div>
       </div>
@@ -1382,17 +1421,23 @@
       <div class="tav-subpanel" id="tav-events">
         <div class="tav-split">
           <div class="tav-list">
-            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+            <div class="tav-list-header">
               <button class="add-btn" onclick="tavNewEvent()">+ New Event</button>
             </div>
-            <div id="tav-events-list"><div class="tav-list-empty">Loading…</div></div>
+            <div class="tav-list-scroll" id="tav-events-list"><div class="tav-list-empty">Loading…</div></div>
           </div>
           <div class="tav-form" id="tav-events-form">
-            <div class="tav-form-empty">Select an event to edit, or create a new one.</div>
+            <div class="tav-form-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Select an event to edit, or create a new one.
+            </div>
           </div>
           <div class="tav-preview" id="tav-events-preview">
             <div class="tav-preview-head">Preview</div>
-            <div class="tav-preview-empty">Open an item to see a preview.</div>
+            <div class="tav-preview-empty">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Open an item to see a preview.
+            </div>
           </div>
         </div>
       </div>
@@ -1401,17 +1446,23 @@
       <div class="tav-subpanel" id="tav-media">
         <div class="tav-split">
           <div class="tav-list">
-            <div style="padding:12px 14px;border-bottom:1px solid var(--b-dim);">
+            <div class="tav-list-header">
               <button class="add-btn" onclick="tavNewMedia()">+ Add Media</button>
             </div>
-            <div id="tav-media-list"><div class="tav-list-empty">Loading…</div></div>
+            <div class="tav-list-scroll" id="tav-media-list"><div class="tav-list-empty">Loading…</div></div>
           </div>
           <div class="tav-form" id="tav-media-form">
-            <div class="tav-form-empty">Select a media item to edit, or add a new one.</div>
+            <div class="tav-form-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Select a media item to edit, or add a new one.
+            </div>
           </div>
           <div class="tav-preview" id="tav-media-preview">
             <div class="tav-preview-head">Preview</div>
-            <div class="tav-preview-empty">Open an item to see a preview.</div>
+            <div class="tav-preview-empty">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              Open an item to see a preview.
+            </div>
           </div>
         </div>
       </div>
@@ -3255,6 +3306,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   function renderAnnList(){
     const items = getSection('announcements').sort((a,b)=>new Date(b.date)-new Date(a.date));
     const el = document.getElementById('tav-ann-list');
+    const countEl = document.getElementById('tav-count-ann');
+    if(countEl) countEl.textContent = items.length;
     if(!items.length){ el.innerHTML='<div class="tav-list-empty">No announcements yet.</div>'; return; }
     el.innerHTML = items.map(a=>`
       <div class="tav-item-row" data-id="${escHtml(a.id)}" onclick="window._tavEditAnn('${escHtml(a.id)}')">
@@ -3262,7 +3315,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
           <span class="tav-item-title">${a.pinned?'<span class="tav-pin-dot">&#x25C6;</span> ':''}${escHtml(a.title||'(untitled)')}</span>
           <div class="tav-item-sub">
             <span class="badge ${CAT_BADGES[a.category]||'badge-dim'}">${escHtml(CAT_LABELS[a.category]||'General')}</span>
-            <span class="tav-item-meta">${fmtDate(a.date)}</span>
+            <span class="tav-item-meta">${fmtDate(a.date)}${a.author?' · '+escHtml(a.author):''}</span>
           </div>
         </div>
         <button class="tav-del-btn" onclick="event.stopPropagation();window._tavDelAnn('${escHtml(a.id)}')">&#x2715;</button>
@@ -3361,6 +3414,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   function renderEventList(){
     const items = getSection('events').sort((a,b)=>new Date(b.date)-new Date(a.date));
     const el = document.getElementById('tav-events-list');
+    const countEl = document.getElementById('tav-count-events');
+    if(countEl) countEl.textContent = items.length;
     if(!items.length){ el.innerHTML='<div class="tav-list-empty">No events yet.</div>'; return; }
     el.innerHTML = items.map(ev=>`
       <div class="tav-item-row" data-id="${escHtml(ev.id)}" onclick="window._tavEditEvent('${escHtml(ev.id)}')">
@@ -3454,6 +3509,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   function renderMediaList(){
     const items = getSection('media').sort((a,b)=>new Date(b.date)-new Date(a.date));
     const el = document.getElementById('tav-media-list');
+    const countEl = document.getElementById('tav-count-media');
+    if(countEl) countEl.textContent = items.length;
     if(!items.length){ el.innerHTML='<div class="tav-list-empty">No media items yet.</div>'; return; }
     el.innerHTML = items.map(m=>`
       <div class="tav-item-row" data-id="${escHtml(m.id)}" onclick="window._tavEditMedia('${escHtml(m.id)}')">
