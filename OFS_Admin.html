@@ -206,25 +206,25 @@
     .banner-pop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
     .banner-pop-card {
       background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 3px;
-      padding: 18px 20px 14px; transition: border-color .2s, box-shadow .2s; cursor: pointer;
+      padding: 14px 16px 12px; transition: border-color .2s, box-shadow .2s; cursor: pointer;
       position: relative; overflow: hidden;
+      display: grid; grid-template-columns: 1fr 64px; gap: 6px; align-items: start;
     }
     .banner-pop-card:hover { border-color: var(--b-gold); box-shadow: 0 0 16px var(--glow); }
     .banner-pop-card.bp-empty-card { opacity: .55; }
-    .bp-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-    .bp-card-header .bp-name { margin-bottom: 0; }
-    .bp-card-medal { width: 110px; height: 110px; object-fit: contain; flex-shrink: 0; cursor: zoom-in; }
-    .bp-card-medal-placeholder { width: 110px; height: 110px; flex-shrink: 0; }
+    .bp-card-medal { width: 64px; height: 64px; object-fit: contain; flex-shrink: 0; cursor: zoom-in; grid-row: 1 / 3; grid-column: 2; align-self: center; }
+    .bp-card-medal-placeholder { width: 64px; height: 64px; flex-shrink: 0; grid-row: 1 / 3; grid-column: 2; }
     #img-zoom-tip { position: fixed; z-index: 99999; pointer-events: none; display: none; background: var(--bg-card); border: 1px solid var(--b-gold); border-radius: 6px; padding: 8px; box-shadow: 0 8px 40px rgba(0,0,0,.8); }
     #img-zoom-tip img { display: block; max-width: 300px; max-height: 300px; object-fit: contain; }
     #img-lightbox { position: fixed; inset: 0; z-index: 999999; background: rgba(0,0,0,.88); display: none; align-items: center; justify-content: center; cursor: zoom-out; }
     #img-lightbox img { max-width: 90vw; max-height: 90vh; object-fit: contain; border: 1px solid var(--b-gold); border-radius: 4px; box-shadow: 0 0 80px rgba(0,0,0,.9); }
-    .bp-name { font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 8px; }
-    .bp-count { font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 700; color: var(--silver); line-height: 1; }
-    .bp-count-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 6px; }
-    .bp-count-label { font-size: .65rem; color: var(--text-dim); }
-    .bp-totalpts { font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .06em; color: var(--gold-dim); margin-bottom: 6px; }
-    .bp-top { font-size: .68rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 10px; }
+    .bp-card-info { display: flex; flex-direction: column; min-width: 0; }
+    .bp-name { font-family: 'Cinzel', serif; font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+    .bp-count { font-family: 'Cinzel', serif; font-size: 1.6rem; font-weight: 700; color: var(--silver); line-height: 1; }
+    .bp-count-row { display: flex; align-items: baseline; gap: 5px; margin-bottom: 3px; }
+    .bp-count-label { font-size: .62rem; color: var(--text-dim); }
+    .bp-totalpts { font-family: 'Cinzel', serif; font-size: .6rem; letter-spacing: .06em; color: var(--gold-dim); margin-bottom: 2px; }
+    .bp-top { font-size: .64rem; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .bp-top strong { color: var(--silver); }
     .bp-fill-bg { height: 3px; background: rgba(255,255,255,.06); border-radius: 2px; overflow: hidden; }
     .bp-fill-bar { height: 100%; border-radius: 2px; background: linear-gradient(to right, var(--gold-dim), var(--gold)); }
@@ -1783,17 +1783,17 @@ function renderBannerPop(){
     const card=document.createElement('div');
     card.className='banner-pop-card'+(members.length===0?' bp-empty-card':'');
     card.innerHTML=`
-      <div class="bp-card-header">
+      <div class="bp-card-info">
         <div class="bp-name">${bn}</div>
-        ${medalSrc?`<img class="bp-card-medal" src="${medalSrc}" data-zoom="${medalSrc}" alt="${bn} Medal" title="${bn} Medal">`:`<div class="bp-card-medal-placeholder"></div>`}
+        <div class="bp-count-row">
+          <div class="bp-count">${members.length}</div>
+          <div class="bp-count-label">${members.length===1?'member':'members'}</div>
+        </div>
+        <div class="bp-totalpts">${totalPts} total pts</div>
+        <div class="bp-top">${topMember?`Top: <strong>${topMember.username}</strong>`:'&nbsp;'}</div>
       </div>
-      <div class="bp-count-row">
-        <div class="bp-count">${members.length}</div>
-        <div class="bp-count-label">${members.length===1?'member':'members'}</div>
-      </div>
-      <div class="bp-totalpts">${totalPts} total pts</div>
-      <div class="bp-top">${topMember?`Top: <strong>${topMember.username}</strong>`:'&nbsp;'}</div>
-      <div class="bp-fill-bg"><div class="bp-fill-bar" style="width:${pct}%"></div></div>`;
+      ${medalSrc?`<img class="bp-card-medal" src="${medalSrc}" data-zoom="${medalSrc}" alt="${bn} Medal" title="${bn} Medal">`:`<div class="bp-card-medal-placeholder"></div>`}
+      <div class="bp-fill-bg" style="grid-column:1/-1"><div class="bp-fill-bar" style="width:${pct}%"></div></div>`;
     card.addEventListener('click', ()=> openBannerPopup(bn, members));
     grid.appendChild(card);
   });
