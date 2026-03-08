@@ -189,6 +189,11 @@
       background: rgba(201,168,76,.08);
       color: var(--gold);
     }
+    .rank-tier-dot.master img {
+      width: 24px; height: 24px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 4px rgba(201,168,76,.4));
+    }
     .rank-tier-info {}
     .rank-tier-name {
       font-family: 'Cinzel', serif;
@@ -453,8 +458,12 @@
       var label = i === 3
         ? (def.medalName || 'Medal') + ' required'
         : t.pts === 0 ? 'Starting rank' : t.pts + ' banner points';
+      var medalSrc2 = t.master ? driveDirect(def.medalUrl) : '';
+      var dotContent = (t.master && medalSrc2)
+        ? '<img src="' + medalSrc2 + '" alt="" onerror="this.replaceWith(document.createTextNode(\'' + (i + 1) + '\'))">'
+        : (i + 1);
       return '<div class="rank-tier">' +
-        '<div class="rank-tier-dot' + (t.master ? ' master' : '') + '">' + (i + 1) + '</div>' +
+        '<div class="rank-tier-dot' + (t.master ? ' master' : '') + '">' + dotContent + '</div>' +
         '<div class="rank-tier-info">' +
           '<div class="rank-tier-name' + (t.master ? ' master' : '') + '">' + t.name + '</div>' +
           '<div class="rank-tier-pts">' + label + '</div>' +
