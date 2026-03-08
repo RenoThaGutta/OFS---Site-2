@@ -509,7 +509,9 @@
       border-radius: 3px;
       padding: 22px 18px;
       text-align: center;
-      cursor: default;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
       transition: border-color .22s, box-shadow .22s, transform .22s;
     }
     .banner-tile:hover {
@@ -1451,11 +1453,11 @@
       var icon = imgSrc
         ? '<img class="banner-medal-img" src="'+imgSrc+'" alt="'+d.name+' medal" loading="lazy" onerror="this.style.display=\'none\'">'
         : '<div class="banner-icon">&#x2605;</div>';
-      return '<div class="banner-tile" id="js-banner-'+i+'" data-edit-key="banner-'+i+'">'
+      return '<a class="banner-tile" href="OFS_Banner.html?banner='+encodeURIComponent(d.name)+'" id="js-banner-'+i+'" data-edit-key="banner-'+i+'">'
         + icon
         + '<div class="banner-name">'+d.name+'</div>'
         + (d.description ? '<div class="banner-focus">'+d.description+'</div>' : '')
-        + '</div>';
+        + '</a>';
     }).join('');
     grid.style.opacity = '1';
   }
