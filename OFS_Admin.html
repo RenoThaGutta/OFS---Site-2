@@ -3590,7 +3590,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
 
   function showBanForm(def, isNew){
     document.getElementById('ban-manage-form').innerHTML = `
-      <div class="tf-section-head">${isNew?'New Banner':'Edit Banner'}</div>
+      <div class="tf-section-head" style="display:flex;align-items:center;justify-content:space-between">${isNew?'New Banner':'Edit Banner'}${isNew?'':`<button type="button" class="bp-view-page-btn" onclick="openPagePreview('OFS_Banner.html?banner='+encodeURIComponent('${escHtml(def.name)}'))">View Page &rarr;</button>`}</div>
       <div class="tf-2col">
         <div class="tf-row"><div class="hf-label">Banner Name *</div>
           <input id="bf-name" class="hf-input" type="text" value="${escHtml(def.name)}"${isNew?'':' readonly style="opacity:.6;cursor:default"'} placeholder="e.g. The Artificer"></div>
