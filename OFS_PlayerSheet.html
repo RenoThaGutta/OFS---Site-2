@@ -305,18 +305,18 @@
       box-shadow: 0 0 6px rgba(201,168,76,.4);
     }
     .bp-markers {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 28px;
       margin-top: 6px;
-      position: relative;
+      gap: 3px;
     }
     .bp-marker {
       font-family: 'Inter', sans-serif;
       font-size: .55rem;
       color: var(--silver-dim);
-      text-align: center;
-      flex: 1;
+      text-align: left;
     }
+    .bp-marker:last-child { text-align: right; }
     .bp-marker.active {
       color: var(--gold);
       font-weight: 500;
