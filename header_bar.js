@@ -69,24 +69,42 @@
     '.nav-dd-trigger{cursor:pointer;user-select:none;}' +
     '.nav-dd-trigger::after{content:" ▾";font-size:8px;opacity:.6;}' +
     '.nav-dd-panel{' +
-      'display:none;position:absolute;top:calc(100% + 6px);left:50%;transform:translateX(-50%);' +
-      'background:rgba(14,14,28,.96);border:1px solid rgba(201,168,76,.28);' +
-      'border-radius:4px;padding:10px;z-index:210;' +
-      'backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);' +
-      'box-shadow:0 12px 36px rgba(0,0,0,.6);' +
-      'display:none;grid-template-columns:1fr 1fr;gap:6px;width:280px;' +
+      'display:none;position:absolute;top:calc(100% + 6px);right:0;' +
+      'background:rgba(10,10,22,.97);border:1px solid rgba(201,168,76,.28);' +
+      'border-radius:6px;padding:8px;z-index:210;' +
+      'backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);' +
+      'box-shadow:0 16px 48px rgba(0,0,0,.7);' +
+      'display:none;grid-template-columns:1fr 1fr;gap:6px;width:380px;' +
     '}' +
     '.nav-dd-panel.open{display:grid;}' +
     '.nav-dd-card{' +
-      'display:block;text-decoration:none;padding:8px 12px;' +
-      'border:1px solid rgba(201,168,76,.12);border-radius:3px;' +
-      'font-family:"Cinzel",serif;font-size:10px;line-height:1.3;' +
-      'letter-spacing:.08em;text-transform:uppercase;color:#b0b8c8;' +
-      'transition:border-color .2s,background .2s,color .2s;' +
+      'display:flex;align-items:center;gap:10px;text-decoration:none;' +
+      'padding:10px 12px;position:relative;overflow:hidden;' +
+      'border:1px solid rgba(201,168,76,.12);border-radius:4px;' +
+      'background-size:cover;background-position:center;' +
+      'transition:border-color .25s,box-shadow .25s;' +
+    '}' +
+    '.nav-dd-card::before{' +
+      'content:"";position:absolute;inset:0;' +
+      'background:linear-gradient(90deg,rgba(7,7,15,.92) 40%,rgba(7,7,15,.5));' +
+      'z-index:0;transition:background .25s;' +
+    '}' +
+    '.nav-dd-card:hover::before{' +
+      'background:linear-gradient(90deg,rgba(7,7,15,.82) 30%,rgba(7,7,15,.35));' +
     '}' +
     '.nav-dd-card:hover{' +
-      'border-color:rgba(201,168,76,.4);background:rgba(201,168,76,.08);color:#c9a84c;' +
+      'border-color:rgba(201,168,76,.45);box-shadow:0 0 12px rgba(201,168,76,.1);' +
     '}' +
+    '.nav-dd-medal{' +
+      'width:28px;height:28px;object-fit:contain;flex-shrink:0;' +
+      'position:relative;z-index:1;filter:drop-shadow(0 0 4px rgba(201,168,76,.3));' +
+    '}' +
+    '.nav-dd-name{' +
+      'font-family:"Cinzel",serif;font-size:10px;line-height:1.2;' +
+      'letter-spacing:.08em;text-transform:uppercase;color:#b0b8c8;' +
+      'position:relative;z-index:1;transition:color .2s;' +
+    '}' +
+    '.nav-dd-card:hover .nav-dd-name{color:#c9a84c;}' +
     '@media(max-width:860px){' +
       '#main-nav{padding:0 20px;}' +
       '.nav-logo span{display:none;}' +
@@ -185,21 +203,57 @@
 
   var _ddPanel = null;
 
+  function driveDirect(url) {
+    if (!url) return '';
+    var m = url.match(/\/file\/d\/([^/?#]+)/);
+    if (m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400';
+    return url;
+  }
+
+  function driveHero(url) {
+    if (!url) return '';
+    var m = url.match(/\/file\/d\/([^/?#]+)/);
+    if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+    return url;
+  }
+
   function populateBannerDropdown(panel) {
-    var banners = FALLBACK_BANNERS;
-    /* Use Sheets data if available */
+    var defs = null;
     if (window.OFSSheets && OFSSheets.getBannerDefs) {
-      var defs = OFSSheets.getBannerDefs();
-      if (defs && defs.length) {
-        banners = defs.map(function (d) { return d.name; });
-      }
+      defs = OFSSheets.getBannerDefs();
+      if (defs && !defs.length) defs = null;
     }
+    var banners = defs
+      ? defs.map(function (d) { return { name: d.name, medal: d.medalUrl || '', hero: d.bannerImageUrl || '' }; })
+      : FALLBACK_BANNERS.map(function (n) { return { name: n, medal: '', hero: '' }; });
+
     panel.innerHTML = '';
-    banners.forEach(function (name) {
+    banners.forEach(function (b) {
       var card = document.createElement('a');
       card.className = 'nav-dd-card';
-      card.href = 'OFS_Banner.html?banner=' + encodeURIComponent(name);
-      card.textContent = name;
+      card.href = 'OFS_Banner.html?banner=' + encodeURIComponent(b.name);
+
+      /* Background hero image */
+      var heroSrc = driveHero(b.hero);
+      if (heroSrc) card.style.backgroundImage = 'url(' + heroSrc + ')';
+
+      /* Medal icon */
+      var medalSrc = driveDirect(b.medal);
+      if (medalSrc) {
+        var img = document.createElement('img');
+        img.className = 'nav-dd-medal';
+        img.src = medalSrc;
+        img.alt = '';
+        img.onerror = function () { this.style.display = 'none'; };
+        card.appendChild(img);
+      }
+
+      /* Name */
+      var nameEl = document.createElement('span');
+      nameEl.className = 'nav-dd-name';
+      nameEl.textContent = b.name;
+      card.appendChild(nameEl);
+
       panel.appendChild(card);
     });
   }
