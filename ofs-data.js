@@ -387,7 +387,7 @@
       ship: String(source.ship || ''),
       reputationXP: Number(source.reputationXP) || 0,
       faction: String(source.faction || 'Unassigned'),
-      activeBanner: BANNER_NAMES.indexOf(source.activeBanner) >= 0 ? source.activeBanner : BANNER_NAMES[0],
+      activeBanner: BANNER_NAMES.indexOf(source.activeBanner) >= 0 ? source.activeBanner : '',
       stats: {
         PatrolCount: Number(stats.PatrolCount) || 0,
         TotalLength: Number(stats.TotalLength) || 0,
