@@ -87,10 +87,7 @@
     '.nav-dd-card::before{' +
       'content:"";position:absolute;inset:0;' +
       'background:linear-gradient(90deg,rgba(7,7,15,.92) 40%,rgba(7,7,15,.5));' +
-      'z-index:0;transition:background .25s;' +
-    '}' +
-    '.nav-dd-card:hover::before{' +
-      'background:linear-gradient(90deg,rgba(7,7,15,.82) 30%,rgba(7,7,15,.35));' +
+      'z-index:0;' +
     '}' +
     '.nav-dd-card:hover{' +
       'border-color:rgba(201,168,76,.45);box-shadow:0 0 12px rgba(201,168,76,.1);' +
