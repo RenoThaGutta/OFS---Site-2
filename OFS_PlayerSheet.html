@@ -541,6 +541,26 @@
       .banners-grid { grid-template-columns: repeat(2, 1fr); }
       .stats-grid   { grid-template-columns: repeat(2, 1fr); }
     }
+
+    /* ── Banner page iframe overlay ────────────────────── */
+    #banner-preview-overlay {
+      display: none; position: fixed; inset: 0; z-index: 700;
+      background: rgba(0,0,0,.85); align-items: stretch; justify-content: stretch;
+      padding: 24px;
+    }
+    #banner-preview-overlay.open { display: flex; }
+    #banner-preview-iframe {
+      width: 100%; height: 100%; border: 1px solid var(--b-gold);
+      border-radius: 6px; background: var(--bg);
+    }
+    .banner-preview-close {
+      position: fixed; top: 4px; right: 12px; z-index: 710;
+      background: rgba(14,14,28,.9); border: 1px solid var(--b-gold); border-radius: 50%;
+      width: 36px; height: 36px; color: var(--gold); font-size: 1.1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .banner-preview-close:hover { background: rgba(201,168,76,.15); }
+    .banner-card { cursor: pointer; }
   </style>
 </head>
 <body>
@@ -602,6 +622,11 @@
   </footer>
 
 </div><!-- /wrap -->
+
+<div id="banner-preview-overlay" onclick="if(event.target===this)closeBannerPreview()">
+  <button class="banner-preview-close" onclick="closeBannerPreview()">&times;</button>
+  <iframe id="banner-preview-iframe" src="about:blank"></iframe>
+</div>
 
 <script src="header_bar.js"></script>
 <script src="ofs-data.js"></script>
@@ -988,9 +1013,25 @@ function render(p) {
         </div>
       </div>`;
     while (rest.firstChild) card.appendChild(rest.firstChild);
+    card.addEventListener('click', () => openBannerPreview(name));
     bannersGrid.appendChild(card);
   }
 }
+
+function openBannerPreview(bannerName) {
+  const iframe = document.getElementById('banner-preview-iframe');
+  iframe.src = 'OFS_Banner.html?banner=' + encodeURIComponent(bannerName);
+  document.getElementById('banner-preview-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeBannerPreview() {
+  document.getElementById('banner-preview-overlay').classList.remove('open');
+  document.getElementById('banner-preview-iframe').src = 'about:blank';
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeBannerPreview();
+});
 
 /* ═══════════════════════════════════════════════════════
    INIT — render from cache, then refresh with live data
