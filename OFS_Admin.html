@@ -254,8 +254,8 @@
     .bp-popup-medal { width: 28px; height: 28px; object-fit: contain; }
     .bp-view-page-btn {
       flex-shrink: 0; font-family: 'Cinzel', serif; font-size: .56rem;
-      letter-spacing: .1em; text-transform: uppercase; text-decoration: none;
-      color: var(--gold); border: 1px solid var(--b-gold); border-radius: 3px;
+      letter-spacing: .1em; text-transform: uppercase; cursor: pointer;
+      color: var(--gold); background: none; border: 1px solid var(--b-gold); border-radius: 3px;
       padding: 5px 12px; transition: background .2s;
     }
     .bp-view-page-btn:hover { background: rgba(201,168,76,.12); }
@@ -286,6 +286,26 @@
     .bp-member-pts { font-family: 'Cinzel', serif; font-size: .75rem; color: var(--gold); flex-shrink: 0; text-align: right; min-width: 44px; }
     .bp-near { font-size: .6rem; color: #6dbf67; white-space: nowrap; flex-shrink: 0; }
     .bp-empty { font-size: .78rem; color: var(--text-dim); font-style: italic; padding: 20px 22px; }
+
+    /* ── Page Preview Iframe ── */
+    #page-preview-overlay {
+      display: none; position: fixed; inset: 0; z-index: 700;
+      background: rgba(0,0,0,.85); align-items: stretch; justify-content: stretch;
+      padding: 24px;
+    }
+    #page-preview-overlay.open { display: flex; }
+    #page-preview-iframe {
+      width: 100%; height: 100%; border: 1px solid var(--b-gold);
+      border-radius: 6px; background: var(--bg);
+    }
+    .page-preview-close {
+      position: fixed; top: 4px; right: 12px; z-index: 710;
+      background: rgba(14,14,28,.9); border: 1px solid var(--b-gold); border-radius: 50%;
+      width: 36px; height: 36px; color: var(--gold); font-size: 1.1rem;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    .page-preview-close:hover { background: rgba(201,168,76,.15); }
 
     /* ── Audit log ── */
     .audit-field { font-size: .72rem; color: var(--gold-dim); font-family: 'Inter', sans-serif; font-style: italic; }
@@ -1408,13 +1428,19 @@
     <div class="bp-popup-head">
       <img class="bp-popup-medal" id="bp-popup-medal" src="" alt="">
       <div class="bp-popup-title" id="bp-popup-title"></div>
-      <a class="bp-view-page-btn" id="bp-view-page-btn" href="#">View Page &rarr;</a>
+      <button class="bp-view-page-btn" id="bp-view-page-btn" type="button">View Page &rarr;</button>
       <button class="bp-popup-close" onclick="document.getElementById('bp-popup-overlay').classList.remove('open')">&#x2715;</button>
     </div>
     <div class="bp-stats-bar" id="bp-stats-bar"></div>
     <div class="bp-breakdown" id="bp-breakdown"></div>
     <div class="bp-popup-body" id="bp-popup-body"></div>
   </div>
+</div>
+
+<!-- ── Page Preview Iframe ── -->
+<div id="page-preview-overlay" onclick="if(event.target===this)closePagePreview()">
+  <button class="page-preview-close" onclick="closePagePreview()">&#x2715;</button>
+  <iframe id="page-preview-iframe" src="about:blank"></iframe>
 </div>
 
 <!-- ── Edit Modal ── -->
@@ -1720,6 +1746,17 @@ function renderBannerPop(){
   });
 }
 
+function openPagePreview(url){
+  document.getElementById('bp-popup-overlay').classList.remove('open');
+  var iframe=document.getElementById('page-preview-iframe');
+  iframe.src=url;
+  document.getElementById('page-preview-overlay').classList.add('open');
+}
+function closePagePreview(){
+  document.getElementById('page-preview-overlay').classList.remove('open');
+  document.getElementById('page-preview-iframe').src='about:blank';
+}
+
 function openBannerPopup(bn, members){
   const banDef2=(OFSSheets.getBannerDefs()||[]).find(d=>d.name===bn);
   const medalSrc=driveDirect((banDef2&&banDef2.medalUrl)||MEDAL_IMGS[bn]||'');
@@ -1736,7 +1773,8 @@ function openBannerPopup(bn, members){
 
   // Header
   document.getElementById('bp-popup-title').textContent=bn;
-  document.getElementById('bp-view-page-btn').href='OFS_Banner.html?banner='+encodeURIComponent(bn);
+  var viewBtn=document.getElementById('bp-view-page-btn');
+  viewBtn.onclick=function(){ openPagePreview('OFS_Banner.html?banner='+encodeURIComponent(bn)); };
   const medalEl=document.getElementById('bp-popup-medal');
   if(medalSrc){ medalEl.src=medalSrc; medalEl.style.display=''; }
   else medalEl.style.display='none';
