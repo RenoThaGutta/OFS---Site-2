@@ -1841,16 +1841,7 @@ function openModal(id){
         <div class="field-row"><label>Org Rank</label><select id="f-rank" disabled>${rankOpts}</select></div>
         <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}" disabled></div>
         <div class="field-row"><label>Active Banner</label><select id="f-activeBanner" disabled>${activeBannerOpts}</select></div>
-        <div class="field-row"><label>Avatar</label>
-          <input id="f-avatar" type="hidden" value="${p?p.avatarUrl:''}">
-          <div class="tf-img-upload-row">
-            <div class="tf-img-thumb" id="f-avatar-thumb" style="width:48px;height:48px;border-radius:50%">
-              ${p&&p.avatarUrl?`<img src="${escHtml(resolveImg(p.avatarUrl))}" style="border-radius:50%" onerror="this.style.display='none'">`:''}
-            </div>
-            <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('f-avatar','avatars','${escHtml(p?p.username:'player')}')">Upload</button>
-            ${p&&p.avatarUrl?`<button type="button" class="tf-remove-img-btn" onclick="document.getElementById('f-avatar').value='';this.parentNode.querySelector('.tf-img-thumb').innerHTML=''">Remove</button>`:''}
-          </div>
-        </div>
+        <input id="f-avatar" type="hidden" value="${p?p.avatarUrl:''}">
       </div>
     </div>
     <!-- Stats -->
