@@ -732,6 +732,15 @@
       color: var(--gold); cursor: pointer; transition: background .2s, box-shadow .2s;
     }
     .tf-save-btn:hover { background: rgba(201,168,76,.1); box-shadow: 0 0 14px var(--glow); }
+    .tf-upload-btn {
+      flex-shrink: 0; background: rgba(201,168,76,.08); border: 1px solid var(--b-gold);
+      border-radius: 3px; padding: 6px 14px;
+      font-family: 'Cinzel', serif; font-size: .62rem;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--gold); cursor: pointer; transition: background .2s;
+      white-space: nowrap;
+    }
+    .tf-upload-btn:hover { background: rgba(201,168,76,.18); }
     .tf-del-full-btn {
       background: none; border: 1px solid var(--b-dim); border-radius: 3px;
       padding: 9px 16px; color: var(--silver-dim);
@@ -1812,7 +1821,12 @@ function openModal(id){
         <div class="field-row"><label>Org Rank</label><select id="f-rank" disabled>${rankOpts}</select></div>
         <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}" disabled></div>
         <div class="field-row"><label>Active Banner</label><select id="f-activeBanner" disabled>${activeBannerOpts}</select></div>
-        <div class="field-row"><label>Avatar URL</label><input id="f-avatar" value="${p?p.avatarUrl:''}" placeholder="https://…" disabled></div>
+        <div class="field-row"><label>Avatar</label>
+          <div style="display:flex;gap:6px">
+            <input id="f-avatar" style="flex:1" value="${p?p.avatarUrl:''}" placeholder="uploads/avatars/… or URL" disabled>
+            <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('f-avatar','avatars','${escHtml(p?p.username:'player')}')">Upload</button>
+          </div>
+        </div>
       </div>
     </div>
     <!-- Stats -->
@@ -2919,6 +2933,42 @@ function driveDirect(url){
   if(m) return 'https://drive.google.com/thumbnail?id=' + m[1] + '&sz=w400';
   return url;
 }
+/* ── Self-hosted image upload helper ────────────────────────────── */
+function ofsFileUpload(urlInputId, folder, nameHint){
+  // Create a hidden file input, open the file picker, then:
+  //  1. Auto-download the file with a clean name into user's Downloads
+  //  2. Set the URL input to the relative repo path
+  //  3. Trigger input event so live previews update
+  const pick = document.createElement('input');
+  pick.type = 'file';
+  pick.accept = 'image/*';
+  pick.onchange = function(){
+    const file = pick.files[0];
+    if(!file) return;
+    const ext = file.name.split('.').pop().toLowerCase() || 'png';
+    const slug = (nameHint || file.name.replace(/\.[^.]+$/,'')).toLowerCase()
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const fileName = slug + '.' + ext;
+    const relPath = 'uploads/' + folder + '/' + fileName;
+
+    // Auto-download so user has the file with the correct name
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file);
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    // Fill the URL input with the relative path
+    const inp = document.getElementById(urlInputId);
+    if(inp){
+      inp.value = relPath;
+      inp.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    showToast('File downloaded as "' + fileName + '" — move it to uploads/' + folder + '/ and commit');
+  };
+  pick.click();
+}
+
 function updateCharCount(countId, textareaId){ document.getElementById(countId).textContent = document.getElementById(textareaId).value.length + ' characters'; }
 
 // Image zoom tooltip — add data-zoom="<url>" to any img to enable
@@ -3124,8 +3174,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         </div>
       </div>
       <div class="tf-row">
-        <div class="hf-label">Image URL</div>
-        <input id="tf-ann-image" class="hf-input" type="url" value="${escHtml(item.image||'')}" placeholder="https://… (optional)">
+        <div class="hf-label">Image</div>
+        <div style="display:flex;gap:6px">
+          <input id="tf-ann-image" class="hf-input" style="flex:1" type="text" value="${escHtml(item.image||'')}" placeholder="uploads/tavern/… or URL (optional)">
+          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-ann-image','tavern','ann-${escHtml(item.id)}')">Upload</button>
+        </div>
       </div>
       <div class="tf-save-row">
         ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelAnn('${escHtml(item.id)}')">Delete</button>`:''}
@@ -3215,8 +3268,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       <div class="tf-row"><div class="hf-label">Status</div><select id="tf-evt-status" class="hf-input">${statOpts}</select></div>
       <div class="tf-row"><div class="hf-label">Description</div><textarea id="tf-evt-desc" class="hf-textarea" rows="4" placeholder="Event details…">${escHtml(item.description)}</textarea></div>
       <div class="tf-row">
-        <div class="hf-label">Image URL</div>
-        <input id="tf-evt-image" class="hf-input" type="url" value="${escHtml(item.image||'')}" placeholder="https://… (optional)">
+        <div class="hf-label">Image</div>
+        <div style="display:flex;gap:6px">
+          <input id="tf-evt-image" class="hf-input" style="flex:1" type="text" value="${escHtml(item.image||'')}" placeholder="uploads/tavern/… or URL (optional)">
+          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-evt-image','tavern','evt-${escHtml(item.id)}')">Upload</button>
+        </div>
       </div>
       <div class="tf-save-row">
         ${!isNew?`<button class="tf-del-full-btn" onclick="window._tavDelEvent('${escHtml(item.id)}')">Delete</button>`:''}
@@ -3295,7 +3351,12 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
           <label class="tf-radio"><input type="radio" name="tf-med-type" value="video"${item.type==='video'?' checked':''}> YouTube Video</label>
         </div>
       </div>
-      <div class="tf-row"><div class="hf-label">URL *</div><input id="tf-med-url" class="hf-input" type="text" value="${escHtml(item.url)}" placeholder="Image URL or YouTube link"></div>
+      <div class="tf-row"><div class="hf-label">URL *</div>
+        <div style="display:flex;gap:6px">
+          <input id="tf-med-url" class="hf-input" style="flex:1" type="text" value="${escHtml(item.url)}" placeholder="uploads/tavern/… , URL, or YouTube link">
+          <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('tf-med-url','tavern','med-${escHtml(item.id)}')">Upload</button>
+        </div>
+      </div>
       <div class="tf-row"><div class="hf-label">Caption</div><input id="tf-med-caption" class="hf-input" type="text" value="${escHtml(item.caption)}" placeholder="Short description"></div>
       <div class="tf-2col">
         <div class="tf-row"><div class="hf-label">Date</div><input id="tf-med-date" class="hf-input" type="date" value="${escHtml(item.date)}"></div>
@@ -3393,8 +3454,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <div>
           <div style="display:flex;gap:10px;align-items:flex-start">
             <div style="flex:1">
-              <div class="hf-label">Medal Image URL</div>
-              <input id="bf-medalurl" class="hf-input" type="url" value="${escHtml(def.medalUrl)}" placeholder="https://… or Drive link">
+              <div class="hf-label">Medal Image</div>
+              <div style="display:flex;gap:6px">
+                <input id="bf-medalurl" class="hf-input" style="flex:1" type="text" value="${escHtml(def.medalUrl)}" placeholder="uploads/banners/… or URL">
+                <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('bf-medalurl','banners', '${escHtml(def.name||'banner')}'+'-medal')">Upload</button>
+              </div>
             </div>
             <div id="bf-medal-preview-box" style="flex-shrink:0;width:96px;height:96px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:18px">
               ${def.medalUrl
@@ -3406,8 +3470,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         </div>
         <!-- Banner Image (right, wide) -->
         <div>
-          <div class="hf-label">Banner Image URL</div>
-          <input id="bf-bannerurl" class="hf-input" type="url" value="${escHtml(def.bannerImageUrl||'')}" placeholder="https://… or Drive link">
+          <div class="hf-label">Banner Image</div>
+          <div style="display:flex;gap:6px">
+            <input id="bf-bannerurl" class="hf-input" style="flex:1" type="text" value="${escHtml(def.bannerImageUrl||'')}" placeholder="uploads/banners/… or URL">
+            <button type="button" class="tf-upload-btn" onclick="ofsFileUpload('bf-bannerurl','banners', '${escHtml(def.name||'banner')}'+'-hero')">Upload</button>
+          </div>
           <div id="bf-banner-preview-box" style="margin-top:8px;width:100%;height:176px;border:1px solid var(--b-gold);border-radius:4px;background:var(--bg-card2);overflow:hidden;display:flex;align-items:center;justify-content:center">
             ${def.bannerImageUrl
               ? `<img id="bf-banner-preview" src="${escHtml(driveDirect(def.bannerImageUrl))}" onclick="openImgLightbox(this.src)" style="max-width:100%;max-height:176px;object-fit:contain;cursor:pointer;" onerror="this.style.display='none';document.getElementById('bf-banner-placeholder').style.display=''">`
