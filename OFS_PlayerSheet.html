@@ -331,11 +331,65 @@
       filter: grayscale(1) brightness(.4);
     }
     .bp-pts-label {
-      font-size: .6rem;
+      font-family: 'Inter', sans-serif;
+      font-size: .58rem;
       color: var(--silver-dim);
-      margin-top: 2px;
-      text-align: right;
+      margin-top: 4px;
+      text-align: center;
+      letter-spacing: .02em;
     }
+    .bp-pts-label span { color: var(--gold); }
+    .banner-progress { position: relative; cursor: default; }
+    .bp-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 10px);
+      right: 0;
+      min-width: 220px;
+      background: rgba(14,14,28,.97);
+      border: 1px solid var(--b-gold);
+      border-radius: 6px;
+      padding: 14px 16px;
+      z-index: 100;
+      box-shadow: 0 8px 32px rgba(0,0,0,.7);
+      backdrop-filter: blur(12px);
+      pointer-events: none;
+    }
+    .banner-progress:hover .bp-tooltip { display: block; }
+    .bp-tip-title {
+      font-family: 'Cinzel', serif;
+      font-size: .7rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--b-dim);
+    }
+    .bp-tip-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      font-family: 'Inter', sans-serif;
+      font-size: .65rem;
+      color: var(--silver-dim);
+    }
+    .bp-tip-row.active { color: var(--gold-lt); }
+    .bp-tip-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--silver-dim);
+      flex-shrink: 0;
+    }
+    .bp-tip-row.active .bp-tip-dot { background: var(--gold); box-shadow: 0 0 6px rgba(201,168,76,.5); }
+    .bp-tip-row.done .bp-tip-dot { background: var(--gold-dim); }
+    .bp-tip-pts {
+      margin-left: auto;
+      font-size: .58rem;
+      color: var(--text-dim);
+    }
+    .bp-tip-row.active .bp-tip-pts { color: var(--gold); }
 
     /* ── Section header ──────────────────────────────────── */
     .sec-head {
@@ -797,27 +851,30 @@ function render(p) {
     const nextIdx = idx + 1;
     let ptsLine = '';
     if (idx === 3 && hasMedal) {
-      ptsLine = `${pts} pts · Max Rank`;
+      ptsLine = `<span>${pts}</span> pts · Max Rank`;
     } else if (nextIdx < 4) {
       const nextThresh = thresholds[nextIdx];
       const toGo = nextThresh - pts;
-      ptsLine = `${pts} / ${nextThresh} pts · ${toGo} to ${ranks[nextIdx]}`;
+      ptsLine = `<span>${pts}</span> / ${nextThresh} pts · ${toGo} to next rank`;
     } else {
-      ptsLine = `${pts} pts · Medal required`;
+      ptsLine = `<span>${pts}</span> pts · Medal required`;
     }
 
-    // Tooltip with full breakdown
-    const tooltipLines = ranks.map((r, i) => {
+    // Styled tooltip rows
+    const tipRows = ranks.map((r, i) => {
       const th = thresholds[i];
-      const prefix = i === idx ? '▸ ' : '  ';
-      const label = i === 3 ? `${th} pts + Medal` : i === 0 ? 'Start' : `${th} pts`;
-      return `${prefix}${r}: ${label}`;
-    }).join('\n');
-    const tooltip = `${p.activeBanner} Progress\n\nCurrent: ${ranks[idx]} (${pts} pts)\n\n${tooltipLines}`;
+      const label = i === 3 ? `${th} pts + Medal` : i === 0 ? 'Starting rank' : `${th} pts`;
+      const cls = i === idx ? 'active' : (i < idx ? 'done' : '');
+      return `<div class="bp-tip-row ${cls}"><span class="bp-tip-dot"></span>${r}<span class="bp-tip-pts">${label}</span></div>`;
+    }).join('');
 
     bpEl.style.display = '';
-    bpEl.title = tooltip;
+    bpEl.removeAttribute('title');
     bpEl.innerHTML =
+      `<div class="bp-tooltip">` +
+        `<div class="bp-tip-title">${p.activeBanner}</div>` +
+        `${tipRows}` +
+      `</div>` +
       `<div class="bp-label">${p.activeBanner} — Progress</div>` +
       `<div class="bp-track">${stepsHTML}${medalImg}</div>` +
       `<div class="bp-markers">${markersHTML}</div>` +
