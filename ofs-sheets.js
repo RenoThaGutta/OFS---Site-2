@@ -142,7 +142,7 @@
         joinDate:      cell(row, ML.JOIN_DATE),
         timeInService: cell(row, ML.TIME_IN_SERVICE),
         backStory:     cell(row, ML.BACK_STORY),
-        avatarUrl:     cell(row, ML.PROFILE_PIC),
+        avatarUrl:     (cell(row, ML.PROFILE_PIC).toLowerCase().indexOf('no avatar') === -1) ? cell(row, ML.PROFILE_PIC) : '',
         ship:          cell(row, ML.SHIP),
         activeBanner:  cell(row, ML.BANNER),
         reputationXP:  num(row, ML.REPUTATION_XP),
