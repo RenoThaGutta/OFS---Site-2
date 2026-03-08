@@ -404,7 +404,23 @@
       border: 1px solid var(--b-dim);
       border-radius: 4px;
       padding: 18px 22px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
     }
+    .quest-card.has-img {
+      grid-template-columns: 68px 1fr;
+      gap: 14px;
+    }
+    .quest-card-img {
+      width: 68px; height: 68px;
+      object-fit: cover;
+      border-radius: 4px;
+      border: 1px solid var(--b-gold);
+      background: var(--bg-card2);
+      align-self: center;
+    }
+    .quest-card.active .quest-card-img { border-color: var(--gold-dim); }
     .quest-card.active { border-color: var(--b-gold); }
     .quest-card-label {
       font-family: 'Cinzel', serif;
@@ -831,7 +847,9 @@ function renderPlayerQuests(p, section, container) {
   var html = '';
 
   // Active quest card
-  html += '<div class="quest-card active">';
+  html += '<div class="quest-card active' + (aq && aq.image ? ' has-img' : '') + '">';
+  if (aq && aq.image) html += '<img class="quest-card-img" src="' + _esc(aq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
+  html += '<div class="quest-card-body">';
   html += '<div class="quest-card-label">Active Quest</div>';
   if (aq) {
     html += '<div class="quest-card-name">' + _esc(aq.name) + '</div>';
@@ -840,10 +858,12 @@ function renderPlayerQuests(p, section, container) {
   } else {
     html += '<div class="quest-card-none">No active quest</div>';
   }
-  html += '</div>';
+  html += '</div></div>';
 
   // Last completed quest card
-  html += '<div class="quest-card">';
+  html += '<div class="quest-card' + (lq && lq.image ? ' has-img' : '') + '">';
+  if (lq && lq.image) html += '<img class="quest-card-img" src="' + _esc(lq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
+  html += '<div class="quest-card-body">';
   html += '<div class="quest-card-label">Last Completed Quest</div>';
   if (lq) {
     html += '<div class="quest-card-name">' + _esc(lq.name) + '</div>';
@@ -852,7 +872,7 @@ function renderPlayerQuests(p, section, container) {
   } else {
     html += '<div class="quest-card-none">No completed quests</div>';
   }
-  html += '</div>';
+  html += '</div></div>';
 
   container.innerHTML = html;
 }
