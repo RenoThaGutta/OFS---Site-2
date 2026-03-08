@@ -2934,11 +2934,9 @@ function driveDirect(url){
   return url;
 }
 /* ── Self-hosted image upload helper ────────────────────────────── */
+// Temporary blob URLs for preview (keyed by relative path)
+var _uploadPreviews = {};
 function ofsFileUpload(urlInputId, folder, nameHint){
-  // Create a hidden file input, open the file picker, then:
-  //  1. Auto-download the file with a clean name into user's Downloads
-  //  2. Set the URL input to the relative repo path
-  //  3. Trigger input event so live previews update
   const pick = document.createElement('input');
   pick.type = 'file';
   pick.accept = 'image/*';
@@ -2951,12 +2949,15 @@ function ofsFileUpload(urlInputId, folder, nameHint){
     const fileName = slug + '.' + ext;
     const relPath = 'uploads/' + folder + '/' + fileName;
 
+    // Create blob URL for instant preview
+    const blobUrl = URL.createObjectURL(file);
+    _uploadPreviews[relPath] = blobUrl;
+
     // Auto-download so user has the file with the correct name
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(file);
+    a.href = blobUrl;
     a.download = fileName;
     a.click();
-    URL.revokeObjectURL(a.href);
 
     // Fill the URL input with the relative path
     const inp = document.getElementById(urlInputId);
@@ -2967,6 +2968,12 @@ function ofsFileUpload(urlInputId, folder, nameHint){
     showToast('File downloaded as "' + fileName + '" — move it to uploads/' + folder + '/ and commit');
   };
   pick.click();
+}
+// Resolve image src: use blob preview if available, otherwise pass through driveDirect
+function resolveImg(url){
+  if(!url) return url;
+  if(_uploadPreviews[url]) return _uploadPreviews[url];
+  return driveDirect(url);
 }
 
 function updateCharCount(countId, textareaId){ document.getElementById(countId).textContent = document.getElementById(textareaId).value.length + ' characters'; }
@@ -3513,11 +3520,9 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
         if(box) box.insertBefore(img, placeholder);
       }
-      const direct = driveDirect(this.value);
-      // Auto-rewrite Drive share links to embeddable URLs
-      if(direct !== this.value) this.value = direct;
-      if(direct){
-        img.src = direct;
+      const resolved = resolveImg(this.value);
+      if(resolved){
+        img.src = resolved;
         img.style.display = '';
         if(placeholder) placeholder.style.display = 'none';
       } else {
@@ -3539,10 +3544,9 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         img.onerror = function(){ this.style.display='none'; if(placeholder) placeholder.style.display=''; };
         if(box) box.insertBefore(img, placeholder);
       }
-      const direct = driveDirect(this.value);
-      if(direct !== this.value) this.value = direct;
-      if(direct){
-        img.src = direct;
+      const resolved = resolveImg(this.value);
+      if(resolved){
+        img.src = resolved;
         img.style.display = '';
         if(placeholder) placeholder.style.display = 'none';
       } else {
@@ -3619,8 +3623,9 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       el.innerHTML=header+'<div class="tav-preview-empty">Fill in the form to see a preview.</div>'; return;
     }
     let h=header;
+    const imgSrc=resolveImg(image);
     if(pinned&&image){
-      h+=`<div class="prev-ann-hero-wrap"><img src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">
+      h+=`<div class="prev-ann-hero-wrap"><img src="${escHtml(imgSrc)}" alt="" onerror="this.style.opacity='.25'">
         <div class="prev-ann-hero-overlay"><span class="prev-ann-eyebrow">${escHtml(catLabel)}</span>
           <div class="prev-ann-title">${escHtml(title)}</div></div></div>
         ${body?`<div class="prev-ann-card"><div class="prev-ann-body">${escHtml(body)}</div></div>`:''}`;
@@ -3630,7 +3635,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
         <div class="prev-ann-eyebrow">${escHtml(catLabel)}</div>
         <div class="prev-ann-title">${escHtml(title)}</div>
         ${body?`<div class="prev-ann-body">${escHtml(body)}</div>`:''}
-        ${image?`<img class="prev-ann-img" src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">`:''}
+        ${image?`<img class="prev-ann-img" src="${escHtml(imgSrc)}" alt="" onerror="this.style.opacity='.25'">`:''}
         ${author||date?`<div class="prev-ann-meta">${escHtml(author)}${author&&date?' · ':''}${date}</div>`:''}
       </div>`;
     }
@@ -3650,9 +3655,10 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     }
     const statusCls=STATUS_BADGES[status]||'badge-dim';
     const statusLbl=status==='ongoing'?'Live':status==='past'?'Ended':'Upcoming';
+    const evtImgSrc=resolveImg(image);
     let h='<div class="tav-preview-head">Preview</div>';
     h+=`<div class="prev-evt-card">
-      ${image?`<img src="${escHtml(image)}" alt="" onerror="this.style.opacity='.25'">`:''}
+      ${image?`<img src="${escHtml(evtImgSrc)}" alt="" onerror="this.style.opacity='.25'">`:''}
       <div class="prev-evt-body">
         <div class="prev-evt-meta-row">
           <span class="badge ${statusCls}">${statusLbl}</span>
@@ -3684,7 +3690,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       if(id) h+=`<div class="prev-media-video"><iframe src="https://www.youtube.com/embed/${id}" allowfullscreen></iframe>${caption?`<div class="prev-media-caption">${escHtml(caption)}</div>`:''}</div>`;
       else h+='<div class="tav-preview-empty">Enter a valid YouTube URL to embed the video.</div>';
     } else {
-      h+=`<div class="prev-media-img"><img src="${escHtml(url)}" alt="${escHtml(caption)}" onerror="this.style.opacity='.25'">
+      const medImgSrc=resolveImg(url);
+      h+=`<div class="prev-media-img"><img src="${escHtml(medImgSrc)}" alt="${escHtml(caption)}" onerror="this.style.opacity='.25'">
         ${caption?`<div class="prev-media-caption">${escHtml(caption)}</div>`:''}</div>`;
     }
     el.innerHTML=h;
