@@ -317,6 +317,9 @@
       outline: none; transition: border-color .2s; width: 100%;
     }
     .field-row input:focus, .field-row select:focus { border-color: var(--b-gold); }
+    .field-row input:disabled, .field-row select:disabled {
+      opacity: .4; cursor: not-allowed; color: var(--text-dim);
+    }
     .field-discord-note {
       font-size: .62rem; line-height: 1.4; color: var(--gold-dim);
       background: rgba(201,168,76,.05); border: 1px solid rgba(201,168,76,.15);
@@ -1804,11 +1807,11 @@ function openModal(id){
       <h4>Identity</h4>
       <div class="field-discord-note" style="margin-bottom:8px;">⚠ Identity fields are not fully wired in yet. Rank &amp; banner changes update the record only — apply Discord roles manually. Username, faction, and avatar editing are future features.</div>
       <div class="field-group">
-        <div class="field-row"><label>Username</label><input id="f-username" value="${p?p.username:''}"></div>
-        <div class="field-row"><label>Org Rank</label><select id="f-rank">${rankOpts}</select></div>
-        <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}"></div>
-        <div class="field-row"><label>Active Banner</label><select id="f-activeBanner">${activeBannerOpts}</select></div>
-        <div class="field-row"><label>Avatar URL</label><input id="f-avatar" value="${p?p.avatarUrl:''}" placeholder="https://…"></div>
+        <div class="field-row"><label>Username</label><input id="f-username" value="${p?p.username:''}" disabled></div>
+        <div class="field-row"><label>Org Rank</label><select id="f-rank" disabled>${rankOpts}</select></div>
+        <div class="field-row"><label>Faction / Chapter</label><input id="f-faction" value="${p?p.faction:''}" disabled></div>
+        <div class="field-row"><label>Active Banner</label><select id="f-activeBanner" disabled>${activeBannerOpts}</select></div>
+        <div class="field-row"><label>Avatar URL</label><input id="f-avatar" value="${p?p.avatarUrl:''}" placeholder="https://…" disabled></div>
       </div>
     </div>
     <!-- Stats -->
