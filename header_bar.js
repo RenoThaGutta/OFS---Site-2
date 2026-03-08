@@ -92,7 +92,9 @@
     '.nav-dd-card-bg::after{' +
       'content:"";position:absolute;inset:0;' +
       'background:linear-gradient(90deg,rgba(7,7,15,.92) 40%,rgba(7,7,15,.5));' +
+      'transition:opacity .3s;' +
     '}' +
+    '.nav-dd-card:hover .nav-dd-card-bg::after{opacity:.7;}' +
     '.nav-dd-card:hover{' +
       'border-color:rgba(201,168,76,.45);' +
     '}' +
