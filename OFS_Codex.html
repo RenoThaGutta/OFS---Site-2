@@ -1171,6 +1171,20 @@ content.addEventListener('scroll', () => {
       .map(function(p){ return '<p>' + p.trim() + '</p>'; }).join('');
   }
 
+  function updateNavLinkText(sectionId, newTitle){
+    // The sidebar nav uses <a class="nav-link" onclick="codexNav('<id>',...)">
+    // <span class="nav-num">...</span>Label</a>. Replace the trailing text node.
+    var links = document.querySelectorAll('.nav-link');
+    for(var i = 0; i < links.length; i++){
+      var onclick = links[i].getAttribute('onclick') || '';
+      if(onclick.indexOf("codexNav('" + sectionId + "'") === -1) continue;
+      for(var j = links[i].childNodes.length - 1; j >= 0; j--){
+        var node = links[i].childNodes[j];
+        if(node.nodeType === 3){ node.textContent = newTitle; return; }
+      }
+    }
+  }
+
   function applyOverrides(entries){
     if(!Array.isArray(entries)) return;
     entries.forEach(function(entry){
@@ -1179,12 +1193,17 @@ content.addEventListener('scroll', () => {
       if(!section || !section.classList.contains('section')) return;
 
       var titleEl = section.querySelector('.article-title');
-      if(titleEl && entry.title) titleEl.textContent = entry.title;
+      if(titleEl && entry.title){
+        titleEl.textContent = entry.title;
+        updateNavLinkText(entry.id, entry.title);
+      }
 
       var eyebrowEl = section.querySelector('.article-eyebrow');
       if(eyebrowEl && entry.type) eyebrowEl.textContent = entry.type;
 
-      var bodyEl = section.querySelector('.article-body') || section.querySelector('.intro-block');
+      var bodyEl = section.querySelector('.article-body')
+                || section.querySelector('.rank-detail-body')
+                || section.querySelector('.intro-block');
       if(bodyEl && entry.content) bodyEl.innerHTML = paragraphize(entry.content);
     });
   }
