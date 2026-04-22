@@ -1004,6 +1004,11 @@
           <!-- Home edit panel -->
           <div id="edit-home" class="home-form">
 
+            <!-- Sticky Save-All bar — saves every home section at once -->
+            <div class="hf-save-all-bar" style="position:sticky;top:0;z-index:5;background:linear-gradient(to bottom,var(--bg) 85%,transparent);padding:10px 0 12px;margin:-2px 0 6px;border-bottom:1px solid var(--b-dim);">
+              <button class="save-btn" id="hf-save-all-btn" onclick="saveAllHome()" style="width:100%;padding:12px;font-size:.82rem;letter-spacing:.18em;">Save All</button>
+            </div>
+
             <!-- HERO -->
             <div class="hf-section-head">Hero</div>
             <div>
@@ -1022,10 +1027,6 @@
               <div class="hf-label">Logo Image Path</div>
               <input id="hf-hero-logo" class="hf-input" type="text" placeholder="ofs_logo.png">
             </div>
-            <div class="hf-save-row">
-              <button class="save-btn" onclick="saveHomeContentForm()">Save Hero</button>
-            </div>
-
             <!-- CONTRACT SERVICES -->
             <div class="hf-section-head" style="margin-top:8px">Contract Services</div>
             <div class="hf-meta">
@@ -1105,10 +1106,6 @@
               <div><div class="hf-label">Title</div><input id="hf-svc-disclaimer-title" class="hf-input" type="text" placeholder="Operational Conduct Disclaimer"></div>
               <div><div class="hf-label">Body (blank line = paragraph break)</div><textarea id="hf-svc-disclaimer-body" class="hf-textarea" rows="8"></textarea></div>
             </div>
-            <div class="hf-save-row">
-              <button class="save-btn" onclick="saveHomeServicesForm()">Save Services</button>
-            </div>
-
             <!-- ABOUT -->
             <div class="hf-section-head" style="margin-top:8px">About</div>
             <div class="hf-meta">
@@ -1145,10 +1142,6 @@
               <div><div class="hf-label">Title</div><input id="hf-pillar-3-title" class="hf-input" type="text"></div>
               <div><div class="hf-label">Text</div><textarea id="hf-pillar-3-text" class="hf-textarea" rows="2"></textarea></div>
             </div>
-            <div class="hf-save-row">
-              <button class="save-btn" onclick="saveHomeContentForm()">Save About</button>
-            </div>
-
             <!-- TRIUMVIRATE -->
             <div class="hf-section-head" style="margin-top:8px">Triumvirate</div>
             <div class="hf-meta">
@@ -1162,9 +1155,8 @@
               </div>
             </div>
             <div id="hf-triv-list"></div>
-            <div class="hf-save-row" style="justify-content:space-between">
+            <div class="hf-save-row">
               <button class="new-entry-btn" onclick="addTrivBlock()">+ Add Member</button>
-              <button class="save-btn" onclick="saveHomeContentForm()">Save Triumvirate</button>
             </div>
 
             <!-- CHRONICLE -->
@@ -1213,10 +1205,6 @@
               <div class="hf-label">Closing Decree</div>
               <input id="hf-decree" class="hf-input" type="text" placeholder="Thus is the chronicle entered...">
             </div>
-            <div class="hf-save-row">
-              <button class="save-btn" onclick="saveHomeChronicleForm()">Save Chronicle</button>
-            </div>
-
             <!-- BANNERS -->
             <div class="hf-section-head" style="margin-top:8px">Paths of Service</div>
             <div>
@@ -1232,9 +1220,8 @@
               <textarea id="hf-banners-intro" class="hf-textarea" rows="3"></textarea>
             </div>
             <div id="hf-banners-list"></div>
-            <div class="hf-save-row" style="justify-content:space-between">
+            <div class="hf-save-row">
               <button class="new-entry-btn" onclick="addBannerBlock()">+ Add Banner</button>
-              <button class="save-btn" onclick="saveHomeBannersForm()">Save Banners</button>
             </div>
 
             <!-- PAGES NAV -->
@@ -1283,10 +1270,6 @@
                 <div style="grid-column:1/-1"><div class="hf-label">Link (href)</div><input id="hf-page-3-href" class="hf-input" type="text"></div>
               </div>
             </div>
-            <div class="hf-save-row">
-              <button class="save-btn" onclick="saveHomePagesForm()">Save Pages Nav</button>
-            </div>
-
           </div>
 
           <!-- Codex edit panel -->
@@ -2307,6 +2290,23 @@ function savePageData(){
   localStorage.setItem(STORAGE_TIMELINE, JSON.stringify(TIMELINE_DATA));
 }
 
+// Server sync for codex edits. Same pattern as saveHomeContent — throws
+// on non-ok so callers can show a real failure toast. Timeline is not
+// synced here because it has its own per-block /content flow.
+function syncCodexToServer(){
+  return fetch('https://ofs-api.orderofthefallenstar.workers.dev/content', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: 'codex_data', value: CODEX_DATA })
+  }).then(function(r){
+    if(!r.ok) throw new Error('Server ' + r.status);
+    return r.json();
+  }).then(function(res){
+    if(!res || !res.ok) throw new Error((res && res.error) || 'Save rejected');
+    return res;
+  });
+}
+
 /* ══════════════════════════════════════════════════════════
    PAGES — SUB-NAV SWITCHING
 ══════════════════════════════════════════════════════════ */
@@ -2638,6 +2638,125 @@ async function _saveHomeContentWithFeedback(c, successLabel){
   }
 }
 
+// Collects every field across the whole home editor and pushes both
+// home_content and home_chronicle in parallel. Invoked by the sticky
+// "Save All" button at the top of the Home panel.
+async function saveAllHome(){
+  const btn = document.getElementById('hf-save-all-btn');
+  const original = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+
+  const c = window.OFSLore.getHomeContent();
+
+  c.hero = {
+    subtitle: val('hf-hero-subtitle'),
+    title:    val('hf-hero-title'),
+    motto:    val('hf-hero-motto'),
+    logo:     val('hf-hero-logo') || 'ofs_logo.png'
+  };
+  c.aboutSection = {
+    label:   val('hf-about-label'),
+    heading: val('hf-about-heading')
+  };
+  c.about = {
+    body: val('hf-about-body'),
+    pillars: [0,1,2,3].map(i=>({
+      title: val('hf-pillar-'+i+'-title'),
+      text:  val('hf-pillar-'+i+'-text')
+    }))
+  };
+  c.trivSection = {
+    label:   val('hf-triv-label'),
+    heading: val('hf-triv-heading')
+  };
+  c.triumvirate = Array.from(document.querySelectorAll('#hf-triv-list .triv-block')).map(b=>({
+    domain: b.querySelector('.tb-domain').value,
+    name:   b.querySelector('.tb-name').value,
+    role:   b.querySelector('.tb-role').value
+  }));
+  c.chronicleSection = {
+    label:   val('hf-chronicle-label'),
+    heading: val('hf-chronicle-heading')
+  };
+  c.banners = {
+    label:   val('hf-banners-label'),
+    heading: val('hf-banners-heading'),
+    intro:   val('hf-banners-intro'),
+    tiles: Array.from(document.querySelectorAll('#hf-banners-list .banner-block')).map(b=>({
+      icon:  b.querySelector('.bb-icon').value,
+      name:  b.querySelector('.bb-name').value,
+      focus: b.querySelector('.bb-focus').value
+    }))
+  };
+  c.pages = {
+    label:   val('hf-pages-label'),
+    heading: val('hf-pages-heading'),
+    cards: [0,1,2,3].map(i=>({
+      icon:  val('hf-page-'+i+'-icon'),
+      title: val('hf-page-'+i+'-title'),
+      desc:  val('hf-page-'+i+'-desc'),
+      href:  val('hf-page-'+i+'-href')
+    }))
+  };
+  c.services = {
+    label:        val('hf-svc-label'),
+    heading:      val('hf-svc-heading'),
+    tagAbbr:      val('hf-svc-abbr'),
+    intro:        val('hf-svc-intro'),
+    cardsHeading: val('hf-svc-cards-heading'),
+    cards: [0,1,2,3].map(i=>({
+      title: val('hf-svc-card-'+i+'-title'),
+      items: val('hf-svc-card-'+i+'-items')
+    })),
+    hire: {
+      heading:        val('hf-svc-hire-heading'),
+      desc:           val('hf-svc-hire-desc'),
+      primaryLabel:   val('hf-svc-hire-primary-label'),
+      primaryUrl:     val('hf-svc-hire-primary-url'),
+      secondaryLabel: val('hf-svc-hire-secondary-label'),
+      secondaryUrl:   val('hf-svc-hire-secondary-url')
+    },
+    policies: [0,1,2].map(i=>{
+      const p = { title: val('hf-svc-policy-'+i+'-title'), body: val('hf-svc-policy-'+i+'-body') };
+      if(i === 2){
+        p.buttonLabel = val('hf-svc-policy-2-button-label');
+        p.buttonUrl   = val('hf-svc-policy-2-button-url');
+      }
+      return p;
+    }),
+    disclaimer: {
+      title: val('hf-svc-disclaimer-title'),
+      body:  val('hf-svc-disclaimer-body')
+    }
+  };
+
+  const chronicle = {
+    tag:      val('hf-tag'),
+    title:    val('hf-title'),
+    subtitle: val('hf-subtitle'),
+    decree:   val('hf-decree'),
+    segments: [1,2,3].map(n=>({
+      heading: val('hf-s'+n+'-heading'),
+      body:    val('hf-s'+n+'-body'),
+      quote:   val('hf-s'+n+'-quote')
+    }))
+  };
+
+  try {
+    await Promise.all([
+      window.OFSLore.saveHomeContent(c),
+      window.OFSLore.saveHomeChronicle(chronicle)
+    ]);
+    const frame = document.getElementById('pages-preview-frame');
+    if(frame) frame.src = frame.src;
+    showToast('All changes saved.');
+  } catch (e) {
+    showToast('Save failed: ' + (e && e.message ? e.message : 'network error'));
+  } finally {
+    if(btn){ btn.disabled = false; btn.textContent = original || 'Save All'; }
+  }
+}
+
 async function saveHomeContentForm(){
   const c = window.OFSLore.getHomeContent(); // read first to preserve other sections
   c.hero = {
@@ -2928,7 +3047,12 @@ function openCodexEditor(id){
   }, 30);
 }
 
-function saveCodexEntry(id){
+function _reloadCodexPreview(){
+  const frame = document.getElementById('pages-preview-frame');
+  if(frame && /OFS_Codex\.html/i.test(frame.src)) frame.src = frame.src;
+}
+
+async function saveCodexEntry(id){
   const entry = CODEX_DATA.find(e=>e.id===id);
   const oldTitle = entry.title;
   entry.title    = document.getElementById('ce-title').value.trim();
@@ -2938,10 +3062,17 @@ function saveCodexEntry(id){
   savePageData();
   logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
   renderCodexList();
-  showToast('Section saved.');
+  showToast('Saving…');
+  try {
+    await syncCodexToServer();
+    _reloadCodexPreview();
+    showToast('Section saved.');
+  } catch(e){
+    showToast('Save failed: ' + (e && e.message ? e.message : 'network error'));
+  }
 }
 
-function deleteCodexEntry(id){
+async function deleteCodexEntry(id){
   const entry = CODEX_DATA.find(e=>e.id===id);
   if(!confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
   logChange('—', `Codex: ${entry.title}`, entry.title, 'DELETED');
@@ -2950,14 +3081,18 @@ function deleteCodexEntry(id){
   savePageData();
   renderCodexList();
   document.getElementById('codex-editor').innerHTML = '<div class="editor-empty"><span>☰</span>Select a section to edit</div>';
+  try { await syncCodexToServer(); _reloadCodexPreview(); }
+  catch(e){ showToast('Delete failed on server: ' + (e && e.message ? e.message : 'network error')); }
 }
 
-function newCodexEntry(){
+async function newCodexEntry(){
   const id = 'codex_'+Date.now();
   CODEX_DATA.push({ id, type:'Section', num:'—', title:'New Section', subtitle:'', content:'' });
   savePageData();
   renderCodexList();
   openCodexEditor(id);
+  try { await syncCodexToServer(); _reloadCodexPreview(); }
+  catch(e){ showToast('New section not synced: ' + (e && e.message ? e.message : 'network error')); }
 }
 
 /* ══════════════════════════════════════════════════════════

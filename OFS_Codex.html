@@ -1154,5 +1154,63 @@ content.addEventListener('scroll', () => {
 <script src="ofs-sheets.js"></script>
 <script src="ofs-nav.js"></script>
 <script>OFSSheets.load().then(function() { if (window.OFSNav) OFSNav.refresh(); });</script>
+
+<script>
+/* ── Codex content overrides (server-synced) ────────────────
+   Admin edits to codex sections are persisted to the Worker's /content
+   store under key "codex_data". We fetch on load and apply overrides to
+   any .section[id] whose id matches a stored entry. Hardcoded HTML
+   remains the fallback when the server has no override. */
+(function(){
+  var STORAGE_CODEX = 'ofs_codex_data';
+  var WORKER_URL    = 'https://ofs-api.orderofthefallenstar.workers.dev';
+
+  function paragraphize(text){
+    return String(text || '').split(/\n\n+/)
+      .filter(function(p){ return p.trim(); })
+      .map(function(p){ return '<p>' + p.trim() + '</p>'; }).join('');
+  }
+
+  function applyOverrides(entries){
+    if(!Array.isArray(entries)) return;
+    entries.forEach(function(entry){
+      if(!entry || !entry.id) return;
+      var section = document.getElementById(entry.id);
+      if(!section || !section.classList.contains('section')) return;
+
+      var titleEl = section.querySelector('.article-title');
+      if(titleEl && entry.title) titleEl.textContent = entry.title;
+
+      var eyebrowEl = section.querySelector('.article-eyebrow');
+      if(eyebrowEl && entry.type) eyebrowEl.textContent = entry.type;
+
+      var bodyEl = section.querySelector('.article-body') || section.querySelector('.intro-block');
+      if(bodyEl && entry.content) bodyEl.innerHTML = paragraphize(entry.content);
+    });
+  }
+
+  // 1. Sync render from cached localStorage (fast path)
+  try {
+    var cached = JSON.parse(localStorage.getItem(STORAGE_CODEX) || 'null');
+    if(cached) applyOverrides(cached);
+  } catch(e) {}
+
+  // 2. Async fetch from Worker; mirror to localStorage; re-apply
+  fetch(WORKER_URL + '/content')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || !data.ok) return;
+      var srv = data.data || {};
+      if(srv.codex_data){
+        localStorage.setItem(STORAGE_CODEX, JSON.stringify(srv.codex_data));
+        applyOverrides(srv.codex_data);
+      } else {
+        // Server has no override — clear stale cache so hardcoded HTML wins
+        localStorage.removeItem(STORAGE_CODEX);
+      }
+    })
+    .catch(function(){});
+})();
+</script>
 </body>
 </html>
