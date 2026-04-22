@@ -5,3 +5,6 @@ desktop.ini
 
 # Dev/scratch files
 OFS_Dev_Login.html
+
+# Claude Code settings
+.claude/
