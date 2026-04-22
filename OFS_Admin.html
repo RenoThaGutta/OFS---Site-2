@@ -1026,6 +1026,89 @@
               <button class="save-btn" onclick="saveHomeContentForm()">Save Hero</button>
             </div>
 
+            <!-- CONTRACT SERVICES -->
+            <div class="hf-section-head" style="margin-top:8px">Contract Services</div>
+            <div class="hf-meta">
+              <div>
+                <div class="hf-label">Section Label (small caps)</div>
+                <input id="hf-svc-label" class="hf-input" type="text" placeholder="What We Do">
+              </div>
+              <div>
+                <div class="hf-label">Section Heading</div>
+                <input id="hf-svc-heading" class="hf-input" type="text" placeholder="Order of the Fallen Star">
+              </div>
+              <div>
+                <div class="hf-label">Abbreviation (dim, beside heading)</div>
+                <input id="hf-svc-abbr" class="hf-input" type="text" placeholder="(FALLSTR)">
+              </div>
+            </div>
+            <div>
+              <div class="hf-label">Intro (blank line = paragraph break)</div>
+              <textarea id="hf-svc-intro" class="hf-textarea" rows="6"></textarea>
+            </div>
+            <div>
+              <div class="hf-label">Services Cards Heading</div>
+              <input id="hf-svc-cards-heading" class="hf-input" type="text" placeholder="Services We Provide">
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Service Card 1</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-card-0-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Bullets (one per line)</div><textarea id="hf-svc-card-0-items" class="hf-textarea" rows="4"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Service Card 2</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-card-1-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Bullets (one per line)</div><textarea id="hf-svc-card-1-items" class="hf-textarea" rows="4"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Service Card 3</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-card-2-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Bullets (one per line)</div><textarea id="hf-svc-card-2-items" class="hf-textarea" rows="4"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Service Card 4</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-card-3-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Bullets (one per line)</div><textarea id="hf-svc-card-3-items" class="hf-textarea" rows="4"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Hiring OFS Block</div>
+              <div><div class="hf-label">Heading</div><input id="hf-svc-hire-heading" class="hf-input" type="text" placeholder="Hiring OFS"></div>
+              <div><div class="hf-label">Description</div><textarea id="hf-svc-hire-desc" class="hf-textarea" rows="3"></textarea></div>
+              <div class="hf-meta" style="margin-top:8px">
+                <div><div class="hf-label">Primary Button Label</div><input id="hf-svc-hire-primary-label" class="hf-input" type="text"></div>
+                <div><div class="hf-label">Primary Button URL</div><input id="hf-svc-hire-primary-url" class="hf-input" type="text"></div>
+                <div><div class="hf-label">Secondary Button Label</div><input id="hf-svc-hire-secondary-label" class="hf-input" type="text"></div>
+                <div><div class="hf-label">Secondary Button URL</div><input id="hf-svc-hire-secondary-url" class="hf-input" type="text"></div>
+              </div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Policy Card 1</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-policy-0-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Body</div><textarea id="hf-svc-policy-0-body" class="hf-textarea" rows="3"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Policy Card 2</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-policy-1-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Body</div><textarea id="hf-svc-policy-1-body" class="hf-textarea" rows="3"></textarea></div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Policy Card 3 (with optional button)</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-policy-2-title" class="hf-input" type="text"></div>
+              <div><div class="hf-label">Body</div><textarea id="hf-svc-policy-2-body" class="hf-textarea" rows="3"></textarea></div>
+              <div class="hf-meta" style="margin-top:8px">
+                <div><div class="hf-label">Button Label (blank = hide)</div><input id="hf-svc-policy-2-button-label" class="hf-input" type="text"></div>
+                <div><div class="hf-label">Button URL (discord URL auto-adds icon)</div><input id="hf-svc-policy-2-button-url" class="hf-input" type="text"></div>
+              </div>
+            </div>
+            <div class="seg-block">
+              <div class="seg-label">Disclaimer</div>
+              <div><div class="hf-label">Title</div><input id="hf-svc-disclaimer-title" class="hf-input" type="text" placeholder="Operational Conduct Disclaimer"></div>
+              <div><div class="hf-label">Body (blank line = paragraph break)</div><textarea id="hf-svc-disclaimer-body" class="hf-textarea" rows="8"></textarea></div>
+            </div>
+            <div class="hf-save-row">
+              <button class="save-btn" onclick="saveHomeServicesForm()">Save Services</button>
+            </div>
+
             <!-- ABOUT -->
             <div class="hf-section-head" style="margin-top:8px">About</div>
             <div class="hf-meta">
@@ -2318,7 +2401,20 @@ const EDIT_KEY_MAP = {
   'page-card-0':    'hf-page-0-title',
   'page-card-1':    'hf-page-1-title',
   'page-card-2':    'hf-page-2-title',
-  'page-card-3':    'hf-page-3-title'
+  'page-card-3':    'hf-page-3-title',
+  'services':            'hf-svc-heading',
+  'svc-label':           'hf-svc-label',
+  'svc-intro':           'hf-svc-intro',
+  'svc-cards-heading':   'hf-svc-cards-heading',
+  'svc-card-0':          'hf-svc-card-0-title',
+  'svc-card-1':          'hf-svc-card-1-title',
+  'svc-card-2':          'hf-svc-card-2-title',
+  'svc-card-3':          'hf-svc-card-3-title',
+  'svc-hire':            'hf-svc-hire-heading',
+  'svc-policy-0':        'hf-svc-policy-0-title',
+  'svc-policy-1':        'hf-svc-policy-1-title',
+  'svc-policy-2':        'hf-svc-policy-2-title',
+  'svc-disclaimer':      'hf-svc-disclaimer-title'
 };
 
 function _scrollAndHighlight(field){
@@ -2499,9 +2595,50 @@ function loadHomeEditor(){
     setVal('hf-page-'+i+'-desc',  card.desc);
     setVal('hf-page-'+i+'-href',  card.href);
   });
+  // Contract Services
+  const sv = c.services || {};
+  setVal('hf-svc-label',         sv.label);
+  setVal('hf-svc-heading',       sv.heading);
+  setVal('hf-svc-abbr',          sv.tagAbbr);
+  setVal('hf-svc-intro',         sv.intro);
+  setVal('hf-svc-cards-heading', sv.cardsHeading);
+  (sv.cards || []).forEach((card,i)=>{
+    setVal('hf-svc-card-'+i+'-title', card.title);
+    setVal('hf-svc-card-'+i+'-items', card.items);
+  });
+  const hr = sv.hire || {};
+  setVal('hf-svc-hire-heading',         hr.heading);
+  setVal('hf-svc-hire-desc',            hr.desc);
+  setVal('hf-svc-hire-primary-label',   hr.primaryLabel);
+  setVal('hf-svc-hire-primary-url',     hr.primaryUrl);
+  setVal('hf-svc-hire-secondary-label', hr.secondaryLabel);
+  setVal('hf-svc-hire-secondary-url',   hr.secondaryUrl);
+  (sv.policies || []).forEach((p,i)=>{
+    setVal('hf-svc-policy-'+i+'-title', p.title);
+    setVal('hf-svc-policy-'+i+'-body',  p.body);
+    if(i === 2){
+      setVal('hf-svc-policy-2-button-label', p.buttonLabel);
+      setVal('hf-svc-policy-2-button-url',   p.buttonUrl);
+    }
+  });
+  const dc = sv.disclaimer || {};
+  setVal('hf-svc-disclaimer-title', dc.title);
+  setVal('hf-svc-disclaimer-body',  dc.body);
 }
 
-function saveHomeContentForm(){
+async function _saveHomeContentWithFeedback(c, successLabel){
+  showToast('Saving…');
+  try {
+    await window.OFSLore.saveHomeContent(c);
+    const frame = document.getElementById('pages-preview-frame');
+    frame.src = frame.src;
+    showToast(successLabel);
+  } catch (e) {
+    showToast('Save failed: ' + (e && e.message ? e.message : 'network error'));
+  }
+}
+
+async function saveHomeContentForm(){
   const c = window.OFSLore.getHomeContent(); // read first to preserve other sections
   c.hero = {
     subtitle: val('hf-hero-subtitle'),
@@ -2533,13 +2670,10 @@ function saveHomeContentForm(){
     label:   val('hf-chronicle-label'),
     heading: val('hf-chronicle-heading')
   };
-  window.OFSLore.saveHomeContent(c);
-  const frame = document.getElementById('pages-preview-frame');
-  frame.src = frame.src;
-  showToast('Home content saved.');
+  await _saveHomeContentWithFeedback(c, 'Home content saved.');
 }
 
-function saveHomeBannersForm(){
+async function saveHomeBannersForm(){
   const c = window.OFSLore.getHomeContent();
   c.banners = {
     label:   val('hf-banners-label'),
@@ -2551,13 +2685,10 @@ function saveHomeBannersForm(){
       focus: b.querySelector('.bb-focus').value
     }))
   };
-  window.OFSLore.saveHomeContent(c);
-  const frame = document.getElementById('pages-preview-frame');
-  frame.src = frame.src;
-  showToast('Banners saved.');
+  await _saveHomeContentWithFeedback(c, 'Banners saved.');
 }
 
-function saveHomePagesForm(){
+async function saveHomePagesForm(){
   const c = window.OFSLore.getHomeContent();
   c.pages = {
     label:   val('hf-pages-label'),
@@ -2569,13 +2700,46 @@ function saveHomePagesForm(){
       href:  val('hf-page-'+i+'-href')
     }))
   };
-  window.OFSLore.saveHomeContent(c);
-  const frame = document.getElementById('pages-preview-frame');
-  frame.src = frame.src;
-  showToast('Pages navigator saved.');
+  await _saveHomeContentWithFeedback(c, 'Pages navigator saved.');
 }
 
-function saveHomeChronicleForm(){
+async function saveHomeServicesForm(){
+  const c = window.OFSLore.getHomeContent();
+  c.services = {
+    label:        val('hf-svc-label'),
+    heading:      val('hf-svc-heading'),
+    tagAbbr:      val('hf-svc-abbr'),
+    intro:        val('hf-svc-intro'),
+    cardsHeading: val('hf-svc-cards-heading'),
+    cards: [0,1,2,3].map(i=>({
+      title: val('hf-svc-card-'+i+'-title'),
+      items: val('hf-svc-card-'+i+'-items')
+    })),
+    hire: {
+      heading:        val('hf-svc-hire-heading'),
+      desc:           val('hf-svc-hire-desc'),
+      primaryLabel:   val('hf-svc-hire-primary-label'),
+      primaryUrl:     val('hf-svc-hire-primary-url'),
+      secondaryLabel: val('hf-svc-hire-secondary-label'),
+      secondaryUrl:   val('hf-svc-hire-secondary-url')
+    },
+    policies: [0,1,2].map(i=>{
+      const p = { title: val('hf-svc-policy-'+i+'-title'), body: val('hf-svc-policy-'+i+'-body') };
+      if(i === 2){
+        p.buttonLabel = val('hf-svc-policy-2-button-label');
+        p.buttonUrl   = val('hf-svc-policy-2-button-url');
+      }
+      return p;
+    }),
+    disclaimer: {
+      title: val('hf-svc-disclaimer-title'),
+      body:  val('hf-svc-disclaimer-body')
+    }
+  };
+  await _saveHomeContentWithFeedback(c, 'Services saved.');
+}
+
+async function saveHomeChronicleForm(){
   const data = {
     tag:      val('hf-tag'),
     title:    val('hf-title'),
@@ -2587,10 +2751,15 @@ function saveHomeChronicleForm(){
       quote:   val('hf-s'+n+'-quote')
     }))
   };
-  window.OFSLore.saveHomeChronicle(data);
-  const frame = document.getElementById('pages-preview-frame');
-  frame.src = frame.src;   // reload iframe
-  showToast('Home chronicle saved.');
+  showToast('Saving…');
+  try {
+    await window.OFSLore.saveHomeChronicle(data);
+    const frame = document.getElementById('pages-preview-frame');
+    frame.src = frame.src;
+    showToast('Home chronicle saved.');
+  } catch (e) {
+    showToast('Save failed: ' + (e && e.message ? e.message : 'network error'));
+  }
 }
 
 // Populate form on initial load

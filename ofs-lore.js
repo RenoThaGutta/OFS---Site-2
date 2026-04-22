@@ -46,11 +46,17 @@
 
   function saveHomeChronicle(data) {
     localStorage.setItem(STORAGE_HOME_CHRONICLE, JSON.stringify(data));
-    fetch(WORKER_URL + '/content', {
+    return fetch(WORKER_URL + '/content', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: 'home_chronicle', value: data })
-    }).catch(function () {});
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Server ' + r.status);
+      return r.json();
+    }).then(function (res) {
+      if (!res || !res.ok) throw new Error((res && res.error) || 'Save rejected');
+      return res;
+    });
   }
 
   /* ── Home Content (hero, about, triumvirate) ──────────────── */
@@ -75,6 +81,36 @@
     aboutSection: {
       label:   'Who We Are',
       heading: 'Forged from the Void'
+    },
+    services: {
+      label:        'What We Do',
+      heading:      'Order of the Fallen Star',
+      tagAbbr:      '(FALLSTR)',
+      intro:        'The Order of the Fallen Star (OFS) is a structured mercenary and security organization operating across the Star Citizen universe. Our focus is providing reliable, organized operational support for individuals, corporations, and organizations requiring professional assistance in hostile or contested environments.\n\nOFS is built around coordinated fleet operations, disciplined command structure, and experienced pilots capable of operating across multiple mission profiles. Our members regularly conduct combat, escort, and security operations in both PvE and PvP environments, allowing us to respond effectively to a wide range of contract requirements.\n\nOur objective is simple: deliver dependable contract services while maintaining operational discipline and client trust.',
+      cardsHeading: 'Services We Provide',
+      cards: [
+        { title: 'Security & Protection', items: 'Escort for cargo, mining, salvage, and transport operations\nFleet and capital ship security\nStation or location security during high-risk activities' },
+        { title: 'Combat Operations',     items: 'Organized combat support against hostile players or NPC threats\nLarge-scale fleet engagements\nTactical strike operations' },
+        { title: 'Operational Support',   items: 'Event security and protection during large player gatherings\nContracted force presence in contested areas\nStrategic fleet deployment and defensive operations' },
+        { title: 'Specialized Contracts', items: 'Custom security operations tailored to client needs\nMulti-ship fleet deployments\nHigh-risk or high-value asset protection' }
+      ],
+      hire: {
+        heading:        'Hiring OFS',
+        desc:           'Contract requests and service listings can be submitted through the following platforms. All contracts are reviewed by OFS leadership to determine scope, feasibility, and operational requirements.',
+        primaryLabel:   'Hire OFS — UEX Corp',
+        primaryUrl:     'https://uexcorp.space/marketplace/orgs/@FALLSTR/',
+        secondaryLabel: 'Service Listings — SC Market',
+        secondaryUrl:   'https://sc-market.space/contractor/FALLSTR/services'
+      },
+      policies: [
+        { title: 'Operational Standards',  body: 'OFS operates under a clear command structure to maintain efficiency and operational security. Once a contract begins, OFS leadership directs all operational execution. Clients may define objectives during setup; however, operational command remains with OFS during execution.' },
+        { title: 'Client Confidentiality', body: 'OFS maintains strict confidentiality regarding its clients and contract details. We do not publicly disclose the identity of organizations or individuals who hire our services, nor do we share operational details of completed contracts.' },
+        { title: 'Recruitment',            body: 'OFS is actively recruiting pilots, combat specialists, and crew members who value coordination, discipline, and organized fleet operations. Contact us through our RSI page or the service platforms listed above.', buttonLabel: 'Join Discord', buttonUrl: 'https://discord.gg/zqKtNTNFBR' }
+      ],
+      disclaimer: {
+        title: 'Operational Conduct Disclaimer',
+        body:  'The Order of the Fallen Star (OFS) operates strictly as a contract-based mercenary and security organization. All combat operations conducted by OFS are performed in response to client contracts, security obligations, or defensive fleet actions.\n\nIf you encounter OFS forces during an operation, our actions are not personal and are not directed at individuals outside the scope of a contract. Engagements occur solely because OFS has been hired to provide protection, enforce an objective, or operate within a contested area. OFS does not participate in harassment or targeted griefing.\n\nOur operations are conducted within the framework of Star Citizen\'s gameplay systems. We recognize that combat encounters may be frustrating for those involved; however, our members are acting in a professional capacity fulfilling a contracted obligation, and engagements should be viewed as part of normal gameplay rather than personal hostility.\n\nIn order to maintain operational security and protect our clients, OFS does not disclose the identity of individuals or organizations that hire our services, nor do we publicly discuss the details of contracts after they are completed.'
+      }
     },
     triumvirate: [
       { domain: 'Primarch of Conquest', name: 'Vanderan',  role: 'Military Operations & War Command' },
@@ -141,10 +177,17 @@
         var pages   = Object.assign({}, d.pages,   data.pages   || {});
         pages.cards = mergeArr((data.pages || {}).cards, d.pages.cards);
 
+        var services = Object.assign({}, d.services, data.services || {});
+        services.cards    = mergeArr((data.services || {}).cards,    d.services.cards);
+        services.policies = mergeArr((data.services || {}).policies, d.services.policies);
+        services.hire       = Object.assign({}, d.services.hire,       (data.services || {}).hire       || {});
+        services.disclaimer = Object.assign({}, d.services.disclaimer, (data.services || {}).disclaimer || {});
+
         return {
           hero:             Object.assign({}, d.hero,             data.hero             || {}),
           about:            about,
           aboutSection:     Object.assign({}, d.aboutSection,     data.aboutSection     || {}),
+          services:         services,
           triumvirate:      mergeArr(data.triumvirate, d.triumvirate),
           trivSection:      Object.assign({}, d.trivSection,      data.trivSection      || {}),
           chronicleSection: Object.assign({}, d.chronicleSection, data.chronicleSection || {}),
@@ -158,11 +201,17 @@
 
   function saveHomeContent(data) {
     localStorage.setItem(STORAGE_HOME_CONTENT, JSON.stringify(data));
-    fetch(WORKER_URL + '/content', {
+    return fetch(WORKER_URL + '/content', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: 'home_content', value: data })
-    }).catch(function () {});
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Server ' + r.status);
+      return r.json();
+    }).then(function (res) {
+      if (!res || !res.ok) throw new Error((res && res.error) || 'Save rejected');
+      return res;
+    });
   }
 
   /* ── Auto-sync from Worker on page load ──────────────────── */
@@ -172,19 +221,22 @@
     fetch(WORKER_URL + '/content')
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (!data.ok || !data.data) return;
-        var changed = false;
-        if (data.data.home_chronicle) {
-          localStorage.setItem(STORAGE_HOME_CHRONICLE, JSON.stringify(data.data.home_chronicle));
-          changed = true;
+        if (!data || !data.ok) return;
+        var srv = data.data || {};
+        // Mirror server state: write if present, clear if absent.
+        // Clearing stale localStorage lets defaults show through instead of
+        // a local snapshot outliving its deletion on the server.
+        if (srv.home_chronicle) {
+          localStorage.setItem(STORAGE_HOME_CHRONICLE, JSON.stringify(srv.home_chronicle));
+        } else {
+          localStorage.removeItem(STORAGE_HOME_CHRONICLE);
         }
-        if (data.data.home_content) {
-          localStorage.setItem(STORAGE_HOME_CONTENT, JSON.stringify(data.data.home_content));
-          changed = true;
+        if (srv.home_content) {
+          localStorage.setItem(STORAGE_HOME_CONTENT, JSON.stringify(srv.home_content));
+        } else {
+          localStorage.removeItem(STORAGE_HOME_CONTENT);
         }
-        if (changed) {
-          global.dispatchEvent(new Event('ofs-lore-loaded'));
-        }
+        global.dispatchEvent(new Event('ofs-lore-loaded'));
       })
       .catch(function () {});
   }());

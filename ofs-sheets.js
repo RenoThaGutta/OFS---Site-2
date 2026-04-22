@@ -347,6 +347,23 @@
     return cached || [];
   }
 
+  /* ── Write helper ────────────────────────────────────
+   * POSTs JSON to the Worker and throws on network errors, non-2xx
+   * responses, or responses that come back with {ok:false}. Every write
+   * path goes through here so callers' try/catch actually fires on
+   * server-side failures (not just network drops). */
+  async function _apiPost(path, body) {
+    const res = await fetch(WORKER_URL + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error('Server ' + res.status);
+    const data = await res.json();
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Write rejected');
+    return data;
+  }
+
   /**
    * Append a stat-adjustment row to Patrols_User_Adjustments.
    * @param {string} userId
@@ -378,12 +395,7 @@
       now
     ];
 
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op: 'append', sheet: 'Patrols_User_Adjustments', row: row })
-    });
-    return res.json();
+    return _apiPost('/write', { op: 'append', sheet: 'Patrols_User_Adjustments', row: row });
   }
 
   /**
@@ -392,18 +404,13 @@
    * @param {{ gold: number, silver: number, copper: number }} wallet
    */
   async function updateWallet(userId, wallet) {
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        op: 'update',
-        sheet: 'Bank',
-        keyCol: 0,
-        keyVal: String(userId),
-        data: { Gold: wallet.gold, Silver: wallet.silver, Copper: wallet.copper }
-      })
+    return _apiPost('/write', {
+      op: 'update',
+      sheet: 'Bank',
+      keyCol: 0,
+      keyVal: String(userId),
+      data: { Gold: wallet.gold, Silver: wallet.silver, Copper: wallet.copper }
     });
-    return res.json();
   }
 
   /**
@@ -432,12 +439,7 @@
       source || 'admin_ui'
     ];
 
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op: 'append', sheet: 'The bank (logs)', row: row })
-    });
-    return res.json();
+    return _apiPost('/write', { op: 'append', sheet: 'The bank (logs)', row: row });
   }
 
   /**
@@ -446,18 +448,13 @@
    * @param {object} changedBanners  { "The Fang": 22, "The Guardian": 15 } — only changed banners
    */
   async function updateBannerPoints(userId, changedBanners) {
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        op:     'upsert',
-        sheet:  'Banners points per user',
-        keyCol: 0,
-        keyVal: String(userId),
-        data:   changedBanners
-      })
+    return _apiPost('/write', {
+      op:     'upsert',
+      sheet:  'Banners points per user',
+      keyCol: 0,
+      keyVal: String(userId),
+      data:   changedBanners
     });
-    return res.json();
   }
 
   /**
@@ -467,18 +464,13 @@
    *                                  Pass [] to clear all medals.
    */
   async function updateMedals(userId, medalBanners) {
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        op:     'update',
-        sheet:  'Member Log',
-        keyCol: 0,
-        keyVal: String(userId),
-        data:   { Medals: medalBanners.join(',') }
-      })
+    return _apiPost('/write', {
+      op:     'update',
+      sheet:  'Member Log',
+      keyCol: 0,
+      keyVal: String(userId),
+      data:   { Medals: medalBanners.join(',') }
     });
-    return res.json();
   }
 
   /**
@@ -488,12 +480,7 @@
    * @param {any[]}  row        Full row array to write
    */
   async function overwriteTavernRow(sheetName, id, row) {
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op: 'overwrite', sheet: sheetName, keyCol: 0, keyVal: id, row }),
-    });
-    return res.json();
+    return _apiPost('/write', { op: 'overwrite', sheet: sheetName, keyCol: 0, keyVal: id, row: row });
   }
 
   /**
@@ -502,12 +489,7 @@
    * @param {string} id         Value in column A (used to find the row)
    */
   async function deleteTavernRow(sheetName, id) {
-    const res = await fetch(WORKER_URL + '/write', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ op: 'deleteRow', sheet: sheetName, keyCol: 0, keyVal: id }),
-    });
-    return res.json();
+    return _apiPost('/write', { op: 'deleteRow', sheet: sheetName, keyCol: 0, keyVal: id });
   }
 
   /**
@@ -521,12 +503,7 @@
       def.subRankMaster, def.medalName, def.medalUrl, def.description, def.bannerImageUrl || ''
     ];
     if (isNew) {
-      const res = await fetch(WORKER_URL + '/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ op: 'append', sheet: 'Banners', row }),
-      });
-      return res.json();
+      return _apiPost('/write', { op: 'append', sheet: 'Banners', row: row });
     }
     return overwriteTavernRow('Banners', def.name, row);
   }
@@ -548,12 +525,7 @@
    */
   async function saveTimelineBlock(blockId, data) {
     _timelineBlocks[blockId] = data;
-    const res = await fetch(WORKER_URL + '/content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: 'tl-block:' + blockId, value: data }),
-    });
-    return res.json();
+    return _apiPost('/content', { key: 'tl-block:' + blockId, value: data });
   }
 
   global.OFSSheets = {
