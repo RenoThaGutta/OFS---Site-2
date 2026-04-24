@@ -165,27 +165,58 @@
       border-radius: 6px;
       overflow: hidden;
     }
-    .r-scroll { overflow-x: auto; }
+    .r-scroll {
+      overflow-x: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--gold-dim) var(--bg-card2);
+    }
+    .r-scroll::-webkit-scrollbar { height: 10px; }
+    .r-scroll::-webkit-scrollbar-track { background: var(--bg-card2); }
+    .r-scroll::-webkit-scrollbar-thumb {
+      background: var(--gold-dim);
+      border: 2px solid var(--bg-card2);
+      border-radius: 6px;
+    }
+    .r-scroll::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+    .r-scroll::-webkit-scrollbar-button {
+      background: var(--bg-card2);
+      height: 14px;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .r-scroll::-webkit-scrollbar-button:single-button:horizontal:decrement {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'><path d='M6 1L2 4l4 3z' fill='%236e5a28'/></svg>");
+    }
+    .r-scroll::-webkit-scrollbar-button:single-button:horizontal:increment {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'><path d='M2 1l4 3-4 3z' fill='%236e5a28'/></svg>");
+    }
+    .r-scroll::-webkit-scrollbar-button:single-button:horizontal:decrement:hover {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'><path d='M6 1L2 4l4 3z' fill='%23c9a84c'/></svg>");
+    }
+    .r-scroll::-webkit-scrollbar-button:single-button:horizontal:increment:hover {
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'><path d='M2 1l4 3-4 3z' fill='%23c9a84c'/></svg>");
+    }
+
     table.roster-tbl {
       width: 100%;
-      min-width: 1100px;
+      min-width: 880px;
       border-collapse: collapse;
       font-size: .82rem;
     }
     .roster-tbl th {
       font-family: 'Cinzel', serif;
-      font-size: .62rem;
-      letter-spacing: .12em;
+      font-size: .58rem;
+      letter-spacing: .1em;
       text-transform: uppercase;
       color: var(--gold);
       text-align: left;
-      padding: 12px 10px;
+      padding: 10px 6px;
       background: var(--bg-card2);
       border-bottom: 1px solid var(--b-gold);
       white-space: nowrap;
     }
     .roster-tbl td {
-      padding: 10px;
+      padding: 7px 6px;
       border-bottom: 1px solid var(--b-dim);
       color: var(--text);
       vertical-align: middle;
@@ -194,7 +225,7 @@
     .roster-tbl tr.leader-row .pname { color: var(--gold-lt); font-weight: 600; }
     .roster-tbl tr.dirty td { background: rgba(76,175,136,.05); }
 
-    .pname-cell { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .pname-cell { display: flex; align-items: center; gap: 10px; min-width: 160px; }
     .pname-cell img {
       width: 28px; height: 28px; border-radius: 50%;
       border: 1px solid var(--b-gold); object-fit: cover; background: var(--bg-card2);
@@ -218,26 +249,26 @@
     /* Editable cells */
     .roster-tbl input[type="number"],
     .roster-tbl input[type="text"] {
-      width: 84px;
+      width: 60px;
       background: var(--bg-card2);
       border: 1px solid var(--b-dim);
       border-radius: 2px;
       color: var(--text);
       font-family: 'Inter', sans-serif;
-      font-size: .82rem;
-      padding: 6px 8px;
+      font-size: .78rem;
+      padding: 5px 6px;
       text-align: right;
     }
-    .roster-tbl input[type="text"].jointime { width: 158px; text-align: left; }
+    .roster-tbl input[type="text"].jointime { width: 138px; text-align: left; font-size: .72rem; }
     .roster-tbl input:focus { outline: none; border-color: var(--gold); background: var(--bg-card); }
 
-    .row-actions { display: flex; gap: 6px; justify-content: flex-end; min-width: 150px; }
+    .row-actions { display: flex; gap: 5px; justify-content: flex-end; min-width: 120px; }
     .btn {
       font-family: 'Cinzel', serif;
-      font-size: .6rem;
-      letter-spacing: .12em;
+      font-size: .58rem;
+      letter-spacing: .1em;
       text-transform: uppercase;
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: 2px;
       cursor: pointer;
       border: 1px solid var(--b-gold);
@@ -577,7 +608,7 @@ async function load() {
     return;
   }
 
-  document.getElementById('crumb').textContent = 'Quest ' + STATE.patrolId;
+  document.getElementById('crumb').textContent = 'Quest';
   document.title = 'Quest ' + STATE.patrolId + ' — Order of the Fallen Star';
 
   /* Make sure OFSData has players for avatar/rank lookups, plus populate the
