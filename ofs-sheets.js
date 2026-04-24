@@ -474,40 +474,40 @@
   }
 
   /* ── Patrols (quest) helpers ─────────────────────────
-   * The Patrols sheet has no unique Patrol-ID + Player-ID key (leader has
-   * two rows, multi-quest participants etc.), but col U "Roster ID" is
-   * unique per row. We key every Patrols write on Roster ID via the
-   * existing generic `update` / `deleteRow` ops — no Worker changes needed.
+   * Patrols rows are keyed on the composite (Patrol ID + Player ID):
+   *   - Participant row: playerId = that player's Discord ID
+   *   - Leader metadata row: playerId = '' (empty string)
+   * These call two Worker ops that don't exist in the generic /write
+   * switch — they must be added server-side (see /docs for the handler).
    */
-  const PATROL_ROSTER_ID_COL = 20; // 0-indexed col U
 
   /**
-   * Update specific cells on a Patrols row identified by its Roster ID.
-   * @param {string} rosterId  — col U value, unique per row
+   * Update specific cells on a Patrols row identified by (Patrol ID, Player ID).
+   * @param {string} patrolId
+   * @param {string} playerId  — '' to target the leader metadata row
    * @param {object} data      — { ColumnHeader: value, … } using Patrols header names
    */
-  async function updatePatrolByRoster(rosterId, data) {
+  async function updatePatrolRow(patrolId, playerId, data) {
     return _apiPost('/write', {
-      op:     'update',
-      sheet:  'Patrols',
-      keyCol: PATROL_ROSTER_ID_COL,
-      keyVal: String(rosterId),
-      data:   data
+      op:       'updatePatrol',
+      patrolId: String(patrolId),
+      playerId: String(playerId || ''),
+      data:     data
     });
   }
 
   /**
-   * Delete a Patrols row by its Roster ID. Caller is responsible for
-   * refusing to delete a leader row (row where col X is populated) — this
-   * function doesn't inspect row content.
-   * @param {string} rosterId
+   * Delete a participant row from Patrols. Refuses empty playerId to avoid
+   * deleting the leader metadata row.
+   * @param {string} patrolId
+   * @param {string} playerId  — must be non-empty
    */
-  async function deletePatrolByRoster(rosterId) {
+  async function deletePatrolRow(patrolId, playerId) {
+    if (!playerId) return Promise.reject(new Error('Cannot delete leader metadata row'));
     return _apiPost('/write', {
-      op:     'deleteRow',
-      sheet:  'Patrols',
-      keyCol: PATROL_ROSTER_ID_COL,
-      keyVal: String(rosterId)
+      op:       'deletePatrolRow',
+      patrolId: String(patrolId),
+      playerId: String(playerId)
     });
   }
 
@@ -586,8 +586,8 @@
     appendBankLog,
     updateBannerPoints,
     updateMedals,
-    updatePatrolByRoster,
-    deletePatrolByRoster,
+    updatePatrolRow,
+    deletePatrolRow,
     appendBannerPointsLog,
     overwriteTavernRow,
     deleteTavernRow,

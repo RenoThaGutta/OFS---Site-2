@@ -917,21 +917,18 @@ function colHeaderToIdx(header) {
   return -1;
 }
 
-function rosterIdOf(row) { return cellTrim(row, COL_IDX.ROSTER_ID); }
-
 async function saveRow(playerId, tr) {
   var data = STATE.dirty[playerId];
   if (!data || !Object.keys(data).length) { toast('Nothing to save'); return; }
+  if (!playerId) { toast('Missing Player ID — cannot save', 'err'); return; }
 
   var rowIdx = Number(tr.getAttribute('data-idx'));
   var row = STATE.rows[rowIdx];
-  var rosterId = rosterIdOf(row);
-  if (!rosterId) { toast('No Roster ID on this row — cannot save', 'err'); return; }
 
   var btn = tr.querySelector('[data-action="save"]');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    await OFSSheets.updatePatrolByRoster(rosterId, data);
+    await OFSSheets.updatePatrolRow(STATE.patrolId, playerId, data);
     /* Patch in-memory row so subsequent saves diff against current values */
     Object.keys(data).forEach(function (k) {
       var idx = colHeaderToIdx(k);
@@ -948,11 +945,9 @@ async function saveRow(playerId, tr) {
 }
 
 async function removeParticipant(playerId, tr) {
-  if (!playerId) return;
+  if (!playerId) { toast('Missing Player ID — cannot remove', 'err'); return; }
   var rowIdx = Number(tr.getAttribute('data-idx'));
   var row = STATE.rows[rowIdx];
-  var rosterId = rosterIdOf(row);
-  if (!rosterId) { toast('No Roster ID on this row — cannot remove', 'err'); return; }
   if (cellTrim(row, COL_IDX.PAUSED_DUR)) {
     toast('Cannot remove the leader row', 'err'); return;
   }
@@ -962,7 +957,7 @@ async function removeParticipant(playerId, tr) {
   var btn = tr.querySelector('[data-action="remove"]');
   btn.disabled = true; btn.textContent = '…';
   try {
-    await OFSSheets.deletePatrolByRoster(rosterId);
+    await OFSSheets.deletePatrolRow(STATE.patrolId, playerId);
     STATE.rows.splice(rowIdx, 1);
     STATE.leaderIdx = findLeaderIndex(STATE.rows);
     delete STATE.dirty[playerId];
@@ -1023,33 +1018,30 @@ async function onCompleteQuest() {
     var nowMs  = Date.now();
     var warnings = [];
 
-    var leaderRosterId = rosterIdOf(STATE.rows[STATE.leaderIdx] || []);
-    if (!leaderRosterId) throw new Error('Leader row has no Roster ID.');
-
-    /* 1. Write AH on every row (incl. leader if they have V populated) */
+    /* 1. Write AH on every participant row with a parseable V */
     for (var i = 0; i < STATE.rows.length; i++) {
-      var r  = STATE.rows[i];
-      var rid = rosterIdOf(r);
-      if (!rid) continue;
-      var v  = cellTrim(r, COL_IDX.JOIN_TIME);
+      var r   = STATE.rows[i];
+      var pid = cellTrim(r, COL_IDX.PLAYER_ID);
+      if (!pid) continue;  // leader metadata row — no V, handled in step 2
+      var v   = cellTrim(r, COL_IDX.JOIN_TIME);
       if (!v) continue;
       var joinD = parseTs(v);
       if (!joinD) {
-        warnings.push('Unparseable join time for ' + (cell(r, COL_IDX.PLAYER_NAME) || rid));
+        warnings.push('Unparseable join time for ' + (cell(r, COL_IDX.PLAYER_NAME) || pid));
         continue;
       }
       var ah = fmtHrMin(nowMs - joinD.getTime());
       var payload = {};
       payload[COL.AH] = ah;
-      try { await OFSSheets.updatePatrolByRoster(rid, payload); }
-      catch (e) { warnings.push('AH write failed for ' + rid + ': ' + (e.message || e)); }
+      try { await OFSSheets.updatePatrolRow(STATE.patrolId, pid, payload); }
+      catch (e) { warnings.push('AH write failed for ' + pid + ': ' + (e.message || e)); }
     }
 
-    /* 2. Mark leader row complete + sent for review */
+    /* 2. Mark leader metadata row (Player ID empty) complete + sent for review */
     var leaderPayload = {};
     leaderPayload[COL.AE] = nowIso;
     leaderPayload[COL.Y]  = nowIso;
-    await OFSSheets.updatePatrolByRoster(leaderRosterId, leaderPayload);
+    await OFSSheets.updatePatrolRow(STATE.patrolId, '', leaderPayload);
 
     STATE.terminal = true;
     toast('Quest submitted', 'ok');
@@ -1079,8 +1071,6 @@ async function onApproveQuest() {
   try {
     await reCheckLeader();
     var lead = STATE.rows[STATE.leaderIdx] || [];
-    var leaderRosterId = rosterIdOf(lead);
-    if (!leaderRosterId) throw new Error('Leader row has no Roster ID.');
 
     var guildId       = cellTrim(lead, COL_IDX.GUILD_ID);
     var game          = cellTrim(lead, COL_IDX.GAME);
@@ -1092,16 +1082,13 @@ async function onApproveQuest() {
     var warnings = [];
 
     for (var i = 0; i < STATE.rows.length; i++) {
-      var r   = STATE.rows[i];
-      var rid = rosterIdOf(r);
-      if (!rid) continue;
+      var r = STATE.rows[i];
+      var targetId = cellTrim(r, COL_IDX.PLAYER_ID);
+      if (!targetId) continue;  // leader metadata row — no points to apply
       var delta = Number(cell(r, COL_IDX.BP_DELTA));
       if (!isFinite(delta) || delta === 0) continue;
 
-      var targetId   = cellTrim(r, COL_IDX.PLAYER_ID);
       var targetName = cellTrim(r, COL_IDX.PLAYER_NAME);
-      if (!targetId) { warnings.push('Row ' + rid + ' has no Player ID — skipped'); continue; }
-
       var player = window.OFSData ? OFSData.getPlayerById(targetId) : null;
       var banner = player && player.activeBanner;
       if (!banner) {
@@ -1132,7 +1119,7 @@ async function onApproveQuest() {
         requesterId,                // Requester User ID
         requesterName,              // Requester Tag
         banner,                     // Banner
-        delta,                      // Points (Current) — per prompt, = delta applied
+        delta,                      // Points (Current)
         delta,                      // Delta Applied
         oldTotal,                   // Old Total
         newTotal,                   // New Total
@@ -1147,8 +1134,7 @@ async function onApproveQuest() {
       /* Clear AI so re-approve can't double-apply */
       try {
         var clearPayload = {}; clearPayload[COL.AI] = 0;
-        await OFSSheets.updatePatrolByRoster(rid, clearPayload);
-        /* Patch local cache too */
+        await OFSSheets.updatePatrolRow(STATE.patrolId, targetId, clearPayload);
         r[COL_IDX.BP_DELTA] = 0;
         if (player && player.banners && player.banners[banner]) player.banners[banner].p = newTotal;
       } catch (e) {
@@ -1156,10 +1142,10 @@ async function onApproveQuest() {
       }
     }
 
-    /* Finally — write Z on the leader row */
+    /* Finally — write Z on the leader metadata row (playerId='') */
     var leaderPayload = {};
     leaderPayload[COL.Z] = reviewerTag;
-    await OFSSheets.updatePatrolByRoster(leaderRosterId, leaderPayload);
+    await OFSSheets.updatePatrolRow(STATE.patrolId, '', leaderPayload);
 
     STATE.terminal = true;
     toast('Quest approved', 'ok');
