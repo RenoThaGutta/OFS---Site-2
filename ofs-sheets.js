@@ -360,7 +360,7 @@
     });
     if (!res.ok) throw new Error('Server ' + res.status);
     const data = await res.json();
-    if (!data || !data.ok) throw new Error((data && data.error) || 'Write rejected');
+    if (!data || !data.ok) throw new Error((data && (data.error || data.reason)) || 'Write rejected');
     return data;
   }
 
