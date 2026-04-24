@@ -367,6 +367,56 @@
     #toast.err  { border-color: rgba(201,76,76,.5); color: var(--danger); }
     #toast.ok   { border-color: rgba(76,175,136,.5); color: var(--ok); }
 
+    /* Themed confirm modal */
+    .ofs-modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(7, 7, 15, .72);
+      backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 9998;
+      opacity: 0; pointer-events: none;
+      transition: opacity .15s;
+    }
+    .ofs-modal-backdrop.show { opacity: 1; pointer-events: auto; }
+    .ofs-modal {
+      min-width: 320px; max-width: 460px;
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 6px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.6);
+      padding: 22px 24px 18px;
+      transform: translateY(-6px);
+      transition: transform .15s;
+    }
+    .ofs-modal-backdrop.show .ofs-modal { transform: translateY(0); }
+    .ofs-modal h3 {
+      margin: 0 0 12px;
+      font-family: 'Cinzel', serif;
+      font-size: .88rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+    }
+    .ofs-modal .msg {
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: .86rem;
+      line-height: 1.45;
+      margin: 0 0 8px;
+    }
+    .ofs-modal .detail {
+      color: var(--text-dim);
+      font-family: 'Inter', sans-serif;
+      font-size: .76rem;
+      line-height: 1.45;
+      margin: 0 0 18px;
+    }
+    .ofs-modal .actions {
+      display: flex; justify-content: flex-end; gap: 8px;
+      margin-top: 4px;
+    }
+    .ofs-modal .actions .btn { font-size: .66rem; padding: 8px 16px; }
+
     /* Loading & empty states */
     .state-loading, .state-empty {
       padding: 60px 24px;
@@ -431,6 +481,7 @@
 </div>
 
 <div id="toast"></div>
+<div id="ofs-modal-root" class="ofs-modal-backdrop" aria-hidden="true"></div>
 
 <script src="header_bar.js"></script>
 <script src="ofs-data.js"></script>
@@ -563,6 +614,58 @@ function toast(msg, kind) {
   t.className = 'show ' + (kind || '');
   clearTimeout(t._tid);
   t._tid = setTimeout(function () { t.className = ''; }, 2400);
+}
+
+function ofsConfirm(opts) {
+  opts = opts || {};
+  var root = document.getElementById('ofs-modal-root');
+  if (!root) return Promise.resolve(window.confirm(opts.message || ''));
+
+  return new Promise(function (resolve) {
+    var variant     = opts.variant === 'danger' ? 'danger' : 'primary';
+    var title       = opts.title || 'Confirm';
+    var message     = opts.message || '';
+    var detail      = opts.detail || '';
+    var confirmText = opts.confirmText || 'Confirm';
+    var cancelText  = opts.cancelText  || 'Cancel';
+
+    root.innerHTML =
+      '<div class="ofs-modal" role="dialog" aria-modal="true">' +
+        '<h3>' + esc(title) + '</h3>' +
+        '<p class="msg">' + esc(message) + '</p>' +
+        (detail ? '<p class="detail">' + esc(detail) + '</p>' : '') +
+        '<div class="actions">' +
+          '<button type="button" class="btn" data-role="cancel">' + esc(cancelText) + '</button>' +
+          '<button type="button" class="btn ' + variant + '" data-role="confirm">' + esc(confirmText) + '</button>' +
+        '</div>' +
+      '</div>';
+    root.classList.add('show');
+    root.setAttribute('aria-hidden', 'false');
+
+    var confirmBtn = root.querySelector('[data-role="confirm"]');
+    var cancelBtn  = root.querySelector('[data-role="cancel"]');
+    setTimeout(function () { confirmBtn && confirmBtn.focus(); }, 0);
+
+    function close(result) {
+      root.classList.remove('show');
+      root.setAttribute('aria-hidden', 'true');
+      root.removeEventListener('click', onBackdrop);
+      document.removeEventListener('keydown', onKey);
+      setTimeout(function () {
+        if (!root.classList.contains('show')) root.innerHTML = '';
+      }, 180);
+      resolve(result);
+    }
+    function onBackdrop(e) { if (e.target === root) close(false); }
+    function onKey(e) {
+      if (e.key === 'Escape') close(false);
+      else if (e.key === 'Enter') close(true);
+    }
+    confirmBtn.addEventListener('click', function () { close(true); });
+    cancelBtn.addEventListener('click',  function () { close(false); });
+    root.addEventListener('click', onBackdrop);
+    document.addEventListener('keydown', onKey);
+  });
 }
 
 function cell(row, idx) { return (row && row[idx] != null) ? String(row[idx]) : ''; }
@@ -1001,7 +1104,13 @@ async function removeParticipant(playerId, tr) {
     toast('Cannot remove the leader row', 'err'); return;
   }
   var pname = tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : playerId;
-  if (!confirm('Remove ' + pname + ' from this quest? This deletes their row.')) return;
+  if (!(await ofsConfirm({
+    title: 'Remove Participant',
+    message: 'Remove ' + pname + ' from this quest?',
+    detail: 'This deletes their row and any points they\'ve earned on this quest.',
+    variant: 'danger',
+    confirmText: 'Remove'
+  }))) return;
 
   var btn = tr.querySelector('[data-action="remove"]');
   btn.disabled = true; btn.textContent = '…';
@@ -1057,7 +1166,13 @@ function fmtHrMin(ms) {
 
 async function onCompleteQuest() {
   if (!STATE.session || !STATE.session.id) { toast('Not logged in', 'err'); return; }
-  if (!confirm('Complete this quest and send it for admin review?\n\nAfter this, editing is locked until approval.')) return;
+  if (!(await ofsConfirm({
+    title: 'Complete Quest',
+    message: 'Complete this quest and send it for admin review?',
+    detail: 'After this, editing is locked until approval.',
+    variant: 'primary',
+    confirmText: 'Complete'
+  }))) return;
 
   var btn = document.querySelector('[data-action="complete"]');
   btn.disabled = true; btn.textContent = 'Submitting…';
@@ -1113,7 +1228,13 @@ async function onCompleteQuest() {
 ═══════════════════════════════════════════════════════════ */
 async function onApproveQuest() {
   if (!STATE.session || !STATE.session.isAdmin) { toast('Admin only', 'err'); return; }
-  if (!confirm('Approve this quest and apply banner points?')) return;
+  if (!(await ofsConfirm({
+    title: 'Approve Quest',
+    message: 'Approve this quest and apply banner points?',
+    detail: 'Banner points earned on this quest will be written to each participant.',
+    variant: 'primary',
+    confirmText: 'Approve'
+  }))) return;
 
   var btn = document.querySelector('[data-action="approve"]');
   btn.disabled = true; btn.textContent = 'Applying…';
