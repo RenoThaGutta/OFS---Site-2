@@ -891,7 +891,7 @@ function renderFooter() {
   if (editable) {
     right += '<button class="btn ok" data-action="save-all">Save All</button>';
   }
-  if (STATE.mode === 'leader' && !completed && !cancelled && !STATE.terminal) {
+  if ((STATE.mode === 'leader' || STATE.mode === 'admin') && !completed && !cancelled && !STATE.terminal) {
     right += '<button class="btn primary" data-action="complete">Complete Quest</button>';
   }
   if (STATE.mode === 'admin' && completed && !approved && !cancelled && !STATE.terminal) {
