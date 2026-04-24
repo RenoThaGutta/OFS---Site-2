@@ -261,6 +261,13 @@
     }
     .roster-tbl input[type="text"].jointime { width: 138px; text-align: left; font-size: .72rem; }
     .roster-tbl input:focus { outline: none; border-color: var(--gold); background: var(--bg-card); }
+    /* Hide the browser's default number-input spinner — doesn't match the theme */
+    .roster-tbl input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+    .roster-tbl input[type="number"]::-webkit-outer-spin-button,
+    .roster-tbl input[type="number"]::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
 
     .row-actions { display: flex; gap: 5px; justify-content: flex-end; min-width: 120px; }
     .btn {
