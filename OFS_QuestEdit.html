@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#07070f">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quest — Order of the Fallen Star</title>
+  <link rel="icon" type="image/png" href="ofs favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://ofs-api.orderofthefallenstar.workers.dev" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        #07070f;
+      --bg-card:   #0e0e1c;
+      --bg-card2:  #13132a;
+      --gold:      #c9a84c;
+      --gold-lt:   #e8ca6a;
+      --gold-dim:  #6e5a28;
+      --silver:    #b0b8c8;
+      --silver-dim:#5a6272;
+      --text:      #ddd8cc;
+      --text-dim:  #7a7568;
+      --b-gold:    rgba(201,168,76,.28);
+      --b-dim:     rgba(201,168,76,.09);
+      --danger:    #c94c4c;
+      --ok:        #4caf88;
+    }
+
+    html { font-size: 16px; background: #07070f; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    #starfield { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    .wrap {
+      position: relative; z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 92px 28px 72px;
+    }
+
+    .page-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--silver);
+      margin-bottom: 20px;
+    }
+    .page-breadcrumb a { color: var(--gold); text-decoration: none; }
+    .page-breadcrumb a:hover { color: var(--gold-lt); }
+    .page-breadcrumb .sep { color: var(--silver-dim); }
+    .page-breadcrumb .current { color: var(--text); }
+
+    /* Quest header card */
+    .quest-head {
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0;
+    }
+    .quest-head-img {
+      width: 100%;
+      aspect-ratio: 1/1;
+      object-fit: cover;
+      border-right: 1px solid var(--b-gold);
+      background: var(--bg-card2);
+    }
+    .quest-head-body { padding: 22px 26px; }
+    .quest-head .pid {
+      font-family: 'Cinzel', serif;
+      font-size: .64rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .quest-head h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      letter-spacing: .08em;
+      color: var(--gold-lt);
+      margin-bottom: 10px;
+    }
+    .quest-head .desc {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .quest-head .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .q-badge {
+      font-family: 'Cinzel', serif;
+      font-size: .6rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 3px;
+      border: 1px solid var(--b-gold);
+      color: var(--gold);
+    }
+    .q-badge.active  { border-color: var(--ok); color: var(--ok); }
+    .q-badge.review  { border-color: #d4a93c; color: #e8c86a; }
+    .q-badge.approved{ border-color: var(--gold-lt); color: var(--gold-lt); background: rgba(201,168,76,.08); }
+    .q-badge.cancel  { border-color: var(--danger); color: var(--danger); }
+
+    .quest-leader-line {
+      font-size: .82rem;
+      color: var(--silver);
+      margin-top: 10px;
+    }
+    .quest-leader-line span { color: var(--gold); font-family: 'Cinzel', serif; letter-spacing: .08em; }
+
+    /* Mode notice */
+    .mode-notice {
+      padding: 12px 18px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: .88rem;
+    }
+    .mode-notice.leader { background: rgba(76,175,136,.08); border: 1px solid rgba(76,175,136,.3); color: var(--ok); }
+    .mode-notice.admin  { background: rgba(201,168,76,.08); border: 1px solid var(--b-gold); color: var(--gold-lt); }
+    .mode-notice.ro     { background: rgba(176,184,200,.05); border: 1px solid rgba(176,184,200,.15); color: var(--silver); }
+    .mode-notice.err    { background: rgba(201,76,76,.08); border: 1px solid rgba(201,76,76,.35); color: var(--danger); }
+    .mode-notice strong { font-family: 'Cinzel', serif; letter-spacing: .1em; }
+
+    /* Roster table */
+    .sec-head {
+      display: flex; align-items: center; gap: 16px;
+      margin: 24px 0 14px;
+    }
+    .sec-head h2 {
+      font-family: 'Cinzel', serif;
+      font-size: .9rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .sec-line { flex: 1; height: 1px; background: var(--b-gold); }
+
+    .roster {
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .r-scroll { overflow-x: auto; }
+    table.roster-tbl {
+      width: 100%;
+      min-width: 1100px;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+    .roster-tbl th {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-align: left;
+      padding: 12px 10px;
+      background: var(--bg-card2);
+      border-bottom: 1px solid var(--b-gold);
+      white-space: nowrap;
+    }
+    .roster-tbl td {
+      padding: 10px;
+      border-bottom: 1px solid var(--b-dim);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    .roster-tbl tr.leader-row td { background: rgba(201,168,76,.04); }
+    .roster-tbl tr.leader-row .pname { color: var(--gold-lt); font-weight: 600; }
+    .roster-tbl tr.dirty td { background: rgba(76,175,136,.05); }
+
+    .pname-cell { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+    .pname-cell img {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 1px solid var(--b-gold); object-fit: cover; background: var(--bg-card2);
+    }
+    .pname-cell .pname { font-family: 'Cinzel', serif; letter-spacing: .06em; font-size: .82rem; color: var(--text); }
+    .pname-cell .psub  { font-size: .68rem; color: var(--text-dim); }
+    .pname-cell a      { color: inherit; text-decoration: none; }
+    .pname-cell a:hover .pname { color: var(--gold-lt); }
+    .leader-chip {
+      font-family: 'Cinzel', serif;
+      font-size: .5rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      border: 1px solid var(--b-gold);
+      padding: 2px 6px;
+      border-radius: 2px;
+      margin-left: 4px;
+    }
+
+    /* Editable cells */
+    .roster-tbl input[type="number"],
+    .roster-tbl input[type="text"] {
+      width: 84px;
+      background: var(--bg-card2);
+      border: 1px solid var(--b-dim);
+      border-radius: 2px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: .82rem;
+      padding: 6px 8px;
+      text-align: right;
+    }
+    .roster-tbl input[type="text"].jointime { width: 158px; text-align: left; }
+    .roster-tbl input:focus { outline: none; border-color: var(--gold); background: var(--bg-card); }
+
+    .row-actions { display: flex; gap: 6px; justify-content: flex-end; min-width: 150px; }
+    .btn {
+      font-family: 'Cinzel', serif;
+      font-size: .6rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+      border: 1px solid var(--b-gold);
+      background: transparent;
+      color: var(--gold);
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { background: rgba(201,168,76,.1); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn.primary { background: rgba(201,168,76,.1); }
+    .btn.primary:hover:not(:disabled) { background: rgba(201,168,76,.2); }
+    .btn.danger { border-color: rgba(201,76,76,.4); color: var(--danger); }
+    .btn.danger:hover:not(:disabled) { background: rgba(201,76,76,.08); }
+    .btn.ok { border-color: rgba(76,175,136,.5); color: var(--ok); }
+    .btn.ok:hover:not(:disabled) { background: rgba(76,175,136,.08); }
+
+    .ro-cell { color: var(--silver); font-family: 'Inter', sans-serif; }
+    .ro-cell.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    /* Footer action bar */
+    .quest-footer {
+      margin-top: 22px;
+      padding: 18px 22px;
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .quest-footer .status-line {
+      font-size: .82rem;
+      color: var(--silver);
+    }
+    .quest-footer .status-line .label {
+      font-family: 'Cinzel', serif;
+      font-size: .64rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-right: 8px;
+    }
+    .quest-footer .btn { font-size: .7rem; padding: 10px 20px; }
+
+    /* Warnings / toast */
+    .warn-list {
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: rgba(212,169,60,.08);
+      border: 1px solid rgba(212,169,60,.35);
+      border-radius: 4px;
+      font-size: .82rem;
+      color: #e8c86a;
+    }
+    .warn-list ul { margin: 6px 0 0 18px; }
+    .warn-list li { margin: 2px 0; }
+
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--b-gold);
+      color: var(--text);
+      padding: 12px 22px; border-radius: 4px;
+      font-family: 'Cinzel', serif; font-size: .72rem; letter-spacing: .1em;
+      opacity: 0; transition: opacity .25s;
+      z-index: 9999; pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+    #toast.err  { border-color: rgba(201,76,76,.5); color: var(--danger); }
+    #toast.ok   { border-color: rgba(76,175,136,.5); color: var(--ok); }
+
+    /* Loading & empty states */
+    .state-loading, .state-empty {
+      padding: 60px 24px;
+      text-align: center;
+      color: var(--text-dim);
+      font-family: 'Cinzel', serif;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      font-size: .78rem;
+    }
+
+    @media (max-width: 800px) {
+      .quest-head { grid-template-columns: 1fr; }
+      .quest-head-img { aspect-ratio: 2/1; border-right: none; border-bottom: 1px solid var(--b-gold); }
+    }
+
+    footer.site-footer {
+      margin-top: 60px;
+      padding: 28px 20px 20px;
+      border-top: 1px solid var(--b-dim);
+      text-align: center;
+      color: var(--text-dim);
+      font-size: .82rem;
+    }
+    .footer-glory { font-family: 'Crimson Text', serif; font-style: italic; color: var(--silver); margin-bottom: 14px; }
+    .footer-links { list-style: none; display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .footer-links a { color: var(--gold); text-decoration: none; font-family: 'Cinzel', serif; font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; }
+    .footer-links a:hover { color: var(--gold-lt); }
+    .footer-copy { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+
+<canvas id="starfield"></canvas>
+
+<nav id="main-nav"></nav>
+
+<div class="wrap">
+
+  <div class="page-breadcrumb">
+    <a href="#" id="back-link" onclick="history.back();return false;">← Back</a>
+    <span class="sep">/</span>
+    <span class="current" id="crumb">Quest</span>
+  </div>
+
+  <div id="page-root">
+    <div class="state-loading">Loading quest…</div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-glory">Glory to the Fallen Star. Our light endures, unbroken.</div>
+    <ul class="footer-links">
+      <li><a href="OFS_Home.html">Home</a></li>
+      <li><a href="OFS_Codex.html">Codex</a></li>
+      <li><a href="OFS_Timeline.html">Chronicles</a></li>
+      <li><a href="OFS_Roster.html">Roster</a></li>
+      <li><a href="OFS_TavernHall.html">Tavern Hall</a></li>
+    </ul>
+    <div class="footer-copy">Order of the Fallen Star &nbsp;·&nbsp; Star Citizen Organization</div>
+  </footer>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="header_bar.js"></script>
+<script src="ofs-data.js"></script>
+<script src="ofs-sheets.js"></script>
+<script src="ofs-nav.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   STAR FIELD (matches other pages)
+═══════════════════════════════════════════════════════════ */
+(function () {
+  var cv = document.getElementById('starfield'), cx = cv.getContext('2d'); var st = [];
+  function resize() {
+    cv.width = window.innerWidth; cv.height = window.innerHeight; st = [];
+    var n = Math.floor(cv.width * cv.height / 4200);
+    for (var i = 0; i < n; i++) st.push({ x: Math.random()*cv.width, y: Math.random()*cv.height, r: Math.random()*1 + .2, a: Math.random()*.5 + .1, s: Math.random()*.0004 + .0001 });
+  }
+  function draw(t) {
+    cx.clearRect(0, 0, cv.width, cv.height);
+    for (var i = 0; i < st.length; i++) {
+      var s = st[i]; var p = Math.sin(t*s.s*900 + s.x*.01)*.18 + .82;
+      cx.beginPath(); cx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      cx.fillStyle = 'rgba(190,210,255,' + (s.a*p).toFixed(3) + ')'; cx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  resize(); window.addEventListener('resize', resize); requestAnimationFrame(draw);
+})();
+
+/* ═══════════════════════════════════════════════════════════
+   PATROL COLUMN REFERENCE
+   Column header strings must match the Patrols sheet header row
+   exactly — the Worker's updatePatrol op keys data by header name.
+   If the Worker errors "unknown column", fix the string here.
+═══════════════════════════════════════════════════════════ */
+var COL_IDX = {
+  PATROL_ID: 0,      // A  "Patrol ID"
+  LEADER_NAME: 1,    // B  "Patrol Leader"
+  LEADER_ID: 2,      // C  "Patrol Leader ID"
+  LEADER_RANK: 3,    // D  "Leader Rank"
+  QUEST_NAME: 4,     // E  "Patrol Name"
+  QUEST_DESC: 5,     // F  "Patrol Description"
+  QUEST_IMG: 6,      // G  "Patrol Image"
+  STATUS: 7,         // H  "Patrol Start Time"
+  PLAYER_ID: 10,     // K  "Player ID"
+  PLAYER_NAME: 11,   // L  "Player Name"
+  PLAYER_ROLE: 12,   // M  "Player Role" (NOT banner — banner comes from Member Log)
+  PLAYER_RANK: 13,   // N  "Player Rank"
+  QUEST_POINTS: 14,  // O  "Quest"       (UI label: Quest Points)
+  GROUND_KILLS: 15,  // P  "Fps kills"   (UI label: Ground Kills)
+  PILOT_KILLS: 16,   // Q  "Ship kills"  (UI label: Pilot Kills)
+  MESSAGE_ID: 18,    // S  "Message ID"
+  THREAD_ID: 19,     // T  "Thread ID"
+  JOIN_TIME: 21,     // V  "Joined Quest TS"
+  PAUSED_DUR: 23,    // X  "Total Paused Duration" (leader-row marker)
+  SENT_REVIEW: 24,   // Y  "Sent for review"
+  APPROVED_BY: 25,   // Z  "Admin, Approved"  (header literally has a comma)
+  CRUSADES: 26,      // AA "Crusades"    (UI label: Crusade Points)
+  TURRET_KILLS: 27,  // AB "Grefier"     (UI label: Turret Kills)
+  GUILD_ID: 28,      // AC "Guild ID"
+  CANCELLED: 29,     // AD "Quest Cancelled"
+  COMPLETED: 30,     // AE "Quest Completed"
+  GAME: 31,          // AF "Game"
+  TYPE: 32,          // AG "Type"
+  TOTAL_TIME: 33,    // AH "Total time in quest per user" (written on complete)
+  BP_DELTA: 34,      // AI "Banner Points Delta"
+};
+
+/* Column header strings — must match the Patrols sheet header row EXACTLY.
+   These are the keys the Worker's updatePatrol op uses to locate columns. */
+var COL = {
+  O:  'Quest',
+  P:  'Fps kills',
+  Q:  'Ship kills',
+  V:  'Joined Quest TS',
+  AA: 'Crusades',
+  AB: 'Grefier',
+  AI: 'Banner Points Delta',
+};
+
+/* Which UI label maps to which editable column. UI labels here are the
+   user-facing strings only — the sheet column names are above in COL. */
+var EDIT_FIELDS = [
+  { idx: COL_IDX.QUEST_POINTS, col: COL.O,  label: 'Quest Points',   type: 'number' },
+  { idx: COL_IDX.GROUND_KILLS, col: COL.P,  label: 'Ground Kills',   type: 'number' },
+  { idx: COL_IDX.PILOT_KILLS,  col: COL.Q,  label: 'Pilot Kills',    type: 'number' },
+  { idx: COL_IDX.TURRET_KILLS, col: COL.AB, label: 'Turret Kills',   type: 'number' },
+  { idx: COL_IDX.CRUSADES,     col: COL.AA, label: 'Crusade Points', type: 'number' },
+  { idx: COL_IDX.BP_DELTA,     col: COL.AI, label: 'Banner Points',  type: 'number' },
+  { idx: COL_IDX.JOIN_TIME,    col: COL.V,  label: 'Join Time',      type: 'jointime' },
+];
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+var STATE = {
+  patrolId:   null,
+  rows:       [],           // raw rows from Worker
+  leaderIdx:  -1,           // index in rows of the leader row
+  mode:       'loading',    // 'loading' | 'leader' | 'admin' | 'readonly' | 'forbidden' | 'error'
+  dirty:      {},           // { playerId: { colHeader: newValue } }
+  session:    null,
+  terminal:   false,        // set true once Complete/Approve fires
+};
+
+/* ═══════════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════════ */
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+function getSession() {
+  try { return JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null'); }
+  catch (e) { return null; }
+}
+
+function toast(msg, kind) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + (kind || '');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(function () { t.className = ''; }, 2400);
+}
+
+function cell(row, idx) { return (row && row[idx] != null) ? String(row[idx]) : ''; }
+function cellTrim(row, idx) { return cell(row, idx).trim(); }
+
+function findLeaderIndex(rows) {
+  /* Prompt rule: leader row is the one where col X (Total Paused Duration) has a value.
+     Fallback: if none match (older/partial rows), use the first row with col C populated. */
+  for (var i = 0; i < rows.length; i++) {
+    if (cellTrim(rows[i], COL_IDX.PAUSED_DUR) !== '') return i;
+  }
+  for (var j = 0; j < rows.length; j++) {
+    if (cellTrim(rows[j], COL_IDX.LEADER_ID) !== '') return j;
+  }
+  return 0;
+}
+
+function parseTs(str) {
+  if (!str) return null;
+  var s = String(str).trim().replace(' ', 'T');
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z';
+  var d = new Date(s); return isNaN(d.getTime()) ? null : d;
+}
+
+function fmtSince(iso) {
+  var d = parseTs(iso); if (!d) return '';
+  var mins = Math.round((Date.now() - d.getTime()) / 60000);
+  if (mins < 60) return mins + 'm ago';
+  if (mins < 1440) return Math.round(mins/60) + 'h ago';
+  return Math.floor(mins/1440) + 'd ago';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PERMISSION MODE
+═══════════════════════════════════════════════════════════ */
+function computeMode(session, rows, leaderIdx) {
+  var lead = rows[leaderIdx] || [];
+  var completed = cellTrim(lead, COL_IDX.COMPLETED);
+  var approved  = cellTrim(lead, COL_IDX.APPROVED_BY);
+  var cancelled = cellTrim(lead, COL_IDX.CANCELLED);
+
+  var isAdmin  = !!(session && session.isAdmin);
+  var sessId   = session ? String(session.id) : '';
+  var leaderId = cellTrim(lead, COL_IDX.LEADER_ID);
+  var isLeader = sessId && sessId === leaderId;
+
+  /* Terminal states — no editing for anyone except admin-on-approved (still read). */
+  if (cancelled) return 'readonly';
+  if (approved)  return 'readonly';
+
+  /* Already sent for review — only admin can act. Leader sees read-only. */
+  if (completed) {
+    if (isAdmin) return 'admin';
+    return 'readonly';
+  }
+
+  /* Active quest — leader edits, admin can also edit + approve (but approval is
+     gated on completion, so in practice admin here is just "edit privileges"). */
+  if (isAdmin)  return 'admin';
+  if (isLeader) return 'leader';
+  return 'readonly';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOAD
+═══════════════════════════════════════════════════════════ */
+async function load() {
+  var params = new URLSearchParams(location.search);
+  STATE.patrolId = (params.get('patrol') || '').trim();
+  STATE.session  = getSession();
+
+  if (!STATE.patrolId) {
+    STATE.mode = 'error';
+    renderRoot('<div class="mode-notice err"><strong>No quest specified.</strong> Append <code>?patrol=P-XXXXXX</code> to the URL.</div>');
+    return;
+  }
+
+  document.getElementById('crumb').textContent = 'Quest ' + STATE.patrolId;
+  document.title = 'Quest ' + STATE.patrolId + ' — Order of the Fallen Star';
+
+  /* Make sure OFSData has players for avatar/rank lookups, then fetch the quest fresh. */
+  try {
+    if (window.OFSSheets && OFSSheets.load) { await OFSSheets.load(); }
+  } catch (e) { /* non-fatal — editor can render with just the Worker's rows */ }
+
+  try {
+    var data = await OFSSheets.getPatrolRows(STATE.patrolId);
+    STATE.rows = (data && data.rows) || [];
+  } catch (e) {
+    STATE.mode = 'error';
+    renderRoot('<div class="mode-notice err"><strong>Could not load quest.</strong> ' + esc(e.message || String(e)) + '</div>');
+    return;
+  }
+
+  if (!STATE.rows.length) {
+    STATE.mode = 'error';
+    renderRoot('<div class="mode-notice err"><strong>Quest not found.</strong> No rows for <code>' + esc(STATE.patrolId) + '</code>.</div>');
+    return;
+  }
+
+  STATE.leaderIdx = findLeaderIndex(STATE.rows);
+  STATE.mode = computeMode(STATE.session, STATE.rows, STATE.leaderIdx);
+  render();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════════════ */
+function renderRoot(html) {
+  document.getElementById('page-root').innerHTML = html;
+}
+
+function render() {
+  var lead = STATE.rows[STATE.leaderIdx] || [];
+  var parts = STATE.rows.filter(function (_, i) { return i !== STATE.leaderIdx; });
+
+  var name   = cell(lead, COL_IDX.QUEST_NAME) || '(Untitled Quest)';
+  var desc   = cell(lead, COL_IDX.QUEST_DESC);
+  var img    = cell(lead, COL_IDX.QUEST_IMG);
+  var type   = cell(lead, COL_IDX.TYPE) || 'Quest';
+  var leader = cell(lead, COL_IDX.LEADER_NAME);
+  var leaderId = cellTrim(lead, COL_IDX.LEADER_ID);
+  var completed = cellTrim(lead, COL_IDX.COMPLETED);
+  var approved  = cellTrim(lead, COL_IDX.APPROVED_BY);
+  var cancelled = cellTrim(lead, COL_IDX.CANCELLED);
+  var sentReview = cellTrim(lead, COL_IDX.SENT_REVIEW);
+
+  var statusBadge = '';
+  if (cancelled)      statusBadge = '<span class="q-badge cancel">Cancelled</span>';
+  else if (approved)  statusBadge = '<span class="q-badge approved">Approved</span>';
+  else if (completed) statusBadge = '<span class="q-badge review">Awaiting Review</span>';
+  else                statusBadge = '<span class="q-badge active">Active</span>';
+
+  var html = '';
+
+  /* Header card */
+  html += '<div class="quest-head">';
+  if (img && img !== '❓') {
+    html += '<img class="quest-head-img" src="' + esc(img) + '" alt="" onerror="this.style.display=\'none\'">';
+  } else {
+    html += '<div class="quest-head-img" style="display:flex;align-items:center;justify-content:center;color:var(--gold-dim);font-family:Cinzel,serif;font-size:.7rem;letter-spacing:.14em;">NO IMAGE</div>';
+  }
+  html += '<div class="quest-head-body">';
+  html += '<div class="pid">' + esc(STATE.patrolId) + '</div>';
+  html += '<h1>' + esc(name) + '</h1>';
+  if (desc && desc !== '❓') html += '<div class="desc">' + esc(desc) + '</div>';
+  html += '<div class="meta-row">';
+  html += '<span class="q-badge">' + esc(type) + '</span>';
+  html += statusBadge;
+  html += '</div>';
+  if (leader) {
+    html += '<div class="quest-leader-line">Led by ';
+    if (leaderId) {
+      html += '<a href="OFS_PlayerSheet.html?player=' + encodeURIComponent(leaderId) + '" style="color:inherit;text-decoration:none;"><span>' + esc(leader) + '</span></a>';
+    } else {
+      html += '<span>' + esc(leader) + '</span>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  /* Mode notice */
+  html += renderModeNotice();
+
+  /* Status lines (submitted / approved timestamps) */
+  if (sentReview) {
+    html += '<div class="mode-notice ro"><strong>Submitted for review</strong> · ' + esc(sentReview) + ' (' + esc(fmtSince(sentReview)) + ')</div>';
+  }
+  if (approved) {
+    html += '<div class="mode-notice admin"><strong>Approved by ' + esc(approved) + '</strong>' + (completed ? ' · completed ' + esc(completed) : '') + '</div>';
+  }
+
+  /* Roster */
+  html += '<div class="sec-head"><h2>Roster</h2><div class="sec-line"></div></div>';
+  html += '<div class="roster"><div class="r-scroll">';
+  html += '<table class="roster-tbl"><thead><tr>';
+  html += '<th>Player</th>';
+  EDIT_FIELDS.forEach(function (f) { html += '<th>' + esc(f.label) + '</th>'; });
+  html += '<th></th>';  // actions
+  html += '</tr></thead><tbody>';
+
+  html += renderRosterRow(lead, STATE.leaderIdx, true);
+  parts.forEach(function (r) {
+    var idx = STATE.rows.indexOf(r);
+    html += renderRosterRow(r, idx, false);
+  });
+
+  html += '</tbody></table></div></div>';
+
+  /* Footer action bar */
+  html += renderFooter();
+
+  renderRoot(html);
+  wireRowEvents();
+}
+
+function renderModeNotice() {
+  var m = STATE.mode;
+  if (m === 'leader') {
+    return '<div class="mode-notice leader"><strong>Leader mode</strong> · Edit points, remove participants, and hit <em>Complete Quest</em> when you\'re done.</div>';
+  }
+  if (m === 'admin') {
+    return '<div class="mode-notice admin"><strong>Admin mode</strong> · Full edit rights. Approve to apply banner points.</div>';
+  }
+  if (m === 'readonly' && STATE.session && STATE.session.id) {
+    return '<div class="mode-notice ro">Read-only — you are not the quest leader.</div>';
+  }
+  if (m === 'readonly') {
+    return '<div class="mode-notice ro">Read-only — log in via Discord to check if you have edit rights.</div>';
+  }
+  return '';
+}
+
+function renderRosterRow(row, idx, isLeader) {
+  var editable = (STATE.mode === 'leader' || STATE.mode === 'admin') && !STATE.terminal;
+  var pid   = cellTrim(row, COL_IDX.PLAYER_ID);
+  var pname = cell(row, COL_IDX.PLAYER_NAME) || (isLeader ? cell(row, COL_IDX.LEADER_NAME) : '');
+  var role  = cell(row, COL_IDX.PLAYER_ROLE);
+  var rank  = cell(row, COL_IDX.PLAYER_RANK);
+
+  var player = (window.OFSData && pid) ? OFSData.getPlayerById(pid) : null;
+  var avatar = (player && player.avatarUrl) || 'ofs_logo.png';
+  /* Live banner from Member Log (not stored in Patrols) */
+  var banner = (player && player.activeBanner) || '';
+
+  var html = '<tr class="' + (isLeader ? 'leader-row' : '') + '" data-pid="' + esc(pid) + '" data-idx="' + idx + '">';
+
+  /* Player cell */
+  html += '<td><div class="pname-cell">';
+  html += '<img src="' + esc(avatar) + '" onerror="this.src=\'ofs_logo.png\'">';
+  html += '<div>';
+  html += '<div><a href="OFS_PlayerSheet.html?player=' + encodeURIComponent(pid) + '">';
+  html += '<span class="pname">' + esc(pname || '—') + '</span>';
+  html += '</a>';
+  if (isLeader) html += '<span class="leader-chip">Leader</span>';
+  html += '</div>';
+  var subParts = [rank, banner, role].filter(Boolean);
+  if (subParts.length) {
+    html += '<div class="psub">' + esc(subParts.join(' · ')) + '</div>';
+  }
+  html += '</div></div></td>';
+
+  /* Editable / static cells */
+  EDIT_FIELDS.forEach(function (f) {
+    var val = cell(row, f.idx);
+    if (editable) {
+      if (f.type === 'jointime') {
+        html += '<td><input type="text" class="jointime" data-col="' + esc(f.col) + '" value="' + esc(val) + '" placeholder="YYYY-MM-DD HH:MM:SS"></td>';
+      } else {
+        html += '<td><input type="number" data-col="' + esc(f.col) + '" value="' + esc(val || '0') + '"></td>';
+      }
+    } else {
+      html += '<td><span class="ro-cell' + (f.type === 'number' ? ' num' : '') + '">' + esc(val || (f.type === 'number' ? '0' : '—')) + '</span></td>';
+    }
+  });
+
+  /* Actions */
+  html += '<td><div class="row-actions">';
+  if (editable) {
+    html += '<button class="btn ok" data-action="save">Save</button>';
+    if (!isLeader) {
+      html += '<button class="btn danger" data-action="remove">Remove</button>';
+    }
+  }
+  html += '</div></td>';
+
+  html += '</tr>';
+  return html;
+}
+
+function renderFooter() {
+  var lead = STATE.rows[STATE.leaderIdx] || [];
+  var completed = cellTrim(lead, COL_IDX.COMPLETED);
+  var approved  = cellTrim(lead, COL_IDX.APPROVED_BY);
+  var cancelled = cellTrim(lead, COL_IDX.CANCELLED);
+  var sentReview = cellTrim(lead, COL_IDX.SENT_REVIEW);
+
+  var left = '';
+  if (approved)      left = '<span class="label">Status</span>Approved by ' + esc(approved);
+  else if (completed) left = '<span class="label">Status</span>Awaiting admin review';
+  else if (cancelled) left = '<span class="label">Status</span>Cancelled';
+  else                left = '<span class="label">Status</span>Active — in progress';
+
+  var right = '';
+  if (STATE.mode === 'leader' && !completed && !cancelled && !STATE.terminal) {
+    right += '<button class="btn primary" data-action="complete">Complete Quest</button>';
+  }
+  if (STATE.mode === 'admin' && completed && !approved && !cancelled && !STATE.terminal) {
+    right += '<button class="btn primary" data-action="approve">Approve Quest</button>';
+  }
+
+  if (!left && !right) return '';
+  return '<div class="quest-footer"><div class="status-line">' + left + '</div><div>' + right + '</div></div>';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════════════════════════ */
+function wireRowEvents() {
+  var root = document.getElementById('page-root');
+
+  /* Track dirty inputs per row */
+  root.querySelectorAll('tbody tr').forEach(function (tr) {
+    var pid = tr.getAttribute('data-pid');
+    tr.querySelectorAll('input[data-col]').forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        if (!STATE.dirty[pid]) STATE.dirty[pid] = {};
+        var col = inp.getAttribute('data-col');
+        var val = inp.type === 'number' ? Number(inp.value || 0) : inp.value;
+        STATE.dirty[pid][col] = val;
+        tr.classList.add('dirty');
+      });
+    });
+
+    var saveBtn = tr.querySelector('[data-action="save"]');
+    if (saveBtn) saveBtn.addEventListener('click', function () { saveRow(pid, tr); });
+
+    var rmBtn = tr.querySelector('[data-action="remove"]');
+    if (rmBtn) rmBtn.addEventListener('click', function () { removeParticipant(pid, tr); });
+  });
+
+  var completeBtn = root.querySelector('[data-action="complete"]');
+  if (completeBtn) completeBtn.addEventListener('click', onCompleteQuest);
+
+  var approveBtn = root.querySelector('[data-action="approve"]');
+  if (approveBtn) approveBtn.addEventListener('click', onApproveQuest);
+}
+
+async function saveRow(playerId, tr) {
+  var data = STATE.dirty[playerId];
+  if (!data || !Object.keys(data).length) { toast('Nothing to save'); return; }
+
+  var btn = tr.querySelector('[data-action="save"]');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    await OFSSheets.updatePatrolCells(STATE.patrolId, playerId, data);
+    /* Patch in-memory row so the next concurrency read doesn't diff against stale values */
+    var rowIdx = Number(tr.getAttribute('data-idx'));
+    var row = STATE.rows[rowIdx];
+    Object.keys(data).forEach(function (k) {
+      var idx = colHeaderToIdx(k);
+      if (idx >= 0 && row) row[idx] = data[k];
+    });
+    delete STATE.dirty[playerId];
+    tr.classList.remove('dirty');
+    toast('Saved', 'ok');
+  } catch (e) {
+    toast('Save failed: ' + (e.message || e), 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save';
+  }
+}
+
+function colHeaderToIdx(header) {
+  for (var k in COL) { if (COL[k] === header) return COL_IDX[k]; }
+  return -1;
+}
+
+async function removeParticipant(playerId, tr) {
+  if (!playerId) return;
+  var pname = tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : playerId;
+  if (!confirm('Remove ' + pname + ' from this quest? This deletes their row.')) return;
+
+  var btn = tr.querySelector('[data-action="remove"]');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    await OFSSheets.deletePatrolRow(STATE.patrolId, playerId);
+    /* Drop row locally and re-render */
+    var rowIdx = Number(tr.getAttribute('data-idx'));
+    STATE.rows.splice(rowIdx, 1);
+    STATE.leaderIdx = findLeaderIndex(STATE.rows);
+    delete STATE.dirty[playerId];
+    render();
+    toast('Removed ' + pname, 'ok');
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Remove';
+    toast('Remove failed: ' + (e.message || e), 'err');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CONCURRENCY RE-CHECK
+═══════════════════════════════════════════════════════════ */
+async function reCheckLeader() {
+  var data = await OFSSheets.getPatrolRows(STATE.patrolId);
+  var rows = (data && data.rows) || [];
+  if (!rows.length) throw new Error('Quest no longer exists.');
+  var leaderIdx = findLeaderIndex(rows);
+  var lead = rows[leaderIdx] || [];
+  var local = STATE.rows[STATE.leaderIdx] || [];
+  /* Bail if AE / Y / Z changed server-side since load */
+  if (cellTrim(lead, COL_IDX.COMPLETED)   !== cellTrim(local, COL_IDX.COMPLETED) ||
+      cellTrim(lead, COL_IDX.SENT_REVIEW) !== cellTrim(local, COL_IDX.SENT_REVIEW) ||
+      cellTrim(lead, COL_IDX.APPROVED_BY) !== cellTrim(local, COL_IDX.APPROVED_BY)) {
+    throw new Error('Quest state changed since page load — refresh and try again.');
+  }
+  STATE.rows = rows;
+  STATE.leaderIdx = leaderIdx;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TERMINAL ACTIONS
+═══════════════════════════════════════════════════════════ */
+async function onCompleteQuest() {
+  if (!STATE.session || !STATE.session.id) { toast('Not logged in', 'err'); return; }
+  if (!confirm('Complete this quest and send it for admin review?\n\nAfter this, editing is locked until approval.')) return;
+
+  var btn = document.querySelector('[data-action="complete"]');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+  try {
+    await reCheckLeader();
+    var res = await OFSSheets.completeQuest(STATE.patrolId, STATE.session.id);
+    STATE.terminal = true;
+    toast('Quest submitted', 'ok');
+    if (res && res.warnings && res.warnings.length) {
+      appendWarnings('Completed with warnings:', res.warnings);
+    }
+    /* Reload fresh to pick up AE/Y/AH writes */
+    await load();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Complete Quest';
+    toast(e.message || String(e), 'err');
+  }
+}
+
+async function onApproveQuest() {
+  if (!STATE.session || !STATE.session.isAdmin) { toast('Admin only', 'err'); return; }
+  if (!confirm('Approve this quest and apply banner points?')) return;
+
+  var btn = document.querySelector('[data-action="approve"]');
+  btn.disabled = true; btn.textContent = 'Applying…';
+  try {
+    await reCheckLeader();
+    var res = await OFSSheets.approveQuest(
+      STATE.patrolId,
+      STATE.session.id,
+      STATE.session.username || 'Admin'
+    );
+    STATE.terminal = true;
+    toast('Quest approved', 'ok');
+    if (res && res.warnings && res.warnings.length) {
+      appendWarnings('Approved with warnings:', res.warnings);
+    }
+    await load();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Approve Quest';
+    toast(e.message || String(e), 'err');
+  }
+}
+
+function appendWarnings(title, list) {
+  var div = document.createElement('div');
+  div.className = 'warn-list';
+  div.innerHTML = '<strong>' + esc(title) + '</strong><ul>' +
+    list.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('') + '</ul>';
+  document.getElementById('page-root').appendChild(div);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KICK OFF
+═══════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', load);
+</script>
+
+</body>
+</html>

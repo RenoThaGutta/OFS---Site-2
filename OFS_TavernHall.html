@@ -231,6 +231,7 @@
       padding: 16px 24px; border-bottom: 1px solid var(--b-dim);
       display: grid; grid-template-columns: 68px 1fr; gap: 14px;
       align-items: start; transition: background .2s;
+      cursor: pointer;
     }
     .quest-card:last-child { border-bottom: none; }
     .quest-card.quest-active {
@@ -997,6 +998,19 @@
 
   window._questLoadMore = function () { _completedShowAll = true; _renderCompletedPage(); };
 
+  function _bindQuestCardNav(container) {
+    if (!container || container.__navBound) return;
+    container.__navBound = true;
+    container.addEventListener('click', function (e) {
+      // Don't hijack clicks on inner anchors (leader profile link, etc.)
+      if (e.target.closest('a')) return;
+      var card = e.target.closest('.quest-card[data-pid]');
+      if (!card) return;
+      var pid = card.getAttribute('data-pid');
+      if (pid) location.href = 'OFS_QuestEdit.html?patrol=' + encodeURIComponent(pid);
+    });
+  }
+
   function renderQuests(rows) {
     var data = buildQuestMap(rows);
     _allCompleted = data.completed;
@@ -1009,8 +1023,10 @@
     activeEl.innerHTML = data.active.length === 0
       ? '<div class="state-empty">No active quests at this time.</div>'
       : '<div class="quest-list">' + data.active.map(function (q) { return questCardHTML(q, false); }).join('') + '</div>';
+    _bindQuestCardNav(activeEl);
 
     _renderCompletedPage();
+    _bindQuestCardNav(document.getElementById('quests-completed'));
 
     var tabs = document.querySelectorAll('.quest-tab-btn');
     if (tabs[0]) tabs[0].textContent = 'Active (' + data.active.length + ')';

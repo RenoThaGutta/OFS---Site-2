@@ -473,6 +473,104 @@
     });
   }
 
+  /* ── Patrols (quest) helpers ─────────────────────────
+   * Patrols rows don't have a unique single-column key — (Patrol ID, Player ID)
+   * identifies a row (leader row's Player ID == the leader's Discord ID, so
+   * the composite still disambiguates). The Worker provides dedicated ops for
+   * this tab because the generic keyCol/keyVal update can't target one row.
+   */
+
+  /**
+   * Fetch raw Patrols rows for a single quest, bypassing the /data cache.
+   * Used for pre-write concurrency re-checks.
+   * @param {string} patrolId
+   * @returns {Promise<{ok:boolean, rows:any[][]}>}
+   */
+  async function getPatrolRows(patrolId) {
+    const res = await fetch(WORKER_URL + '/patrol?id=' + encodeURIComponent(patrolId));
+    if (!res.ok) throw new Error('Server ' + res.status);
+    const data = await res.json();
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Patrol read rejected');
+    return data;
+  }
+
+  /**
+   * Update specific cells on a Patrols row identified by (Patrol ID, Player ID).
+   * @param {string} patrolId
+   * @param {string} playerId  — the row's col K value (leader's own ID for the leader row)
+   * @param {object} data      — { ColumnHeader: value, … } using Patrols header names
+   */
+  async function updatePatrolCells(patrolId, playerId, data) {
+    return _apiPost('/write', {
+      op:       'updatePatrol',
+      sheet:    'Patrols',
+      patrolId: String(patrolId),
+      playerId: String(playerId),
+      data:     data
+    });
+  }
+
+  /**
+   * Delete a participant row from Patrols. Server must refuse if the target
+   * is the leader row (has col X populated).
+   * @param {string} patrolId
+   * @param {string} playerId
+   */
+  async function deletePatrolRow(patrolId, playerId) {
+    return _apiPost('/write', {
+      op:       'deletePatrol',
+      sheet:    'Patrols',
+      patrolId: String(patrolId),
+      playerId: String(playerId)
+    });
+  }
+
+  /**
+   * Mark a quest complete. Server writes AE + Y on the leader row and
+   * computes AH (total time per user = AE − V) for every row.
+   * Format: "{h}hr{m}mins" (e.g. "1hr2mins"). Rows with missing/unparseable V
+   * get AH = "" and surface in warnings[].
+   * @param {string} patrolId
+   * @param {string} leaderId  — sent for server-side authorization check
+   * @returns {Promise<{ok, completedAt, warnings:string[]}>}
+   */
+  async function completeQuest(patrolId, leaderId) {
+    const res = await fetch(WORKER_URL + '/quest/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patrolId: String(patrolId), leaderId: String(leaderId) })
+    });
+    if (!res.ok) throw new Error('Server ' + res.status);
+    const data = await res.json();
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Complete rejected');
+    return data;
+  }
+
+  /**
+   * Admin approve. Server applies banner-point deltas (col AI) to
+   * "Banners points per user", appends "Banner points log" rows, clears AI,
+   * then writes Z on the leader row = reviewerTag. Atomic per participant.
+   * @param {string} patrolId
+   * @param {string} reviewerId   — admin's Discord ID
+   * @param {string} reviewerTag  — admin's display name (written to col Z)
+   * @returns {Promise<{ok, applied:object[], warnings:string[]}>}
+   */
+  async function approveQuest(patrolId, reviewerId, reviewerTag) {
+    const res = await fetch(WORKER_URL + '/quest/approve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        patrolId:    String(patrolId),
+        reviewerId:  String(reviewerId),
+        reviewerTag: String(reviewerTag)
+      })
+    });
+    if (!res.ok) throw new Error('Server ' + res.status);
+    const data = await res.json();
+    if (!data || !data.ok) throw new Error((data && data.error) || 'Approve rejected');
+    return data;
+  }
+
   /**
    * Overwrite (or append) a Tavern row in the sheet.
    * @param {string} sheetName  e.g. 'Tavern_Announcements'
@@ -539,6 +637,11 @@
     appendBankLog,
     updateBannerPoints,
     updateMedals,
+    getPatrolRows,
+    updatePatrolCells,
+    deletePatrolRow,
+    completeQuest,
+    approveQuest,
     overwriteTavernRow,
     deleteTavernRow,
     getTimelineBlocks,

@@ -460,8 +460,62 @@
       color: var(--text-dim);
       font-style: italic;
     }
+
+    /* ── Led-quests section (self-view only) ─────────────── */
+    .led-quests-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 44px;
+    }
+    .led-quest-card {
+      display: block;
+      background: var(--bg-card);
+      border: 1px solid var(--b-gold);
+      border-radius: 4px;
+      padding: 14px 18px;
+      text-decoration: none;
+      color: inherit;
+      transition: background .15s, border-color .15s;
+      position: relative;
+    }
+    .led-quest-card:hover { background: rgba(201,168,76,.06); border-color: var(--gold-dim); }
+    .led-quest-card .lq-label {
+      font-family: 'Cinzel', serif;
+      font-size: .56rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 6px;
+    }
+    .led-quest-card .lq-name {
+      font-family: 'Cinzel', serif;
+      font-size: .92rem;
+      letter-spacing: .06em;
+      color: var(--gold-lt);
+      margin-bottom: 4px;
+    }
+    .led-quest-card .lq-meta {
+      font-size: .7rem;
+      color: var(--silver);
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .led-quest-card .lq-meta .pid { color: var(--text-dim); font-family: 'Cinzel', serif; letter-spacing: .1em; font-size: .6rem; }
+    .led-quest-card .lq-edit {
+      position: absolute;
+      top: 14px; right: 14px;
+      font-family: 'Cinzel', serif;
+      font-size: .58rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
     @media (max-width: 700px) {
       .quests-row { grid-template-columns: 1fr; }
+      .led-quests-row { grid-template-columns: 1fr; }
     }
 
     .sec-head {
@@ -668,6 +722,12 @@
   <section id="js-quests-section" style="display:none">
     <div class="sec-head"><h2>Quests</h2><div class="sec-line"></div></div>
     <div class="quests-row" id="js-quests"></div>
+  </section>
+
+  <!-- Active Quests (as Leader) — shown only when viewing your own profile -->
+  <section id="js-led-quests-section" style="display:none">
+    <div class="sec-head"><h2>Quests You're Leading</h2><div class="sec-line"></div></div>
+    <div class="led-quests-row" id="js-led-quests"></div>
   </section>
 
   <!-- Stats -->
@@ -881,6 +941,84 @@ function _esc(s) {
   var el = document.createElement('span');
   el.textContent = s;
   return el.innerHTML;
+}
+
+/* ═══════════════════════════════════════════════════════
+   LED-QUESTS — patrols where the viewing user is leader and
+   the quest is not yet completed. Self-view only.
+═══════════════════════════════════════════════════════ */
+function _fmtSince(iso) {
+  var d = _parseDate(iso); if (!d) return '';
+  var mins = Math.round((Date.now() - d.getTime()) / 60000);
+  if (mins < 60)  return mins + 'm';
+  if (mins < 1440) return Math.round(mins/60) + 'h';
+  return Math.floor(mins/1440) + 'd';
+}
+
+function _buildLedQuests(rows, userId) {
+  if (!rows || rows.length < 2 || !userId) return [];
+  var out = {};
+  rows.slice(1).forEach(function (row) {
+    var pid = String(row[0] || '').trim();
+    if (!pid || !/^P\d/.test(pid)) return;
+    var k   = String(row[10] || '').trim();    // K: Player ID on this row
+    var x   = String(row[23] || '').trim();    // X: leader-row marker
+    var ae  = String(row[30] || '').trim();    // AE: Quest Completed
+    var ad  = String(row[29] || '').trim();    // AD: Quest Cancelled
+    if (!x) return;           // only leader rows
+    if (k !== userId) return; // only quests I lead
+    if (ae) return;           // already completed
+    if (ad) return;           // cancelled
+    if (out[pid]) return;
+    out[pid] = {
+      id:        pid,
+      name:      String(row[4] || '').trim(),
+      desc:      String(row[5] || ''),
+      startTime: String(row[7] || '').trim(),
+      type:      String(row[32] || 'Quest').trim(),
+      y:         String(row[24] || '').trim()  // Y: Sent for review
+    };
+  });
+  return Object.keys(out).map(function (k) { return out[k]; })
+    .sort(function (a, b) { return (_parseDate(b.startTime)||0) - (_parseDate(a.startTime)||0); });
+}
+
+function renderLedQuests(viewerId, playerId) {
+  var section = document.getElementById('js-led-quests-section');
+  var container = document.getElementById('js-led-quests');
+  if (!section || !container) return;
+
+  // Self-view only: viewer must be logged in AND looking at their own profile
+  if (!viewerId || String(viewerId) !== String(playerId)) {
+    section.style.display = 'none';
+    return;
+  }
+
+  var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+  var rows = (tavData && tavData.quests) || [];
+  var led = _buildLedQuests(rows, String(viewerId));
+
+  if (!led.length) { section.style.display = 'none'; return; }
+
+  section.style.display = '';
+  container.innerHTML = led.map(function (q) {
+    var sinceStr = q.startTime && _parseDate(q.startTime)
+      ? 'Running ' + _fmtSince(q.startTime)
+      : '';
+    var reviewStr = q.y ? 'Awaiting review' : 'Active';
+    var metaParts = [
+      '<span class="pid">' + _esc(q.id) + '</span>',
+      _esc(q.type),
+      _esc(reviewStr)
+    ];
+    if (sinceStr) metaParts.push(_esc(sinceStr));
+    return '<a class="led-quest-card" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">' +
+      '<div class="lq-edit">Edit &rarr;</div>' +
+      '<div class="lq-label">Leading</div>' +
+      '<div class="lq-name">' + _esc(q.name || '(Untitled Quest)') + '</div>' +
+      '<div class="lq-meta">' + metaParts.join(' ') + '</div>' +
+      '</a>';
+  }).join('');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1149,6 +1287,12 @@ function render(p) {
   const questsSection = document.getElementById('js-quests-section');
   const questsEl = document.getElementById('js-quests');
   renderPlayerQuests(p, questsSection, questsEl);
+
+  // "Quests You're Leading" — self-view only
+  try {
+    const viewerSession = JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null');
+    renderLedQuests(viewerSession && viewerSession.id, p.id);
+  } catch (e) { /* no session — section stays hidden */ }
 
   // Stats
   const statsGrid = document.getElementById('js-stats');

@@ -890,6 +890,7 @@
     <div class="nav-tabs">
       <div class="nav-tab active" data-tab="roster">Roster</div>
       <div class="nav-tab"        data-tab="banners">Banners</div>
+      <div class="nav-tab"        data-tab="quests">Quest Review</div>
       <div class="nav-tab"        data-tab="audit">Audit Log</div>
       <div class="nav-tab"        data-tab="pages">Pages</div>
       <div class="nav-tab"        data-tab="tavern">Tavern</div>
@@ -955,6 +956,28 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- ── Quest Review ── -->
+    <div class="tab-panel" id="tab-quests">
+      <div class="sec-head"><h2>Quests Awaiting Review</h2><div class="sec-line"></div></div>
+      <div class="controls">
+        <input class="ctrl-input" id="quest-review-search" placeholder="Filter by quest name, leader, or ID…" oninput="renderQuestReview()">
+        <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestReview()">Refresh</button>
+      </div>
+      <table class="data-table" id="quest-review-table">
+        <thead><tr>
+          <th>Quest</th>
+          <th>Leader</th>
+          <th>Participants</th>
+          <th>Type</th>
+          <th>Submitted</th>
+          <th></th>
+        </tr></thead>
+        <tbody id="quest-review-tbody">
+          <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
+        </tbody>
+      </table>
     </div>
 
     <!-- ── Audit Log ── -->
@@ -1751,6 +1774,122 @@ function calcRep(xp){
 function totalBannerPts(p){ return Object.values(p.banners).reduce((s,b)=>s+b.p,0); }
 
 /* ══════════════════════════════════════════════════════════
+   QUEST REVIEW — leader rows where X∧Y populated and Z empty
+══════════════════════════════════════════════════════════ */
+function _qrEsc(s) {
+  var el = document.createElement('span');
+  el.textContent = s == null ? '' : String(s);
+  return el.innerHTML;
+}
+
+function _qrFmtSince(iso) {
+  if (!iso) return '';
+  var s = String(iso).trim().replace(' ', 'T');
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z';
+  var d = new Date(s); if (isNaN(d.getTime())) return '';
+  var mins = Math.round((Date.now() - d.getTime()) / 60000);
+  if (mins < 1)    return 'just now';
+  if (mins < 60)   return mins + 'm ago';
+  if (mins < 1440) return Math.round(mins/60) + 'h ago';
+  return Math.floor(mins/1440) + 'd ago';
+}
+
+function _qrBuild(rows) {
+  // Group by patrol ID, mark the leader row (col X populated), count participants.
+  if (!rows || rows.length < 2) return [];
+  var map = {};
+  rows.slice(1).forEach(function (row) {
+    var pid = String(row[0] || '').trim();
+    if (!pid || !/^P\d/.test(pid)) return;
+    var x  = String(row[23] || '').trim();  // X
+    var y  = String(row[24] || '').trim();  // Y  Sent for review
+    var z  = String(row[25] || '').trim();  // Z  Admin, Approved
+    var ad = String(row[29] || '').trim();  // AD Quest Cancelled
+
+    if (!map[pid]) {
+      map[pid] = {
+        id: pid,
+        leaderName: '',
+        leaderId:   '',
+        name:       '',
+        type:       'Quest',
+        isLeaderRow: false,
+        y: '', z: '', cancelled: '',
+        participantCount: 0
+      };
+    }
+    var q = map[pid];
+    if (x) {
+      q.isLeaderRow  = true;
+      q.leaderName   = String(row[1]  || '').trim();
+      q.leaderId     = String(row[2]  || '').trim();
+      q.name         = String(row[4]  || '').trim();
+      q.type         = String(row[32] || 'Quest').trim();
+      q.y            = y;
+      q.z            = z;
+      q.cancelled    = ad;
+    }
+    var pidK = String(row[10] || '').trim();
+    if (pidK) q.participantCount += 1;
+  });
+  return Object.keys(map)
+    .map(function (k) { return map[k]; })
+    .filter(function (q) { return q.isLeaderRow && q.y && !q.z && !q.cancelled; })
+    .sort(function (a, b) { return new Date(b.y) - new Date(a.y); });
+}
+
+function renderQuestReview() {
+  var tbody = document.getElementById('quest-review-tbody');
+  if (!tbody) return;
+
+  var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+  var rows = (tavData && tavData.quests) || [];
+  var list = _qrBuild(rows);
+
+  var filter = (document.getElementById('quest-review-search') || {}).value || '';
+  filter = filter.trim().toLowerCase();
+  if (filter) {
+    list = list.filter(function (q) {
+      return q.name.toLowerCase().indexOf(filter)       !== -1 ||
+             q.leaderName.toLowerCase().indexOf(filter) !== -1 ||
+             q.id.toLowerCase().indexOf(filter)         !== -1;
+    });
+  }
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">No quests awaiting review.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(function (q) {
+    var leaderCell = q.leaderId
+      ? '<a href="OFS_PlayerSheet.html?player=' + encodeURIComponent(q.leaderId) + '" style="color:var(--gold);text-decoration:none">' + _qrEsc(q.leaderName) + '</a>'
+      : _qrEsc(q.leaderName || '—');
+    return '<tr>' +
+      '<td><div style="font-family:Cinzel,serif;color:var(--gold-lt);font-size:.9rem">' + _qrEsc(q.name || '(Untitled Quest)') + '</div>' +
+        '<div style="font-size:.68rem;color:var(--text-dim);letter-spacing:.1em;font-family:Cinzel,serif">' + _qrEsc(q.id) + '</div></td>' +
+      '<td>' + leaderCell + '</td>' +
+      '<td style="color:var(--silver)">' + q.participantCount + '</td>' +
+      '<td style="color:var(--silver)">' + _qrEsc(q.type) + '</td>' +
+      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.y) +
+        (q.y ? '<div style="color:var(--text-dim);font-size:.72rem">' + _qrEsc(_qrFmtSince(q.y)) + '</div>' : '') +
+      '</td>' +
+      '<td style="text-align:right"><a class="ctrl-btn" style="text-decoration:none;display:inline-block" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">Review &rarr;</a></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function refreshQuestReview() {
+  var tbody = document.getElementById('quest-review-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Refreshing…</td></tr>';
+  if (window.OFSSheets && OFSSheets.load) {
+    OFSSheets.load().then(renderQuestReview).catch(renderQuestReview);
+  } else {
+    renderQuestReview();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
    TABS
 ══════════════════════════════════════════════════════════ */
 document.querySelectorAll('.nav-tab').forEach(t=>{
@@ -1759,6 +1898,7 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('tab-'+t.dataset.tab).classList.add('active');
+    if(t.dataset.tab==='quests')       renderQuestReview();
     if(t.dataset.tab==='banners'){
       renderBannerPop();
       renderBanManageList();
