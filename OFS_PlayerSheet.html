@@ -907,7 +907,8 @@ function renderPlayerQuests(p, section, container) {
   var html = '';
 
   // Active quest card
-  html += '<div class="quest-card active' + (aq && aq.image ? ' has-img' : '') + '">';
+  var aqPid = aq && aq.id ? aq.id : '';
+  html += '<div class="quest-card active' + (aq && aq.image ? ' has-img' : '') + '"' + (aqPid ? ' data-pid="' + _esc(aqPid) + '"' : '') + '>';
   if (aq && aq.image) html += '<img class="quest-card-img" src="' + _esc(aq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
   html += '<div class="quest-card-body">';
   html += '<div class="quest-card-label">Active Quest</div>';
@@ -921,7 +922,8 @@ function renderPlayerQuests(p, section, container) {
   html += '</div></div>';
 
   // Last completed quest card
-  html += '<div class="quest-card' + (lq && lq.image ? ' has-img' : '') + '">';
+  var lqPid = lq && lq.id ? lq.id : '';
+  html += '<div class="quest-card' + (lq && lq.image ? ' has-img' : '') + '"' + (lqPid ? ' data-pid="' + _esc(lqPid) + '"' : '') + '>';
   if (lq && lq.image) html += '<img class="quest-card-img" src="' + _esc(lq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
   html += '<div class="quest-card-body">';
   html += '<div class="quest-card-label">Last Completed Quest</div>';
@@ -935,6 +937,21 @@ function renderPlayerQuests(p, section, container) {
   html += '</div></div>';
 
   container.innerHTML = html;
+
+  // Make cards clickable → quest editor (skips clicks on inner anchors)
+  if (!container.__navBound) {
+    container.__navBound = true;
+    container.addEventListener('click', function (e) {
+      if (e.target.closest('a')) return;
+      var card = e.target.closest('.quest-card[data-pid]');
+      if (!card) return;
+      var pid = card.getAttribute('data-pid');
+      if (pid) location.href = 'OFS_QuestEdit.html?patrol=' + encodeURIComponent(pid);
+    });
+  }
+  container.querySelectorAll('.quest-card[data-pid]').forEach(function (el) {
+    el.style.cursor = 'pointer';
+  });
 }
 
 function _esc(s) {
@@ -957,30 +974,40 @@ function _fmtSince(iso) {
 
 function _buildLedQuests(rows, userId) {
   if (!rows || rows.length < 2 || !userId) return [];
-  var out = {};
+  // Group rows by patrol ID first, then pick the leader row per group.
+  var groups = {};
   rows.slice(1).forEach(function (row) {
     var pid = String(row[0] || '').trim();
     if (!pid || !/^P\d/.test(pid)) return;
-    var k   = String(row[10] || '').trim();    // K: Player ID on this row
-    var x   = String(row[23] || '').trim();    // X: leader-row marker
-    var ae  = String(row[30] || '').trim();    // AE: Quest Completed
-    var ad  = String(row[29] || '').trim();    // AD: Quest Cancelled
-    if (!x) return;           // only leader rows
-    if (k !== userId) return; // only quests I lead
-    if (ae) return;           // already completed
-    if (ad) return;           // cancelled
-    if (out[pid]) return;
-    out[pid] = {
-      id:        pid,
-      name:      String(row[4] || '').trim(),
-      desc:      String(row[5] || ''),
-      startTime: String(row[7] || '').trim(),
-      type:      String(row[32] || 'Quest').trim(),
-      y:         String(row[24] || '').trim()  // Y: Sent for review
-    };
+    (groups[pid] = groups[pid] || []).push(row);
   });
-  return Object.keys(out).map(function (k) { return out[k]; })
-    .sort(function (a, b) { return (_parseDate(b.startTime)||0) - (_parseDate(a.startTime)||0); });
+  var out = [];
+  Object.keys(groups).forEach(function (pid) {
+    var grp = groups[pid];
+    // Leader row = row with col X (Total Paused Duration) populated.
+    // Fallback for never-paused quests: first row with col C (Patrol Leader ID) populated.
+    var leader = null;
+    for (var i = 0; i < grp.length; i++) { if (String(grp[i][23] || '').trim()) { leader = grp[i]; break; } }
+    if (!leader) { for (var j = 0; j < grp.length; j++) { if (String(grp[j][2] || '').trim()) { leader = grp[j]; break; } } }
+    if (!leader) leader = grp[0];
+    if (!leader) return;
+    var k  = String(leader[10] || '').trim();  // K on leader row
+    var ae = String(leader[30] || '').trim();  // AE Quest Completed
+    var ad = String(leader[29] || '').trim();  // AD Quest Cancelled
+    if (k !== userId) return;
+    if (ae) return;
+    if (ad) return;
+    out.push({
+      id:        pid,
+      name:      String(leader[4]  || '').trim(),
+      desc:      String(leader[5]  || ''),
+      startTime: String(leader[7]  || '').trim(),
+      type:      String(leader[32] || 'Quest').trim(),
+      y:         String(leader[24] || '').trim()
+    });
+  });
+  out.sort(function (a, b) { return (_parseDate(b.startTime)||0) - (_parseDate(a.startTime)||0); });
+  return out;
 }
 
 function renderLedQuests(viewerId, playerId) {

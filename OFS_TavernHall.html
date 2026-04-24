@@ -1182,13 +1182,25 @@
     } else {
       html += '<div class="widget-label">Active</div>';
       myActive.slice(0, 5).forEach(function (q) {
-        html += '<div class="widget-quest-item"><div class="widget-quest-name">' + esc(q.name) + '</div>';
+        html += '<div class="widget-quest-item" data-pid="' + esc(q.id) + '" style="cursor:pointer"><div class="widget-quest-name">' + esc(q.name) + '</div>';
         html += '<div class="widget-quest-meta">Led by ' + esc(q.leaderName) + '</div></div>';
       });
     }
     html += '</div>';
     widget.innerHTML = html;
     widget.style.display = 'block';
+
+    // Clicking a widget quest item → editor
+    if (!widget.__navBound) {
+      widget.__navBound = true;
+      widget.addEventListener('click', function (e) {
+        if (e.target.closest('a')) return;
+        var item = e.target.closest('.widget-quest-item[data-pid]');
+        if (!item) return;
+        var pid = item.getAttribute('data-pid');
+        if (pid) location.href = 'OFS_QuestEdit.html?patrol=' + encodeURIComponent(pid);
+      });
+    }
   }
 
   /* ═══════════════════════════════════════════

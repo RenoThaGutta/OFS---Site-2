@@ -580,18 +580,32 @@ async function load() {
   document.getElementById('crumb').textContent = 'Quest ' + STATE.patrolId;
   document.title = 'Quest ' + STATE.patrolId + ' — Order of the Fallen Star';
 
-  /* Make sure OFSData has players for avatar/rank lookups, then fetch the quest fresh. */
+  /* Make sure OFSData has players for avatar/rank lookups, plus populate the
+     cached tavData.quests which we use as a fallback below. */
   try {
     if (window.OFSSheets && OFSSheets.load) { await OFSSheets.load(); }
-  } catch (e) { /* non-fatal — editor can render with just the Worker's rows */ }
+  } catch (e) { /* non-fatal — fallback still works with whatever's cached */ }
 
+  /* Primary: fresh read via /patrol?id=. Fallback: client-side filter of the
+     5-min-cached tavData.quests (same source Tavern/PlayerSheet use). The
+     fresh read is only strictly required for the pre-action concurrency check. */
   try {
     var data = await OFSSheets.getPatrolRows(STATE.patrolId);
     STATE.rows = (data && data.rows) || [];
+    STATE.usedFallback = false;
   } catch (e) {
-    STATE.mode = 'error';
-    renderRoot('<div class="mode-notice err"><strong>Could not load quest.</strong> ' + esc(e.message || String(e)) + '</div>');
-    return;
+    var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+    var allRows = (tavData && tavData.quests) || [];
+    if (allRows.length > 1) {
+      STATE.rows = allRows.slice(1).filter(function (r) {
+        return String(r[COL_IDX.PATROL_ID] || '').trim() === STATE.patrolId;
+      });
+      STATE.usedFallback = true;
+    } else {
+      STATE.mode = 'error';
+      renderRoot('<div class="mode-notice err"><strong>Could not load quest.</strong> ' + esc(e.message || String(e)) + '</div>');
+      return;
+    }
   }
 
   if (!STATE.rows.length) {
@@ -663,6 +677,10 @@ function render() {
 
   /* Mode notice */
   html += renderModeNotice();
+
+  if (STATE.usedFallback) {
+    html += '<div class="mode-notice err"><strong>Using cached data (up to 5 min stale).</strong> Fresh-read endpoint <code>/patrol</code> is not yet deployed. Writes will fail until the Worker ops ship.</div>';
+  }
 
   /* Status lines (submitted / approved timestamps) */
   if (sentReview) {
