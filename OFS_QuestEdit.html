@@ -626,9 +626,47 @@ function renderRoot(html) {
   document.getElementById('page-root').innerHTML = html;
 }
 
+/* Build the displayed roster. The bot may write TWO rows for the leader:
+   a quest-metadata row (cols B-G + X, K empty) and a participation row
+   (cols K + V + points). We skip rows with no K, and when a player has
+   multiple rows, prefer the one with col V (join time) populated so the
+   empty metadata duplicate doesn't show up alongside the real entry. */
+function getRosterRows() {
+  var leaderRow = STATE.rows[STATE.leaderIdx] || [];
+  var leaderId = cellTrim(leaderRow, COL_IDX.LEADER_ID);
+
+  var byPid = {};
+  STATE.rows.forEach(function (r, i) {
+    var pid = cellTrim(r, COL_IDX.PLAYER_ID);
+    if (!pid) return;
+    (byPid[pid] = byPid[pid] || []).push({ row: r, origIdx: i });
+  });
+
+  var roster = [];
+  Object.keys(byPid).forEach(function (pid) {
+    var entries = byPid[pid];
+    var chosen = null;
+    for (var i = 0; i < entries.length; i++) {
+      if (cellTrim(entries[i].row, COL_IDX.JOIN_TIME) !== '') { chosen = entries[i]; break; }
+    }
+    if (!chosen) chosen = entries[0];
+    roster.push({
+      row:      chosen.row,
+      origIdx:  chosen.origIdx,
+      isLeader: !!leaderId && pid === leaderId
+    });
+  });
+
+  roster.sort(function (a, b) {
+    if (a.isLeader !== b.isLeader) return a.isLeader ? -1 : 1;
+    return a.origIdx - b.origIdx;
+  });
+  return roster;
+}
+
 function render() {
   var lead = STATE.rows[STATE.leaderIdx] || [];
-  var parts = STATE.rows.filter(function (_, i) { return i !== STATE.leaderIdx; });
+  var roster = getRosterRows();
 
   var name   = cell(lead, COL_IDX.QUEST_NAME) || '(Untitled Quest)';
   var desc   = cell(lead, COL_IDX.QUEST_DESC);
@@ -678,10 +716,6 @@ function render() {
   /* Mode notice */
   html += renderModeNotice();
 
-  if (STATE.usedFallback) {
-    html += '<div class="mode-notice err"><strong>Using cached data (up to 5 min stale).</strong> Fresh-read endpoint <code>/patrol</code> is not yet deployed. Writes will fail until the Worker ops ship.</div>';
-  }
-
   /* Status lines (submitted / approved timestamps) */
   if (sentReview) {
     html += '<div class="mode-notice ro"><strong>Submitted for review</strong> · ' + esc(sentReview) + ' (' + esc(fmtSince(sentReview)) + ')</div>';
@@ -699,10 +733,8 @@ function render() {
   html += '<th></th>';  // actions
   html += '</tr></thead><tbody>';
 
-  html += renderRosterRow(lead, STATE.leaderIdx, true);
-  parts.forEach(function (r) {
-    var idx = STATE.rows.indexOf(r);
-    html += renderRosterRow(r, idx, false);
+  roster.forEach(function (entry) {
+    html += renderRosterRow(entry.row, entry.origIdx, entry.isLeader);
   });
 
   html += '</tbody></table></div></div>';
@@ -721,12 +753,6 @@ function renderModeNotice() {
   }
   if (m === 'admin') {
     return '<div class="mode-notice admin"><strong>Admin mode</strong> · Full edit rights. Approve to apply banner points.</div>';
-  }
-  if (m === 'readonly' && STATE.session && STATE.session.id) {
-    return '<div class="mode-notice ro">Read-only — you are not the quest leader.</div>';
-  }
-  if (m === 'readonly') {
-    return '<div class="mode-notice ro">Read-only — log in via Discord to check if you have edit rights.</div>';
   }
   return '';
 }
