@@ -269,7 +269,25 @@
       margin: 0;
     }
 
-    .row-actions { display: flex; gap: 5px; justify-content: flex-end; min-width: 120px; }
+    /* Custom +/- stepper for number cells */
+    .num-stepper { display: inline-flex; align-items: stretch; gap: 2px; }
+    .num-stepper .step-btn {
+      width: 22px;
+      padding: 0;
+      background: var(--bg-card2);
+      border: 1px solid var(--b-dim);
+      border-radius: 2px;
+      color: var(--gold);
+      font-family: 'Inter', sans-serif;
+      font-size: .95rem;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+    }
+    .num-stepper .step-btn:hover { border-color: var(--gold); color: var(--gold-lt); }
+    .num-stepper input[type="number"] { width: 48px; }
+
+    .row-actions { display: flex; gap: 5px; justify-content: flex-end; min-width: 80px; }
     .btn {
       font-family: 'Cinzel', serif;
       font-size: .58rem;
@@ -829,7 +847,11 @@ function renderRosterRow(row, idx, isLeader) {
       if (f.type === 'jointime') {
         html += '<td><input type="text" class="jointime" data-col="' + esc(f.col) + '" value="' + esc(val) + '" placeholder="YYYY-MM-DD HH:MM:SS"></td>';
       } else {
-        html += '<td><input type="number" data-col="' + esc(f.col) + '" value="' + numOrZero(val) + '"></td>';
+        html += '<td><div class="num-stepper">' +
+                  '<button type="button" class="step-btn" data-step="-1" aria-label="decrease">−</button>' +
+                  '<input type="number" data-col="' + esc(f.col) + '" value="' + numOrZero(val) + '">' +
+                  '<button type="button" class="step-btn" data-step="1" aria-label="increase">+</button>' +
+                '</div></td>';
       }
     } else {
       if (f.type === 'number') {
@@ -842,11 +864,8 @@ function renderRosterRow(row, idx, isLeader) {
 
   /* Actions */
   html += '<td><div class="row-actions">';
-  if (editable) {
-    html += '<button class="btn ok" data-action="save">Save</button>';
-    if (!isLeader) {
-      html += '<button class="btn danger" data-action="remove">Remove</button>';
-    }
+  if (editable && !isLeader) {
+    html += '<button class="btn danger" data-action="remove">Remove</button>';
   }
   html += '</div></td>';
 
@@ -867,7 +886,11 @@ function renderFooter() {
   else if (cancelled) left = '<span class="label">Status</span>Cancelled';
   else                left = '<span class="label">Status</span>Active — in progress';
 
+  var editable = (STATE.mode === 'leader' || STATE.mode === 'admin') && !STATE.terminal && !approved && !cancelled;
   var right = '';
+  if (editable) {
+    right += '<button class="btn ok" data-action="save-all">Save All</button>';
+  }
   if (STATE.mode === 'leader' && !completed && !cancelled && !STATE.terminal) {
     right += '<button class="btn primary" data-action="complete">Complete Quest</button>';
   }
@@ -898,12 +921,24 @@ function wireRowEvents() {
       });
     });
 
-    var saveBtn = tr.querySelector('[data-action="save"]');
-    if (saveBtn) saveBtn.addEventListener('click', function () { saveRow(pid, tr); });
+    tr.querySelectorAll('.step-btn').forEach(function (bt) {
+      bt.addEventListener('click', function () {
+        var step = Number(bt.getAttribute('data-step')) || 0;
+        var inp = bt.parentElement.querySelector('input[type="number"]');
+        if (!inp) return;
+        var next = Number(inp.value || 0) + step;
+        if (next < 0) next = 0;
+        inp.value = next;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
 
     var rmBtn = tr.querySelector('[data-action="remove"]');
     if (rmBtn) rmBtn.addEventListener('click', function () { removeParticipant(pid, tr); });
   });
+
+  var saveAllBtn = root.querySelector('[data-action="save-all"]');
+  if (saveAllBtn) saveAllBtn.addEventListener('click', saveAll);
 
   var completeBtn = root.querySelector('[data-action="complete"]');
   if (completeBtn) completeBtn.addEventListener('click', onCompleteQuest);
@@ -917,30 +952,44 @@ function colHeaderToIdx(header) {
   return -1;
 }
 
-async function saveRow(playerId, tr) {
-  var data = STATE.dirty[playerId];
-  if (!data || !Object.keys(data).length) { toast('Nothing to save'); return; }
-  if (!playerId) { toast('Missing Player ID — cannot save', 'err'); return; }
+async function saveAll() {
+  var pids = Object.keys(STATE.dirty).filter(function (p) {
+    return p && STATE.dirty[p] && Object.keys(STATE.dirty[p]).length;
+  });
+  if (!pids.length) { toast('Nothing to save'); return; }
 
-  var rowIdx = Number(tr.getAttribute('data-idx'));
-  var row = STATE.rows[rowIdx];
+  var btn = document.querySelector('[data-action="save-all"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
-  var btn = tr.querySelector('[data-action="save"]');
-  btn.disabled = true; btn.textContent = 'Saving…';
-  try {
-    await OFSSheets.updatePatrolRow(STATE.patrolId, playerId, data);
-    /* Patch in-memory row so subsequent saves diff against current values */
-    Object.keys(data).forEach(function (k) {
-      var idx = colHeaderToIdx(k);
-      if (idx >= 0 && row) row[idx] = data[k];
-    });
-    delete STATE.dirty[playerId];
-    tr.classList.remove('dirty');
-    toast('Saved', 'ok');
-  } catch (e) {
-    toast('Save failed: ' + (e.message || e), 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Save';
+  var okCount = 0;
+  var failed = [];
+  for (var i = 0; i < pids.length; i++) {
+    var pid = pids[i];
+    var data = STATE.dirty[pid];
+    var tr = document.querySelector('tr[data-pid="' + pid + '"]');
+    var rowIdx = tr ? Number(tr.getAttribute('data-idx')) : -1;
+    var row = rowIdx >= 0 ? STATE.rows[rowIdx] : null;
+    try {
+      await OFSSheets.updatePatrolRow(STATE.patrolId, pid, data);
+      Object.keys(data).forEach(function (k) {
+        var idx = colHeaderToIdx(k);
+        if (idx >= 0 && row) row[idx] = data[k];
+      });
+      delete STATE.dirty[pid];
+      if (tr) tr.classList.remove('dirty');
+      okCount++;
+    } catch (e) {
+      var pname = tr && tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : pid;
+      failed.push(pname + ': ' + (e && e.message ? e.message : e));
+    }
+  }
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Save All'; }
+
+  if (!failed.length) {
+    toast('Saved ' + okCount + (okCount === 1 ? ' row' : ' rows'), 'ok');
+  } else {
+    toast('Saved ' + okCount + ', ' + failed.length + ' failed — ' + failed.join('; '), 'err');
   }
 }
 
