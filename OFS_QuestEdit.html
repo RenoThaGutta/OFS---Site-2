@@ -466,6 +466,7 @@ var COL_IDX = {
   PILOT_KILLS: 16,   // Q  "Ship kills"  (UI label: Pilot Kills)
   MESSAGE_ID: 18,    // S  "Message ID"
   THREAD_ID: 19,     // T  "Thread ID"
+  ROSTER_ID: 20,     // U  "Roster ID"  (unique per row — used as write key)
   JOIN_TIME: 21,     // V  "Joined Quest TS"
   PAUSED_DUR: 23,    // X  "Total Paused Duration" (leader-row marker)
   SENT_REVIEW: 24,   // Y  "Sent for review"
@@ -482,14 +483,20 @@ var COL_IDX = {
 };
 
 /* Column header strings — must match the Patrols sheet header row EXACTLY.
-   These are the keys the Worker's updatePatrol op uses to locate columns. */
+   These are the keys the Worker's generic `update` op uses to locate
+   columns (it writes by header name, same as updateWallet does with
+   "Gold"/"Silver"/"Copper"). */
 var COL = {
   O:  'Quest',
   P:  'Fps kills',
   Q:  'Ship kills',
   V:  'Joined Quest TS',
+  Y:  'Sent for review',
+  Z:  'Admin Approved',
   AA: 'Crusades',
   AB: 'Grefier',
+  AE: 'Quest Completed',
+  AH: 'Total time in quest per user',
   AI: 'Banner Points Delta',
 };
 
@@ -619,32 +626,22 @@ async function load() {
   document.getElementById('crumb').textContent = 'Quest';
   document.title = 'Quest ' + STATE.patrolId + ' — Order of the Fallen Star';
 
-  /* Make sure OFSData has players for avatar/rank lookups, plus populate the
-     cached tavData.quests which we use as a fallback below. */
+  /* Fresh fetch: OFSSheets.load() always hits /data (no client-side cache
+     gate), so this is authoritative up to the Worker's own caching. */
   try {
     if (window.OFSSheets && OFSSheets.load) { await OFSSheets.load(); }
-  } catch (e) { /* non-fatal — fallback still works with whatever's cached */ }
+  } catch (e) { /* non-fatal — we'll try the cache */ }
 
-  /* Primary: fresh read via /patrol?id=. Fallback: client-side filter of the
-     5-min-cached tavData.quests (same source Tavern/PlayerSheet use). The
-     fresh read is only strictly required for the pre-action concurrency check. */
-  try {
-    var data = await OFSSheets.getPatrolRows(STATE.patrolId);
-    STATE.rows = (data && data.rows) || [];
-    STATE.usedFallback = false;
-  } catch (e) {
-    var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
-    var allRows = (tavData && tavData.quests) || [];
-    if (allRows.length > 1) {
-      STATE.rows = allRows.slice(1).filter(function (r) {
-        return String(r[COL_IDX.PATROL_ID] || '').trim() === STATE.patrolId;
-      });
-      STATE.usedFallback = true;
-    } else {
-      STATE.mode = 'error';
-      renderRoot('<div class="mode-notice err"><strong>Could not load quest.</strong> ' + esc(e.message || String(e)) + '</div>');
-      return;
-    }
+  var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+  var allRows = (tavData && tavData.quests) || [];
+  if (allRows.length > 1) {
+    STATE.rows = allRows.slice(1).filter(function (r) {
+      return String(r[COL_IDX.PATROL_ID] || '').trim() === STATE.patrolId;
+    });
+  } else {
+    STATE.mode = 'error';
+    renderRoot('<div class="mode-notice err"><strong>Could not load quest data.</strong></div>');
+    return;
   }
 
   if (!STATE.rows.length) {
@@ -915,17 +912,27 @@ function wireRowEvents() {
   if (approveBtn) approveBtn.addEventListener('click', onApproveQuest);
 }
 
+function colHeaderToIdx(header) {
+  for (var k in COL) { if (COL[k] === header) return COL_IDX[k]; }
+  return -1;
+}
+
+function rosterIdOf(row) { return cellTrim(row, COL_IDX.ROSTER_ID); }
+
 async function saveRow(playerId, tr) {
   var data = STATE.dirty[playerId];
   if (!data || !Object.keys(data).length) { toast('Nothing to save'); return; }
 
+  var rowIdx = Number(tr.getAttribute('data-idx'));
+  var row = STATE.rows[rowIdx];
+  var rosterId = rosterIdOf(row);
+  if (!rosterId) { toast('No Roster ID on this row — cannot save', 'err'); return; }
+
   var btn = tr.querySelector('[data-action="save"]');
   btn.disabled = true; btn.textContent = 'Saving…';
   try {
-    await OFSSheets.updatePatrolCells(STATE.patrolId, playerId, data);
-    /* Patch in-memory row so the next concurrency read doesn't diff against stale values */
-    var rowIdx = Number(tr.getAttribute('data-idx'));
-    var row = STATE.rows[rowIdx];
+    await OFSSheets.updatePatrolByRoster(rosterId, data);
+    /* Patch in-memory row so subsequent saves diff against current values */
     Object.keys(data).forEach(function (k) {
       var idx = colHeaderToIdx(k);
       if (idx >= 0 && row) row[idx] = data[k];
@@ -940,22 +947,22 @@ async function saveRow(playerId, tr) {
   }
 }
 
-function colHeaderToIdx(header) {
-  for (var k in COL) { if (COL[k] === header) return COL_IDX[k]; }
-  return -1;
-}
-
 async function removeParticipant(playerId, tr) {
   if (!playerId) return;
+  var rowIdx = Number(tr.getAttribute('data-idx'));
+  var row = STATE.rows[rowIdx];
+  var rosterId = rosterIdOf(row);
+  if (!rosterId) { toast('No Roster ID on this row — cannot remove', 'err'); return; }
+  if (cellTrim(row, COL_IDX.PAUSED_DUR)) {
+    toast('Cannot remove the leader row', 'err'); return;
+  }
   var pname = tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : playerId;
   if (!confirm('Remove ' + pname + ' from this quest? This deletes their row.')) return;
 
   var btn = tr.querySelector('[data-action="remove"]');
   btn.disabled = true; btn.textContent = '…';
   try {
-    await OFSSheets.deletePatrolRow(STATE.patrolId, playerId);
-    /* Drop row locally and re-render */
-    var rowIdx = Number(tr.getAttribute('data-idx'));
+    await OFSSheets.deletePatrolByRoster(rosterId);
     STATE.rows.splice(rowIdx, 1);
     STATE.leaderIdx = findLeaderIndex(STATE.rows);
     delete STATE.dirty[playerId];
@@ -969,27 +976,41 @@ async function removeParticipant(playerId, tr) {
 
 /* ═══════════════════════════════════════════════════════════
    CONCURRENCY RE-CHECK
+   Hit /data fresh, then re-filter to this patrol. Bail if AE/Y/Z
+   changed server-side since load.
 ═══════════════════════════════════════════════════════════ */
 async function reCheckLeader() {
-  var data = await OFSSheets.getPatrolRows(STATE.patrolId);
-  var rows = (data && data.rows) || [];
-  if (!rows.length) throw new Error('Quest no longer exists.');
-  var leaderIdx = findLeaderIndex(rows);
-  var lead = rows[leaderIdx] || [];
+  await OFSSheets.load();
+  var tavData = OFSSheets.getTavernData();
+  var allRows = (tavData && tavData.quests) || [];
+  var freshRows = allRows.slice(1).filter(function (r) {
+    return String(r[COL_IDX.PATROL_ID] || '').trim() === STATE.patrolId;
+  });
+  if (!freshRows.length) throw new Error('Quest no longer exists.');
+  var leaderIdx = findLeaderIndex(freshRows);
+  var lead  = freshRows[leaderIdx] || [];
   var local = STATE.rows[STATE.leaderIdx] || [];
-  /* Bail if AE / Y / Z changed server-side since load */
   if (cellTrim(lead, COL_IDX.COMPLETED)   !== cellTrim(local, COL_IDX.COMPLETED) ||
       cellTrim(lead, COL_IDX.SENT_REVIEW) !== cellTrim(local, COL_IDX.SENT_REVIEW) ||
       cellTrim(lead, COL_IDX.APPROVED_BY) !== cellTrim(local, COL_IDX.APPROVED_BY)) {
     throw new Error('Quest state changed since page load — refresh and try again.');
   }
-  STATE.rows = rows;
+  STATE.rows = freshRows;
   STATE.leaderIdx = leaderIdx;
 }
 
 /* ═══════════════════════════════════════════════════════════
-   TERMINAL ACTIONS
+   COMPLETE QUEST — client-orchestrated
+   1. AH on every row with Roster ID + parseable V = (AE_now − V) formatted {h}hr{m}mins
+   2. AE + Y on the leader row (the one with col X populated)
 ═══════════════════════════════════════════════════════════ */
+function fmtHrMin(ms) {
+  var total = Math.max(0, Math.round(ms / 60000));
+  var h = Math.floor(total / 60);
+  var m = total % 60;
+  return h + 'hr' + m + 'mins';
+}
+
 async function onCompleteQuest() {
   if (!STATE.session || !STATE.session.id) { toast('Not logged in', 'err'); return; }
   if (!confirm('Complete this quest and send it for admin review?\n\nAfter this, editing is locked until approval.')) return;
@@ -998,13 +1019,41 @@ async function onCompleteQuest() {
   btn.disabled = true; btn.textContent = 'Submitting…';
   try {
     await reCheckLeader();
-    var res = await OFSSheets.completeQuest(STATE.patrolId, STATE.session.id);
+    var nowIso = new Date().toISOString();
+    var nowMs  = Date.now();
+    var warnings = [];
+
+    var leaderRosterId = rosterIdOf(STATE.rows[STATE.leaderIdx] || []);
+    if (!leaderRosterId) throw new Error('Leader row has no Roster ID.');
+
+    /* 1. Write AH on every row (incl. leader if they have V populated) */
+    for (var i = 0; i < STATE.rows.length; i++) {
+      var r  = STATE.rows[i];
+      var rid = rosterIdOf(r);
+      if (!rid) continue;
+      var v  = cellTrim(r, COL_IDX.JOIN_TIME);
+      if (!v) continue;
+      var joinD = parseTs(v);
+      if (!joinD) {
+        warnings.push('Unparseable join time for ' + (cell(r, COL_IDX.PLAYER_NAME) || rid));
+        continue;
+      }
+      var ah = fmtHrMin(nowMs - joinD.getTime());
+      var payload = {};
+      payload[COL.AH] = ah;
+      try { await OFSSheets.updatePatrolByRoster(rid, payload); }
+      catch (e) { warnings.push('AH write failed for ' + rid + ': ' + (e.message || e)); }
+    }
+
+    /* 2. Mark leader row complete + sent for review */
+    var leaderPayload = {};
+    leaderPayload[COL.AE] = nowIso;
+    leaderPayload[COL.Y]  = nowIso;
+    await OFSSheets.updatePatrolByRoster(leaderRosterId, leaderPayload);
+
     STATE.terminal = true;
     toast('Quest submitted', 'ok');
-    if (res && res.warnings && res.warnings.length) {
-      appendWarnings('Completed with warnings:', res.warnings);
-    }
-    /* Reload fresh to pick up AE/Y/AH writes */
+    if (warnings.length) appendWarnings('Completed with warnings:', warnings);
     await load();
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Complete Quest';
@@ -1012,6 +1061,15 @@ async function onCompleteQuest() {
   }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   APPROVE QUEST — client-orchestrated
+   For each row with a non-zero AI (Banner Points Delta):
+     - Look up the participant's active banner from Member Log (OFSData)
+     - Compute oldTotal/newTotal from cached OFSData, upsert "Banners points per user"
+     - Append "Banner points log" row
+     - Clear AI on that Patrols row (idempotent re-approve safeguard)
+   Finally: write Z on the leader row = reviewer display name.
+═══════════════════════════════════════════════════════════ */
 async function onApproveQuest() {
   if (!STATE.session || !STATE.session.isAdmin) { toast('Admin only', 'err'); return; }
   if (!confirm('Approve this quest and apply banner points?')) return;
@@ -1020,16 +1078,92 @@ async function onApproveQuest() {
   btn.disabled = true; btn.textContent = 'Applying…';
   try {
     await reCheckLeader();
-    var res = await OFSSheets.approveQuest(
-      STATE.patrolId,
-      STATE.session.id,
-      STATE.session.username || 'Admin'
-    );
+    var lead = STATE.rows[STATE.leaderIdx] || [];
+    var leaderRosterId = rosterIdOf(lead);
+    if (!leaderRosterId) throw new Error('Leader row has no Roster ID.');
+
+    var guildId       = cellTrim(lead, COL_IDX.GUILD_ID);
+    var game          = cellTrim(lead, COL_IDX.GAME);
+    var requesterId   = cellTrim(lead, COL_IDX.LEADER_ID);
+    var requesterName = cellTrim(lead, COL_IDX.LEADER_NAME);
+    var reviewerId    = String(STATE.session.id);
+    var reviewerTag   = STATE.session.username || 'Admin';
+
+    var warnings = [];
+
+    for (var i = 0; i < STATE.rows.length; i++) {
+      var r   = STATE.rows[i];
+      var rid = rosterIdOf(r);
+      if (!rid) continue;
+      var delta = Number(cell(r, COL_IDX.BP_DELTA));
+      if (!isFinite(delta) || delta === 0) continue;
+
+      var targetId   = cellTrim(r, COL_IDX.PLAYER_ID);
+      var targetName = cellTrim(r, COL_IDX.PLAYER_NAME);
+      if (!targetId) { warnings.push('Row ' + rid + ' has no Player ID — skipped'); continue; }
+
+      var player = window.OFSData ? OFSData.getPlayerById(targetId) : null;
+      var banner = player && player.activeBanner;
+      if (!banner) {
+        warnings.push('No active banner on Member Log for ' + (targetName || targetId) + ' — skipped');
+        continue;
+      }
+
+      var oldTotal = (player.banners && player.banners[banner] && player.banners[banner].p) || 0;
+      var newTotal = oldTotal + delta;
+
+      try {
+        var bannerUpdate = {}; bannerUpdate[banner] = newTotal;
+        await OFSSheets.updateBannerPoints(targetId, bannerUpdate);
+      } catch (e) {
+        warnings.push('Banner upsert failed for ' + (targetName || targetId) + ': ' + (e.message || e));
+        continue;
+      }
+
+      var logRow = [
+        new Date().toISOString(),   // Timestamp
+        guildId,                    // Guild ID
+        '',                         // Review Message ID
+        '',                         // Review Channel ID
+        'Approved',                 // Event
+        game,                       // Game
+        targetId,                   // Target User ID
+        targetName,                 // Target Tag
+        requesterId,                // Requester User ID
+        requesterName,              // Requester Tag
+        banner,                     // Banner
+        delta,                      // Points (Current) — per prompt, = delta applied
+        delta,                      // Delta Applied
+        oldTotal,                   // Old Total
+        newTotal,                   // New Total
+        'Quest ' + STATE.patrolId,  // Reason
+        reviewerId,                 // Reviewer User ID
+        reviewerTag,                // Reviewer Tag
+        STATE.patrolId              // Request ID
+      ];
+      try { await OFSSheets.appendBannerPointsLog(logRow); }
+      catch (e) { warnings.push('Log append failed for ' + (targetName || targetId) + ': ' + (e.message || e)); }
+
+      /* Clear AI so re-approve can't double-apply */
+      try {
+        var clearPayload = {}; clearPayload[COL.AI] = 0;
+        await OFSSheets.updatePatrolByRoster(rid, clearPayload);
+        /* Patch local cache too */
+        r[COL_IDX.BP_DELTA] = 0;
+        if (player && player.banners && player.banners[banner]) player.banners[banner].p = newTotal;
+      } catch (e) {
+        warnings.push('Could not clear AI for ' + (targetName || targetId) + ' (banner points were applied): ' + (e.message || e));
+      }
+    }
+
+    /* Finally — write Z on the leader row */
+    var leaderPayload = {};
+    leaderPayload[COL.Z] = reviewerTag;
+    await OFSSheets.updatePatrolByRoster(leaderRosterId, leaderPayload);
+
     STATE.terminal = true;
     toast('Quest approved', 'ok');
-    if (res && res.warnings && res.warnings.length) {
-      appendWarnings('Approved with warnings:', res.warnings);
-    }
+    if (warnings.length) appendWarnings('Approved with warnings:', warnings);
     await load();
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Approve Quest';
