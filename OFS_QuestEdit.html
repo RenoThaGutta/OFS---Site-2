@@ -542,6 +542,7 @@ function toast(msg, kind) {
 
 function cell(row, idx) { return (row && row[idx] != null) ? String(row[idx]) : ''; }
 function cellTrim(row, idx) { return cell(row, idx).trim(); }
+function numOrZero(v) { var n = Number(v); return isFinite(n) ? n : 0; }
 
 function findLeaderIndex(rows) {
   /* Prompt rule: leader row is the one where col X (Total Paused Duration) has a value.
@@ -831,10 +832,14 @@ function renderRosterRow(row, idx, isLeader) {
       if (f.type === 'jointime') {
         html += '<td><input type="text" class="jointime" data-col="' + esc(f.col) + '" value="' + esc(val) + '" placeholder="YYYY-MM-DD HH:MM:SS"></td>';
       } else {
-        html += '<td><input type="number" data-col="' + esc(f.col) + '" value="' + esc(val || '0') + '"></td>';
+        html += '<td><input type="number" data-col="' + esc(f.col) + '" value="' + numOrZero(val) + '"></td>';
       }
     } else {
-      html += '<td><span class="ro-cell' + (f.type === 'number' ? ' num' : '') + '">' + esc(val || (f.type === 'number' ? '0' : '—')) + '</span></td>';
+      if (f.type === 'number') {
+        html += '<td><span class="ro-cell num">' + numOrZero(val) + '</span></td>';
+      } else {
+        html += '<td><span class="ro-cell">' + esc(val || '—') + '</span></td>';
+      }
     }
   });
 
