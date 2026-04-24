@@ -960,24 +960,55 @@
 
     <!-- ── Quest Review ── -->
     <div class="tab-panel" id="tab-quests">
-      <div class="sec-head"><h2>Quests Awaiting Review</h2><div class="sec-line"></div></div>
-      <div class="controls">
-        <input class="ctrl-input" id="quest-review-search" placeholder="Filter by quest name, leader, or ID…" oninput="renderQuestReview()">
-        <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestReview()">Refresh</button>
+      <div class="sec-head"><h2>Quest Review</h2><div class="sec-line"></div></div>
+      <div class="tav-subtabs" id="qr-subtabs">
+        <button class="tav-stab active" data-qrtab="pending">Pending Review</button>
+        <button class="tav-stab"        data-qrtab="completed">Completed Quests</button>
       </div>
-      <table class="data-table" id="quest-review-table">
-        <thead><tr>
-          <th>Quest</th>
-          <th>Leader</th>
-          <th>Participants</th>
-          <th>Type</th>
-          <th>Submitted</th>
-          <th></th>
-        </tr></thead>
-        <tbody id="quest-review-tbody">
-          <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
-        </tbody>
-      </table>
+
+      <!-- Pending subtab -->
+      <div id="qr-pending">
+        <div class="controls">
+          <input class="ctrl-input" id="quest-review-search" placeholder="Filter by quest name, leader, or ID…" oninput="renderQuestReview()">
+          <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestReview()">Refresh</button>
+        </div>
+        <table class="data-table" id="quest-review-table">
+          <thead><tr>
+            <th>Quest</th>
+            <th>Leader</th>
+            <th>Participants</th>
+            <th>Type</th>
+            <th>Submitted</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="quest-review-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Completed subtab -->
+      <div id="qr-completed" style="display:none">
+        <div class="controls">
+          <input class="ctrl-input" id="qr-completed-lookup" placeholder="Enter Patrol ID (e.g. P1385700546434039928-1233)…" onkeydown="if(event.key==='Enter')openPatrolById()">
+          <button class="ctrl-btn" style="margin-left:8px" onclick="openPatrolById()">Open</button>
+          <input class="ctrl-input" id="qr-completed-search" placeholder="Filter by quest name, leader, or ID…" style="margin-left:16px" oninput="renderQuestCompleted()">
+          <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestCompleted()">Refresh</button>
+        </div>
+        <table class="data-table" id="qr-completed-table">
+          <thead><tr>
+            <th>Quest</th>
+            <th>Leader</th>
+            <th>Participants</th>
+            <th>Type</th>
+            <th>Approved</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="qr-completed-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
     <!-- ── Audit Log ── -->
@@ -1889,6 +1920,112 @@ function refreshQuestReview() {
   }
 }
 
+/* ── Completed subtab: approved quests admin can revisit ───── */
+function _qrBuildCompleted(rows) {
+  if (!rows || rows.length < 2) return [];
+  var map = {};
+  rows.slice(1).forEach(function (row) {
+    var pid = String(row[0] || '').trim();
+    if (!pid || !/^P\d/.test(pid)) return;
+    var x  = String(row[23] || '').trim();
+    var y  = String(row[24] || '').trim();
+    var z  = String(row[25] || '').trim();
+    var ad = String(row[29] || '').trim();
+
+    if (!map[pid]) {
+      map[pid] = {
+        id: pid, leaderName: '', leaderId: '', name: '', type: 'Quest',
+        isLeaderRow: false, y: '', z: '', cancelled: '', participantCount: 0
+      };
+    }
+    var q = map[pid];
+    if (x) {
+      q.isLeaderRow = true;
+      q.leaderName  = String(row[1]  || '').trim();
+      q.leaderId    = String(row[2]  || '').trim();
+      q.name        = String(row[4]  || '').trim();
+      q.type        = String(row[32] || 'Quest').trim();
+      q.y = y; q.z = z; q.cancelled = ad;
+    }
+    if (String(row[10] || '').trim()) q.participantCount += 1;
+  });
+  return Object.keys(map)
+    .map(function (k) { return map[k]; })
+    .filter(function (q) { return q.isLeaderRow && q.z && !q.cancelled; })
+    .sort(function (a, b) { return new Date(b.y || 0) - new Date(a.y || 0); });
+}
+
+function renderQuestCompleted() {
+  var tbody = document.getElementById('qr-completed-tbody');
+  if (!tbody) return;
+
+  var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+  var rows = (tavData && tavData.quests) || [];
+  var list = _qrBuildCompleted(rows);
+
+  var filter = (document.getElementById('qr-completed-search') || {}).value || '';
+  filter = filter.trim().toLowerCase();
+  if (filter) {
+    list = list.filter(function (q) {
+      return q.name.toLowerCase().indexOf(filter)       !== -1 ||
+             q.leaderName.toLowerCase().indexOf(filter) !== -1 ||
+             q.id.toLowerCase().indexOf(filter)         !== -1;
+    });
+  }
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">No completed quests.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(function (q) {
+    var leaderCell = q.leaderId
+      ? '<a href="OFS_PlayerSheet.html?player=' + encodeURIComponent(q.leaderId) + '" style="color:var(--gold);text-decoration:none">' + _qrEsc(q.leaderName) + '</a>'
+      : _qrEsc(q.leaderName || '—');
+    return '<tr>' +
+      '<td><div style="font-family:Cinzel,serif;color:var(--gold-lt);font-size:.9rem">' + _qrEsc(q.name || '(Untitled Quest)') + '</div>' +
+        '<div style="font-size:.68rem;color:var(--text-dim);letter-spacing:.1em;font-family:Cinzel,serif">' + _qrEsc(q.id) + '</div></td>' +
+      '<td>' + leaderCell + '</td>' +
+      '<td style="color:var(--silver)">' + q.participantCount + '</td>' +
+      '<td style="color:var(--silver)">' + _qrEsc(q.type) + '</td>' +
+      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.y) +
+        (q.y ? '<div style="color:var(--text-dim);font-size:.72rem">' + _qrEsc(_qrFmtSince(q.y)) + '</div>' : '') +
+      '</td>' +
+      '<td style="text-align:right"><a class="ctrl-btn" style="text-decoration:none;display:inline-block" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">Edit &rarr;</a></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function refreshQuestCompleted() {
+  var tbody = document.getElementById('qr-completed-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Refreshing…</td></tr>';
+  if (window.OFSSheets && OFSSheets.load) {
+    OFSSheets.load().then(renderQuestCompleted).catch(renderQuestCompleted);
+  } else {
+    renderQuestCompleted();
+  }
+}
+
+function openPatrolById() {
+  var inp = document.getElementById('qr-completed-lookup');
+  var pid = (inp && inp.value || '').trim();
+  if (!pid) { if (inp) inp.focus(); return; }
+  window.location.href = 'OFS_QuestEdit.html?patrol=' + encodeURIComponent(pid);
+}
+
+/* Subtab switcher for Quest Review */
+document.addEventListener('click', function (e) {
+  var btn = e.target.closest && e.target.closest('#qr-subtabs .tav-stab');
+  if (!btn) return;
+  var key = btn.getAttribute('data-qrtab');
+  document.querySelectorAll('#qr-subtabs .tav-stab').forEach(function (b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.getElementById('qr-pending').style.display   = (key === 'pending')   ? '' : 'none';
+  document.getElementById('qr-completed').style.display = (key === 'completed') ? '' : 'none';
+  if (key === 'pending')   renderQuestReview();
+  if (key === 'completed') renderQuestCompleted();
+});
+
 /* ══════════════════════════════════════════════════════════
    TABS
 ══════════════════════════════════════════════════════════ */
@@ -1898,7 +2035,11 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
     t.classList.add('active');
     document.getElementById('tab-'+t.dataset.tab).classList.add('active');
-    if(t.dataset.tab==='quests')       renderQuestReview();
+    if(t.dataset.tab==='quests'){
+      var activeQr = document.querySelector('#qr-subtabs .tav-stab.active');
+      var k = activeQr ? activeQr.getAttribute('data-qrtab') : 'pending';
+      if (k === 'completed') renderQuestCompleted(); else renderQuestReview();
+    }
     if(t.dataset.tab==='banners'){
       renderBannerPop();
       renderBanManageList();

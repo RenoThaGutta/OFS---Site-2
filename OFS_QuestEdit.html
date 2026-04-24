@@ -713,9 +713,13 @@ function computeMode(session, rows, leaderIdx) {
   var leaderId = cellTrim(lead, COL_IDX.LEADER_ID);
   var isLeader = sessId && sessId === leaderId;
 
-  /* Terminal states — no editing for anyone except admin-on-approved (still read). */
+  /* Cancelled is terminal for everyone. Approved is readonly for everyone
+     except admins, who can revisit finalized quests to correct points. */
   if (cancelled) return 'readonly';
-  if (approved)  return 'readonly';
+  if (approved) {
+    if (isAdmin) return 'admin';
+    return 'readonly';
+  }
 
   /* Already sent for review — only admin can act. Leader sees read-only. */
   if (completed) {
@@ -989,7 +993,7 @@ function renderFooter() {
   else if (cancelled) left = '<span class="label">Status</span>Cancelled';
   else                left = '<span class="label">Status</span>Active — in progress';
 
-  var editable = (STATE.mode === 'leader' || STATE.mode === 'admin') && !STATE.terminal && !approved && !cancelled;
+  var editable = (STATE.mode === 'leader' || STATE.mode === 'admin') && !STATE.terminal;
   var right = '';
   if (editable) {
     right += '<button class="btn ok" data-action="save-all">Save All</button>';
