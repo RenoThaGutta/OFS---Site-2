@@ -1825,47 +1825,59 @@ function _qrFmtSince(iso) {
   return Math.floor(mins/1440) + 'd ago';
 }
 
-function _qrBuild(rows) {
-  // Group by patrol ID, mark the leader row (col X populated), count participants.
+/* Pick the leader row out of a patrol's rows. Mirrors editor's findLeaderIndex:
+   1) prefer the row where col X (PAUSED_DUR) is populated, else
+   2) fall back to a row where col K (PLAYER_ID) is empty and col C (LEADER_ID) is set,
+   3) else fall back to the first row with col C populated. */
+function _qrPickLeader(patrolRows) {
+  for (var i = 0; i < patrolRows.length; i++) {
+    if (String(patrolRows[i][23] || '').trim() !== '') return patrolRows[i];
+  }
+  for (var j = 0; j < patrolRows.length; j++) {
+    if (!String(patrolRows[j][10] || '').trim() &&
+         String(patrolRows[j][2]  || '').trim()) return patrolRows[j];
+  }
+  for (var k = 0; k < patrolRows.length; k++) {
+    if (String(patrolRows[k][2] || '').trim()) return patrolRows[k];
+  }
+  return null;
+}
+
+function _qrGroup(rows) {
   if (!rows || rows.length < 2) return [];
-  var map = {};
+  var groups = {};
   rows.slice(1).forEach(function (row) {
     var pid = String(row[0] || '').trim();
     if (!pid || !/^P\d/.test(pid)) return;
-    var x  = String(row[23] || '').trim();  // X
-    var y  = String(row[24] || '').trim();  // Y  Sent for review
-    var z  = String(row[25] || '').trim();  // Z  Admin, Approved
-    var ad = String(row[29] || '').trim();  // AD Quest Cancelled
-
-    if (!map[pid]) {
-      map[pid] = {
-        id: pid,
-        leaderName: '',
-        leaderId:   '',
-        name:       '',
-        type:       'Quest',
-        isLeaderRow: false,
-        y: '', z: '', cancelled: '',
-        participantCount: 0
-      };
-    }
-    var q = map[pid];
-    if (x) {
-      q.isLeaderRow  = true;
-      q.leaderName   = String(row[1]  || '').trim();
-      q.leaderId     = String(row[2]  || '').trim();
-      q.name         = String(row[4]  || '').trim();
-      q.type         = String(row[32] || 'Quest').trim();
-      q.y            = y;
-      q.z            = z;
-      q.cancelled    = ad;
-    }
-    var pidK = String(row[10] || '').trim();
-    if (pidK) q.participantCount += 1;
+    (groups[pid] || (groups[pid] = [])).push(row);
   });
-  return Object.keys(map)
-    .map(function (k) { return map[k]; })
-    .filter(function (q) { return q.isLeaderRow && q.y && !q.z && !q.cancelled; })
+  var out = [];
+  Object.keys(groups).forEach(function (pid) {
+    var patrolRows = groups[pid];
+    var lead = _qrPickLeader(patrolRows);
+    if (!lead) return;
+    var participantCount = 0;
+    for (var i = 0; i < patrolRows.length; i++) {
+      if (String(patrolRows[i][10] || '').trim()) participantCount++;
+    }
+    out.push({
+      id:               pid,
+      leaderName:       String(lead[1]  || '').trim(),
+      leaderId:         String(lead[2]  || '').trim(),
+      name:             String(lead[4]  || '').trim(),
+      type:             String(lead[32] || 'Quest').trim(),
+      y:                String(lead[24] || '').trim(),
+      z:                String(lead[25] || '').trim(),
+      cancelled:        String(lead[29] || '').trim(),
+      participantCount: participantCount
+    });
+  });
+  return out;
+}
+
+function _qrBuild(rows) {
+  return _qrGroup(rows)
+    .filter(function (q) { return q.y && !q.z && !q.cancelled; })
     .sort(function (a, b) { return new Date(b.y) - new Date(a.y); });
 }
 
@@ -1922,36 +1934,8 @@ function refreshQuestReview() {
 
 /* ── Completed subtab: approved quests admin can revisit ───── */
 function _qrBuildCompleted(rows) {
-  if (!rows || rows.length < 2) return [];
-  var map = {};
-  rows.slice(1).forEach(function (row) {
-    var pid = String(row[0] || '').trim();
-    if (!pid || !/^P\d/.test(pid)) return;
-    var x  = String(row[23] || '').trim();
-    var y  = String(row[24] || '').trim();
-    var z  = String(row[25] || '').trim();
-    var ad = String(row[29] || '').trim();
-
-    if (!map[pid]) {
-      map[pid] = {
-        id: pid, leaderName: '', leaderId: '', name: '', type: 'Quest',
-        isLeaderRow: false, y: '', z: '', cancelled: '', participantCount: 0
-      };
-    }
-    var q = map[pid];
-    if (x) {
-      q.isLeaderRow = true;
-      q.leaderName  = String(row[1]  || '').trim();
-      q.leaderId    = String(row[2]  || '').trim();
-      q.name        = String(row[4]  || '').trim();
-      q.type        = String(row[32] || 'Quest').trim();
-      q.y = y; q.z = z; q.cancelled = ad;
-    }
-    if (String(row[10] || '').trim()) q.participantCount += 1;
-  });
-  return Object.keys(map)
-    .map(function (k) { return map[k]; })
-    .filter(function (q) { return q.isLeaderRow && q.z && !q.cancelled; })
+  return _qrGroup(rows)
+    .filter(function (q) { return q.z && !q.cancelled; })
     .sort(function (a, b) { return new Date(b.y || 0) - new Date(a.y || 0); });
 }
 
