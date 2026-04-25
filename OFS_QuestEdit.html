@@ -784,7 +784,69 @@ async function load() {
 
   STATE.leaderIdx = findLeaderIndex(STATE.rows);
   STATE.mode = computeMode(STATE.session, STATE.rows, STATE.leaderIdx);
+
+  /* Replay any post-approval adjustments tagged for this quest so the
+     editor reflects the cumulative effective points without writing to
+     the historical Patrols row. */
+  applyAdjustmentsToRows(tavData);
+
   render();
+}
+
+/* Adjustment-sheet field name → Patrols column index. Keeping this here
+   keeps the mapping next to the saveAll counterpart for sanity. */
+var ADJUSTMENT_TO_PATROL_IDX = {
+  'Quest_Total':        COL_IDX.QUEST_POINTS,
+  'FPS_Kills_Total':    COL_IDX.GROUND_KILLS,
+  'Ship_Kills_Total':   COL_IDX.PILOT_KILLS,
+  'Turret_Kills_Total': COL_IDX.TURRET_KILLS,
+  'Crusades_Total':     COL_IDX.CRUSADES
+};
+
+function applyAdjustmentsToRows(tavData) {
+  var adjRows = tavData && tavData.patrolAdjustments;
+  if (!adjRows || adjRows.length < 2) return;
+
+  var headers = adjRows[0];
+  var idxOf   = {};
+  for (var h = 0; h < headers.length; h++) idxOf[String(headers[h]).trim()] = h;
+
+  var userIdC    = idxOf['User ID'];
+  var reasonC    = idxOf['Reason'];
+  if (userIdC == null || reasonC == null) return;
+
+  var marker = '(Quest ' + STATE.patrolId + ')';
+
+  /* Index a single roster row per player (prefer one with col V populated,
+     same rule getRosterRows uses to pick the visible entry). */
+  var rowByPid = {};
+  STATE.rows.forEach(function (r) {
+    var pid = cellTrim(r, COL_IDX.PLAYER_ID);
+    if (!pid) return;
+    var prior = rowByPid[pid];
+    if (!prior) { rowByPid[pid] = r; return; }
+    if (cellTrim(r, COL_IDX.JOIN_TIME) && !cellTrim(prior, COL_IDX.JOIN_TIME)) {
+      rowByPid[pid] = r;
+    }
+  });
+
+  for (var i = 1; i < adjRows.length; i++) {
+    var ar     = adjRows[i] || [];
+    var reason = String(ar[reasonC] || '');
+    if (reason.indexOf(marker) === -1) continue;
+    var uid = String(ar[userIdC] || '').trim();
+    var target = uid && rowByPid[uid];
+    if (!target) continue;
+
+    Object.keys(ADJUSTMENT_TO_PATROL_IDX).forEach(function (adjField) {
+      var adjC = idxOf[adjField];
+      if (adjC == null) return;
+      var delta = Number(ar[adjC]) || 0;
+      if (!delta) return;
+      var patrolIdx = ADJUSTMENT_TO_PATROL_IDX[adjField];
+      target[patrolIdx] = (Number(target[patrolIdx]) || 0) + delta;
+    });
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1132,8 +1194,11 @@ async function saveAll() {
          adjustment log + Patrols_User_Totals merge in Worker /data is the
          source of truth for the player's effective stats. */
       if (Object.keys(deltas).length) {
+        /* Encode the patrol ID in the reason so the editor can replay
+           matching adjustments on next load without touching Patrols. */
+        var reason = 'Admin edit (Quest ' + STATE.patrolId + ')';
         try {
-          await OFSSheets.appendStatAdjustment(pid, deltas, 'Admin edit', adminId);
+          await OFSSheets.appendStatAdjustment(pid, deltas, reason, adminId);
         } catch (e) {
           var pname = tr && tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : pid;
           failed.push(pname + ': ' + (e && e.message ? e.message : e));

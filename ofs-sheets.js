@@ -301,10 +301,11 @@
 
     // Cache tavern data for OFS_TavernHall.html to consume
     _tavernData = {
-      quests:           data.quests           || [],
-      tavAnnouncements: data.tavAnnouncements || [],
-      tavEvents:        data.tavEvents        || [],
-      tavMedia:         data.tavMedia         || [],
+      quests:            data.quests            || [],
+      patrolAdjustments: data.patrolAdjustments || [],
+      tavAnnouncements:  data.tavAnnouncements  || [],
+      tavEvents:         data.tavEvents         || [],
+      tavMedia:          data.tavMedia          || [],
     };
 
     // Fetch /content for timeline block overrides (optional — non-fatal)
