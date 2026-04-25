@@ -1059,6 +1059,17 @@ function colHeaderToIdx(header) {
   return -1;
 }
 
+/* Patrols sheet header → Patrols_User_Adjustments column name. Only stats
+   that aggregate into player totals are mirrored here; BP Delta and
+   Join Time are intentionally omitted. */
+var ADJUSTMENT_FIELD_MAP = {
+  'Quest':      'Quest_Total',
+  'Fps kills':  'FPS_Kills_Total',
+  'Ship kills': 'Ship_Kills_Total',
+  'Grefier':    'Turret_Kills_Total',
+  'Crusades':   'Crusades_Total'
+};
+
 async function saveAll() {
   var pids = Object.keys(STATE.dirty).filter(function (p) {
     return p && STATE.dirty[p] && Object.keys(STATE.dirty[p]).length;
@@ -1068,14 +1079,37 @@ async function saveAll() {
   var btn = document.querySelector('[data-action="save-all"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
+  var lead      = STATE.rows[STATE.leaderIdx] || [];
+  var approved  = cellTrim(lead, COL_IDX.APPROVED_BY);
+  var adminId   = (STATE.session && STATE.session.username) || 'Admin';
+
   var okCount = 0;
   var failed = [];
+  var adjustmentWarnings = [];
+
   for (var i = 0; i < pids.length; i++) {
     var pid = pids[i];
     var data = STATE.dirty[pid];
     var tr = document.querySelector('tr[data-pid="' + pid + '"]');
     var rowIdx = tr ? Number(tr.getAttribute('data-idx')) : -1;
     var row = rowIdx >= 0 ? STATE.rows[rowIdx] : null;
+
+    /* Snapshot prior values for any field that maps to an adjustment column,
+       BEFORE we patch the in-memory row after the write. */
+    var deltas = {};
+    if (approved && row) {
+      Object.keys(data).forEach(function (header) {
+        var adjField = ADJUSTMENT_FIELD_MAP[header];
+        if (!adjField) return;
+        var idx = colHeaderToIdx(header);
+        if (idx < 0) return;
+        var oldVal = Number(row[idx]) || 0;
+        var newVal = Number(data[header]) || 0;
+        var delta  = newVal - oldVal;
+        if (delta !== 0) deltas[adjField] = delta;
+      });
+    }
+
     try {
       await OFSSheets.updatePatrolRow(STATE.patrolId, pid, data);
       Object.keys(data).forEach(function (k) {
@@ -1088,6 +1122,17 @@ async function saveAll() {
     } catch (e) {
       var pname = tr && tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : pid;
       failed.push(pname + ': ' + (e && e.message ? e.message : e));
+      continue;
+    }
+
+    /* Post-approval edit: log a delta row so player totals stay consistent. */
+    if (approved && Object.keys(deltas).length) {
+      try {
+        await OFSSheets.appendStatAdjustment(pid, deltas, 'Admin edit', adminId);
+      } catch (e) {
+        var pname2 = tr && tr.querySelector('.pname') ? tr.querySelector('.pname').textContent : pid;
+        adjustmentWarnings.push(pname2 + ': ' + (e && e.message ? e.message : e));
+      }
     }
   }
 
@@ -1097,6 +1142,9 @@ async function saveAll() {
     toast('Saved ' + okCount + (okCount === 1 ? ' row' : ' rows'), 'ok');
   } else {
     toast('Saved ' + okCount + ', ' + failed.length + ' failed — ' + failed.join('; '), 'err');
+  }
+  if (adjustmentWarnings.length) {
+    appendWarnings('Patrol rows saved, but could not log adjustments for:', adjustmentWarnings);
   }
 }
 
