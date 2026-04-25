@@ -673,13 +673,20 @@ function cellTrim(row, idx) { return cell(row, idx).trim(); }
 function numOrZero(v) { var n = Number(v); return isFinite(n) ? n : 0; }
 
 function findLeaderIndex(rows) {
-  /* Prompt rule: leader row is the one where col X (Total Paused Duration) has a value.
-     Fallback: if none match (older/partial rows), use the first row with col C populated. */
+  /* Leader/metadata row lookup (in priority order):
+     1) col X (Total Paused Duration) populated — newer bot writes this as a marker.
+     2) col K (Player ID) empty AND col C (Leader ID) populated — the bot's
+        classic metadata-row shape; this is where AE/Y/Z live for older quests.
+     3) first row with col C populated — last-resort fallback. */
   for (var i = 0; i < rows.length; i++) {
     if (cellTrim(rows[i], COL_IDX.PAUSED_DUR) !== '') return i;
   }
   for (var j = 0; j < rows.length; j++) {
-    if (cellTrim(rows[j], COL_IDX.LEADER_ID) !== '') return j;
+    if (!cellTrim(rows[j], COL_IDX.PLAYER_ID) &&
+         cellTrim(rows[j], COL_IDX.LEADER_ID)) return j;
+  }
+  for (var k = 0; k < rows.length; k++) {
+    if (cellTrim(rows[k], COL_IDX.LEADER_ID) !== '') return k;
   }
   return 0;
 }
@@ -1079,9 +1086,13 @@ async function saveAll() {
   var btn = document.querySelector('[data-action="save-all"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
 
-  var lead      = STATE.rows[STATE.leaderIdx] || [];
-  var approved  = cellTrim(lead, COL_IDX.APPROVED_BY);
-  var adminId   = (STATE.session && STATE.session.username) || 'Admin';
+  /* Approval metadata lives on the leader/metadata row, but older bot data
+     doesn't always put it where findLeaderIndex lands. Scan every row for
+     a populated col Z so we never miss logging an adjustment. */
+  var approved = STATE.rows.some(function (r) {
+    return cellTrim(r, COL_IDX.APPROVED_BY) !== '';
+  });
+  var adminId = (STATE.session && STATE.session.username) || 'Admin';
 
   var okCount = 0;
   var failed = [];
