@@ -927,6 +927,11 @@ function renderModeNotice() {
 
 function renderRosterRow(row, idx, isLeader) {
   var editable = (STATE.mode === 'leader' || STATE.mode === 'admin') && !STATE.terminal;
+  /* Banner Points are locked once the quest has been approved — the points
+     have already been applied at approval time and cleared from AI. */
+  var questApproved = STATE.rows.some(function (r) {
+    return cellTrim(r, COL_IDX.APPROVED_BY) !== '';
+  });
   var pid   = cellTrim(row, COL_IDX.PLAYER_ID);
   var pname = cell(row, COL_IDX.PLAYER_NAME) || (isLeader ? cell(row, COL_IDX.LEADER_NAME) : '');
   var role  = cell(row, COL_IDX.PLAYER_ROLE);
@@ -957,7 +962,8 @@ function renderRosterRow(row, idx, isLeader) {
   /* Editable / static cells */
   EDIT_FIELDS.forEach(function (f) {
     var val = cell(row, f.idx);
-    if (editable) {
+    var fieldEditable = editable && !(questApproved && f.idx === COL_IDX.BP_DELTA);
+    if (fieldEditable) {
       if (f.type === 'jointime') {
         html += '<td><input type="text" class="jointime" data-col="' + esc(f.col) + '" value="' + esc(val) + '" placeholder="YYYY-MM-DD HH:MM:SS"></td>';
       } else {
