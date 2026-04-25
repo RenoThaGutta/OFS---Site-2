@@ -990,9 +990,8 @@
       <!-- Completed subtab -->
       <div id="qr-completed" style="display:none">
         <div class="controls">
-          <input class="ctrl-input" id="qr-completed-lookup" placeholder="Enter Patrol ID (e.g. P1385700546434039928-1233)…" onkeydown="if(event.key==='Enter')openPatrolById()">
-          <button class="ctrl-btn" style="margin-left:8px" onclick="openPatrolById()">Open</button>
-          <input class="ctrl-input" id="qr-completed-search" placeholder="Filter by quest name, leader, or ID…" style="margin-left:16px" oninput="renderQuestCompleted()">
+          <input class="ctrl-input" id="qr-completed-search" placeholder="Filter by quest name, leader, or Patrol ID — Enter to open by ID…" oninput="renderQuestCompleted()" onkeydown="if(event.key==='Enter')openPatrolById()">
+          <button class="ctrl-btn" style="margin-left:8px" onclick="openPatrolById()">Open ID</button>
           <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestCompleted()">Refresh</button>
         </div>
         <table class="data-table" id="qr-completed-table">
@@ -1991,7 +1990,7 @@ function refreshQuestCompleted() {
 }
 
 function openPatrolById() {
-  var inp = document.getElementById('qr-completed-lookup');
+  var inp = document.getElementById('qr-completed-search');
   var pid = (inp && inp.value || '').trim();
   if (!pid) { if (inp) inp.focus(); return; }
   window.location.href = 'OFS_QuestEdit.html?patrol=' + encodeURIComponent(pid);
