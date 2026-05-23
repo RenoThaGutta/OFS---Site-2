@@ -400,13 +400,14 @@
   }
 
   /**
-   * Update a player's wallet in the Bank sheet (find-and-update).
+   * Update or create a player's wallet in the Bank sheet.
+   * Existing users are updated by User ID; missing users get a new Bank row.
    * @param {string} userId
    * @param {{ gold: number, silver: number, copper: number }} wallet
    */
   async function updateWallet(userId, wallet) {
     return _apiPost('/write', {
-      op: 'update',
+      op: 'upsert',
       sheet: 'Bank',
       keyCol: 0,
       keyVal: String(userId),
