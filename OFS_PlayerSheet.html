@@ -514,6 +514,36 @@
       color: var(--silver-dim);
     }
     .quest-history-meta .pid { font-family: 'Cinzel', serif; letter-spacing: .09em; color: var(--text-dim); }
+    .quest-history-pager {
+      display: none;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: -28px;
+      margin-bottom: 44px;
+    }
+    .quest-history-pager.open { display: flex; }
+    .quest-history-page-label {
+      font-size: .62rem;
+      color: var(--text-dim);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .quest-history-page-btn {
+      background: none;
+      border: 0;
+      padding: 0;
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      cursor: pointer;
+      opacity: .85;
+      transition: opacity .15s, color .15s;
+    }
+    .quest-history-page-btn:hover { opacity: 1; color: var(--gold-lt); }
+    .quest-history-page-btn:disabled { color: var(--text-dim); cursor: default; opacity: .35; }
 
     /* ── Led-quests section (self-view only) ─────────────── */
     .led-quests-row {
@@ -781,6 +811,7 @@
       <button class="quest-history-toggle" id="js-quest-history-toggle" type="button" onclick="toggleQuestHistory()">See all quests →</button>
     </div>
     <div class="quest-history-all" id="js-quest-history-all"></div>
+    <div class="quest-history-pager" id="js-quest-history-pager"></div>
   </section>
 
   <!-- Active Quests (as Leader) — shown only when viewing your own profile -->
@@ -994,11 +1025,60 @@ function _questHistoryItemHTML(q, label) {
     '</a>';
 }
 
+var QUEST_HISTORY_PAGE_SIZE = 10;
+var _questHistoryEntries = [];
+var _questHistoryPage = 0;
+
+function renderQuestHistoryPage() {
+  var historyEl = document.getElementById('js-quest-history-all');
+  var pagerEl = document.getElementById('js-quest-history-pager');
+  if (!historyEl) return;
+
+  var total = _questHistoryEntries.length;
+  var pages = Math.max(1, Math.ceil(total / QUEST_HISTORY_PAGE_SIZE));
+  if (_questHistoryPage < 0) _questHistoryPage = 0;
+  if (_questHistoryPage >= pages) _questHistoryPage = pages - 1;
+
+  if (!total) {
+    historyEl.innerHTML = '<div class="quest-card-none">No quest history yet.</div>';
+    if (pagerEl) { pagerEl.classList.remove('open'); pagerEl.innerHTML = ''; }
+    return;
+  }
+
+  var start = _questHistoryPage * QUEST_HISTORY_PAGE_SIZE;
+  var pageEntries = _questHistoryEntries.slice(start, start + QUEST_HISTORY_PAGE_SIZE);
+  historyEl.innerHTML = pageEntries.map(function (entry) { return _questHistoryItemHTML(entry.q, entry.label); }).join('');
+
+  if (pagerEl) {
+    if (pages > 1) {
+      pagerEl.classList.add('open');
+      pagerEl.innerHTML =
+        '<button class="quest-history-page-btn" type="button" onclick="changeQuestHistoryPage(-1)"' + (_questHistoryPage === 0 ? ' disabled' : '') + '>← Previous Page</button>' +
+        '<span class="quest-history-page-label">Page ' + (_questHistoryPage + 1) + ' of ' + pages + '</span>' +
+        '<button class="quest-history-page-btn" type="button" onclick="changeQuestHistoryPage(1)"' + (_questHistoryPage >= pages - 1 ? ' disabled' : '') + '>Next Page →</button>';
+    } else {
+      pagerEl.classList.remove('open');
+      pagerEl.innerHTML = '';
+    }
+  }
+}
+
+function changeQuestHistoryPage(delta) {
+  _questHistoryPage += delta;
+  renderQuestHistoryPage();
+}
+
 function toggleQuestHistory() {
   var historyEl = document.getElementById('js-quest-history-all');
+  var pagerEl = document.getElementById('js-quest-history-pager');
   var btn = document.getElementById('js-quest-history-toggle');
   if (!historyEl || !btn) return;
   var open = historyEl.classList.toggle('open');
+  if (pagerEl) pagerEl.classList.toggle('open', open && _questHistoryEntries.length > QUEST_HISTORY_PAGE_SIZE);
+  if (open) {
+    _questHistoryPage = 0;
+    renderQuestHistoryPage();
+  }
   btn.textContent = open ? 'Hide all quests ↑' : 'See all quests →';
 }
 
@@ -1010,6 +1090,7 @@ function renderPlayerQuests(p, section, container) {
   var aq = result.activeOne;
   var lq = result.completedOne;
   var historyEl = document.getElementById('js-quest-history-all');
+  var pagerEl = document.getElementById('js-quest-history-pager');
   var toggleBtn = document.getElementById('js-quest-history-toggle');
 
   section.style.display = '';
@@ -1050,11 +1131,12 @@ function renderPlayerQuests(p, section, container) {
   var allHistory = result.active.map(function (q) { return { q: q, label: 'Active' }; })
     .concat(result.completed.map(function (q) { return { q: q, label: 'Completed' }; }));
   if (historyEl) {
+    _questHistoryEntries = allHistory;
+    _questHistoryPage = 0;
     historyEl.classList.remove('open');
-    historyEl.innerHTML = allHistory.length
-      ? allHistory.map(function (entry) { return _questHistoryItemHTML(entry.q, entry.label); }).join('')
-      : '<div class="quest-card-none">No quest history yet.</div>';
+    renderQuestHistoryPage();
   }
+  if (pagerEl) pagerEl.classList.remove('open');
   if (toggleBtn) {
     toggleBtn.style.display = allHistory.length > 2 ? '' : 'none';
     toggleBtn.textContent = 'See all quests →';
