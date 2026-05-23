@@ -963,6 +963,7 @@
       <div class="sec-head"><h2>Quest Review</h2><div class="sec-line"></div></div>
       <div class="tav-subtabs" id="qr-subtabs">
         <button class="tav-stab active" data-qrtab="pending">Pending Review</button>
+        <button class="tav-stab"        data-qrtab="active">Active Quests</button>
         <button class="tav-stab"        data-qrtab="completed">Completed Quests</button>
       </div>
 
@@ -982,6 +983,27 @@
             <th></th>
           </tr></thead>
           <tbody id="quest-review-tbody">
+            <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Active subtab -->
+      <div id="qr-active" style="display:none">
+        <div class="controls">
+          <input class="ctrl-input" id="qr-active-search" placeholder="Filter by quest name, leader, or Patrol ID…" oninput="renderQuestActive()">
+          <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestActive()">Refresh</button>
+        </div>
+        <table class="data-table" id="qr-active-table">
+          <thead><tr>
+            <th>Quest</th>
+            <th>Leader</th>
+            <th>Participants</th>
+            <th>Type</th>
+            <th>Started</th>
+            <th></th>
+          </tr></thead>
+          <tbody id="qr-active-tbody">
             <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
           </tbody>
         </table>
@@ -1845,7 +1867,7 @@ function _qrPickLeader(patrolRows) {
 function _qrGroup(rows) {
   if (!rows || rows.length < 2) return [];
   var groups = {};
-  rows.slice(1).forEach(function (row) {
+  rows.forEach(function (row) {
     var pid = String(row[0] || '').trim();
     if (!pid || !/^P\d/.test(pid)) return;
     (groups[pid] || (groups[pid] = [])).push(row);
@@ -1867,7 +1889,10 @@ function _qrGroup(rows) {
       type:             String(lead[32] || 'Quest').trim(),
       y:                String(lead[24] || '').trim(),
       z:                String(lead[25] || '').trim(),
+      approved:         String(lead[25] || '').trim(),
       cancelled:        String(lead[29] || '').trim(),
+      completed:        String(lead[30] || '').trim(),
+      startTime:        String(lead[7]  || '').trim(),
       participantCount: participantCount
     });
   });
@@ -1876,8 +1901,14 @@ function _qrGroup(rows) {
 
 function _qrBuild(rows) {
   return _qrGroup(rows)
-    .filter(function (q) { return q.y && !q.z && !q.cancelled; })
-    .sort(function (a, b) { return new Date(b.y) - new Date(a.y); });
+    .filter(function (q) { return (q.y || q.completed) && !q.approved && !q.cancelled; })
+    .sort(function (a, b) { return new Date(b.y || b.completed || 0) - new Date(a.y || a.completed || 0); });
+}
+
+function _qrBuildActive(rows) {
+  return _qrGroup(rows)
+    .filter(function (q) { return !q.y && !q.completed && !q.approved && !q.cancelled; })
+    .sort(function (a, b) { return new Date(b.startTime || 0) - new Date(a.startTime || 0); });
 }
 
 function renderQuestReview() {
@@ -1913,8 +1944,8 @@ function renderQuestReview() {
       '<td>' + leaderCell + '</td>' +
       '<td style="color:var(--silver)">' + q.participantCount + '</td>' +
       '<td style="color:var(--silver)">' + _qrEsc(q.type) + '</td>' +
-      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.y) +
-        (q.y ? '<div style="color:var(--text-dim);font-size:.72rem">' + _qrEsc(_qrFmtSince(q.y)) + '</div>' : '') +
+      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.y || q.completed) +
+        ((q.y || q.completed) ? '<div style="color:var(--text-dim);font-size:.72rem">' + _qrEsc(_qrFmtSince(q.y || q.completed)) + '</div>' : '') +
       '</td>' +
       '<td style="text-align:right"><a class="ctrl-btn" style="text-decoration:none;display:inline-block" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">Review &rarr;</a></td>' +
       '</tr>';
@@ -1931,11 +1962,63 @@ function refreshQuestReview() {
   }
 }
 
+/* ── Active subtab: quests still in progress ───── */
+function renderQuestActive() {
+  var tbody = document.getElementById('qr-active-tbody');
+  if (!tbody) return;
+
+  var tavData = window.OFSSheets && OFSSheets.getTavernData ? OFSSheets.getTavernData() : null;
+  var rows = (tavData && tavData.quests) || [];
+  var list = _qrBuildActive(rows);
+
+  var filter = (document.getElementById('qr-active-search') || {}).value || '';
+  filter = filter.trim().toLowerCase();
+  if (filter) {
+    list = list.filter(function (q) {
+      return q.name.toLowerCase().indexOf(filter)       !== -1 ||
+             q.leaderName.toLowerCase().indexOf(filter) !== -1 ||
+             q.id.toLowerCase().indexOf(filter)         !== -1;
+    });
+  }
+
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">No active quests.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = list.map(function (q) {
+    var leaderCell = q.leaderId
+      ? '<a href="OFS_PlayerSheet.html?player=' + encodeURIComponent(q.leaderId) + '" style="color:var(--gold);text-decoration:none">' + _qrEsc(q.leaderName) + '</a>'
+      : _qrEsc(q.leaderName || '—');
+    return '<tr>' +
+      '<td><div style="font-family:Cinzel,serif;color:var(--gold-lt);font-size:.9rem">' + _qrEsc(q.name || '(Untitled Quest)') + '</div>' +
+        '<div style="font-size:.68rem;color:var(--text-dim);letter-spacing:.1em;font-family:Cinzel,serif">' + _qrEsc(q.id) + '</div></td>' +
+      '<td>' + leaderCell + '</td>' +
+      '<td style="color:var(--silver)">' + q.participantCount + '</td>' +
+      '<td style="color:var(--silver)">' + _qrEsc(q.type) + '</td>' +
+      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.startTime) +
+        (q.startTime ? '<div style="color:var(--text-dim);font-size:.72rem">' + _qrEsc(_qrFmtSince(q.startTime)) + '</div>' : '') +
+      '</td>' +
+      '<td style="text-align:right"><a class="ctrl-btn" style="text-decoration:none;display:inline-block" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">Open &rarr;</a></td>' +
+      '</tr>';
+  }).join('');
+}
+
+function refreshQuestActive() {
+  var tbody = document.getElementById('qr-active-tbody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Refreshing…</td></tr>';
+  if (window.OFSSheets && OFSSheets.load) {
+    OFSSheets.load().then(renderQuestActive).catch(renderQuestActive);
+  } else {
+    renderQuestActive();
+  }
+}
+
 /* ── Completed subtab: approved quests admin can revisit ───── */
 function _qrBuildCompleted(rows) {
   return _qrGroup(rows)
-    .filter(function (q) { return q.z && !q.cancelled; })
-    .sort(function (a, b) { return new Date(b.y || 0) - new Date(a.y || 0); });
+    .filter(function (q) { return q.approved && !q.cancelled; })
+    .sort(function (a, b) { return new Date(b.completed || b.y || 0) - new Date(a.completed || a.y || 0); });
 }
 
 function renderQuestCompleted() {
@@ -1971,8 +2054,8 @@ function renderQuestCompleted() {
       '<td>' + leaderCell + '</td>' +
       '<td style="color:var(--silver)">' + q.participantCount + '</td>' +
       '<td style="color:var(--silver)">' + _qrEsc(q.type) + '</td>' +
-      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.y) +
-        (q.y ? '<div style="color:var(--text-dim);font-size:.72rem">' + _qrEsc(_qrFmtSince(q.y)) + '</div>' : '') +
+      '<td style="color:var(--silver);font-size:.8rem">' + _qrEsc(q.approved) +
+        (q.completed ? '<div style="color:var(--text-dim);font-size:.72rem">Completed ' + _qrEsc(_qrFmtSince(q.completed)) + '</div>' : '') +
       '</td>' +
       '<td style="text-align:right"><a class="ctrl-btn" style="text-decoration:none;display:inline-block" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">Edit &rarr;</a></td>' +
       '</tr>';
@@ -2004,8 +2087,10 @@ document.addEventListener('click', function (e) {
   document.querySelectorAll('#qr-subtabs .tav-stab').forEach(function (b) { b.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('qr-pending').style.display   = (key === 'pending')   ? '' : 'none';
+  document.getElementById('qr-active').style.display    = (key === 'active')    ? '' : 'none';
   document.getElementById('qr-completed').style.display = (key === 'completed') ? '' : 'none';
   if (key === 'pending')   renderQuestReview();
+  if (key === 'active')    renderQuestActive();
   if (key === 'completed') renderQuestCompleted();
 });
 
@@ -2021,7 +2106,9 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     if(t.dataset.tab==='quests'){
       var activeQr = document.querySelector('#qr-subtabs .tav-stab.active');
       var k = activeQr ? activeQr.getAttribute('data-qrtab') : 'pending';
-      if (k === 'completed') renderQuestCompleted(); else renderQuestReview();
+      if (k === 'completed') renderQuestCompleted();
+      else if (k === 'active') renderQuestActive();
+      else renderQuestReview();
     }
     if(t.dataset.tab==='banners'){
       renderBannerPop();
