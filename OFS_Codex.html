@@ -1165,10 +1165,47 @@ content.addEventListener('scroll', () => {
   var STORAGE_CODEX = 'ofs_codex_data';
   var WORKER_URL    = 'https://ofs-api.orderofthefallenstar.workers.dev';
 
+  function esc(s){
+    var el = document.createElement('div');
+    el.textContent = s == null ? '' : String(s);
+    return el.innerHTML;
+  }
+
   function paragraphize(text){
     return String(text || '').split(/\n\n+/)
       .filter(function(p){ return p.trim(); })
-      .map(function(p){ return '<p>' + p.trim() + '</p>'; }).join('');
+      .map(function(p){ return '<p>' + esc(p.trim()) + '</p>'; }).join('');
+  }
+
+  var RANK_DETAIL_IDS = ['r8','r7','r6','r5','r4t','r4p','r3','r2','r1'];
+
+  function rankDetailHTML(text){
+    return String(text || '').split(/\n\n+/)
+      .filter(function(p){ return p.trim(); })
+      .map(function(p){
+        var t = p.trim();
+        var m = t.match(/^([^:]{2,32}):\s*(.*)$/s);
+        if(m) return '<p><strong>' + esc(m[1].trim()) + ':</strong> ' + esc(m[2].trim()) + '</p>';
+        return '<p>' + esc(t) + '</p>';
+      }).join('');
+  }
+
+  function rankTableRowsHTML(text){
+    var rows = String(text || '').split(/\r?\n/)
+      .map(function(line){ return line.trim(); })
+      .filter(Boolean)
+      .map(function(line){
+        var parts = line.split(/\s+[—-]\s+/);
+        return {
+          rank:  parts[0] || '',
+          title: parts[1] || '',
+          auth:  parts.slice(2).join(' — ') || ''
+        };
+      })
+      .filter(function(r){ return r.rank || r.title || r.auth; });
+    return rows.map(function(r){
+      return '<tr><td class="rank-num">' + esc(r.rank) + '</td><td class="rank-name">' + esc(r.title) + '</td><td>' + esc(r.auth) + '</td></tr>';
+    }).join('');
   }
 
   function updateNavLinkText(sectionId, newTitle){
@@ -1200,6 +1237,18 @@ content.addEventListener('scroll', () => {
 
       var eyebrowEl = section.querySelector('.article-eyebrow');
       if(eyebrowEl && entry.type) eyebrowEl.textContent = entry.type;
+
+      if(entry.id === 'ranks'){
+        var tbody = section.querySelector('.rank-table tbody');
+        if(tbody && entry.content) tbody.innerHTML = rankTableRowsHTML(entry.content);
+        return;
+      }
+
+      if(RANK_DETAIL_IDS.indexOf(entry.id) !== -1){
+        var rankBody = section.querySelector('.rank-detail-body');
+        if(rankBody && entry.content) rankBody.innerHTML = rankDetailHTML(entry.content);
+        return;
+      }
 
       var bodyEl = section.querySelector('.article-body')
                 || section.querySelector('.rank-detail-body')

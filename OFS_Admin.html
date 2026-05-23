@@ -3400,11 +3400,72 @@ function renderCodexList(){
   });
 }
 
+const CODEX_RANK_DETAIL_IDS = ['r8','r7','r6','r5','r4t','r4p','r3','r2','r1'];
+const CODEX_STRUCTURED_IDS = CODEX_RANK_DETAIL_IDS.concat(['ranks']);
+
+function isStructuredCodexEntry(entry){
+  return entry && CODEX_STRUCTURED_IDS.includes(entry.id);
+}
+
+function splitRankDetailContent(content){
+  const fields = [];
+  String(content || '').split(/\n\n+/).forEach(function(part){
+    const text = part.trim();
+    if(!text) return;
+    const m = text.match(/^([^:]{2,32}):\s*(.*)$/s);
+    if(m) fields.push({ label:m[1].trim(), body:m[2].trim() });
+    else fields.push({ label:'Overview', body:text });
+  });
+  if(!fields.length) fields.push({ label:'Overview', body:'' });
+  return fields;
+}
+
+function renderRankDetailFields(entry){
+  return splitRankDetailContent(entry.content).map(function(f, i){
+    return `<div class="field-row codex-structured-field" data-field-index="${i}">
+      <label>${i === 0 && f.label === 'Overview' ? 'Overview' : 'Label + Text'}</label>
+      <input class="ce-rank-label" value="${escHtml(f.label)}" placeholder="Overview, Eligibility, Selection, Requirements…">
+      <textarea class="editor-textarea ce-rank-body" rows="4" placeholder="Field text…">${escHtml(f.body)}</textarea>
+    </div>`;
+  }).join('');
+}
+
+function collectRankDetailContent(){
+  return Array.from(document.querySelectorAll('.codex-structured-field')).map(function(row, i){
+    const label = (row.querySelector('.ce-rank-label') || {}).value || '';
+    const body  = (row.querySelector('.ce-rank-body')  || {}).value || '';
+    const cleanLabel = label.trim();
+    const cleanBody  = body.trim();
+    if(!cleanBody) return '';
+    if(i === 0 && (!cleanLabel || cleanLabel === 'Overview')) return cleanBody;
+    return (cleanLabel || 'Note') + ': ' + cleanBody;
+  }).filter(Boolean).join('\n\n');
+}
+
+function renderRanksOverviewEditor(entry){
+  return `<div class="field-row">
+    <label>Rank Table Rows</label>
+    <div class="editor-meta-label" style="margin-bottom:6px;letter-spacing:.08em;text-transform:none;color:var(--text-dim)">One row per line: Rank — Title — Command Authority. The public Codex will keep the styled table.</div>
+    <textarea class="editor-textarea" id="ce-content" rows="12" oninput="updateCharCount('ce-count','ce-content')">${escHtml(entry.content)}</textarea>
+  </div>`;
+}
+
+function renderStandardCodexBody(entry){
+  return `<div class="field-row">
+    <label>Content</label>
+    <textarea class="editor-textarea" id="ce-content" oninput="updateCharCount('ce-count','ce-content')">${escHtml(entry.content)}</textarea>
+  </div>`;
+}
+
 function openCodexEditor(id){
   activeCodexId = id;
   renderCodexList();
   const entry = CODEX_DATA.find(e=>e.id===id);
   const ed = document.getElementById('codex-editor');
+  const structured = isStructuredCodexEntry(entry);
+  const bodyFields = entry.id === 'ranks'
+    ? renderRanksOverviewEditor(entry)
+    : (CODEX_RANK_DETAIL_IDS.includes(entry.id) ? renderRankDetailFields(entry) : renderStandardCodexBody(entry));
   ed.innerHTML = `
     <div class="editor-topbar">
       <div>
@@ -3416,6 +3477,7 @@ function openCodexEditor(id){
         <button class="save-btn" onclick="saveCodexEntry('${id}')">Save</button>
       </div>
     </div>
+    ${structured ? '<div class="editor-empty" style="height:auto;align-items:flex-start;text-align:left;padding:12px;border-color:var(--b-gold);color:var(--silver)"><span>🛡</span><div><strong>Structured layout protected.</strong><br>Admins may edit these fields, but the Codex table/card styling remains controlled by the page template.</div></div>' : ''}
     <div class="editor-fields">
       <div class="field-row"><label>Title</label><input id="ce-title" value="${escHtml(entry.title)}" oninput="document.getElementById('ce-live-title').textContent=this.value"></div>
       <div class="field-row"><label>Subtitle / Tagline</label><input id="ce-subtitle" value="${escHtml(entry.subtitle||'')}"></div>
@@ -3424,10 +3486,7 @@ function openCodexEditor(id){
           ${['Article','Appendix','Oath','Rank','Preamble','Section'].map(t=>`<option ${entry.type===t?'selected':''}>${t}</option>`).join('')}
         </select>
       </div>
-      <div class="field-row">
-        <label>Content</label>
-        <textarea class="editor-textarea" id="ce-content" oninput="updateCharCount('ce-count','ce-content')">${escHtml(entry.content)}</textarea>
-      </div>
+      ${bodyFields}
     </div>
     <div class="editor-footer">
       <span class="char-count" id="ce-count">${entry.content.length} characters</span>
@@ -3454,7 +3513,9 @@ async function saveCodexEntry(id){
   entry.title    = document.getElementById('ce-title').value.trim();
   entry.subtitle = document.getElementById('ce-subtitle').value.trim();
   entry.type     = document.getElementById('ce-type').value;
-  entry.content  = document.getElementById('ce-content').value;
+  entry.content  = CODEX_RANK_DETAIL_IDS.includes(entry.id)
+    ? collectRankDetailContent()
+    : document.getElementById('ce-content').value;
   savePageData();
   logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
   renderCodexList();
