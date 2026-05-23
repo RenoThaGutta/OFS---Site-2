@@ -3401,7 +3401,39 @@ function renderCodexList(){
 }
 
 const CODEX_RANK_DETAIL_IDS = ['r8','r7','r6','r5','r4t','r4p','r3','r2','r1'];
-const CODEX_STRUCTURED_IDS = CODEX_RANK_DETAIL_IDS.concat(['ranks','art7']);
+const CODEX_OATH_IDS = ['oath1','oath2'];
+const CODEX_STRUCTURED_IDS = CODEX_RANK_DETAIL_IDS.concat(['banners','ranks','art7','appendix1']).concat(CODEX_OATH_IDS);
+
+const CODEX_BANNER_NAMES = [
+  'The Artificer','The Astraeus','The Engineer','The Explorer','The Fang',
+  'The Forager','The Guardian','The Healer','The Merchant','The Privateer','The Talon'
+];
+const CODEX_ARTICLE_SEVEN_TIERS = ['Minor violations','Intermediate breaches','High crimes (treason, falsification of records, relic theft)'];
+const CODEX_OATH_SPEAKERS = { oath1:'Commander', oath2:'Lord / Lord Commander' };
+const CODEX_OATH_DEFAULT_LINES = {
+  oath1:[
+    ['Oathswearer','\"Kneel, Commander of the Order. You stand at the threshold of stewardship and rule.\"'],
+    ['Commander','\"I kneel before the Oathswearer, the Council, and the Order I serve.\"'],
+    ['Oathswearer','\"Do you swear to place the Order above ambition, to govern with restraint, and to wield authority as a trust, not a privilege?\"'],
+    ['Commander','\"I swear.\"'],
+    ['Oathswearer','\"Do you swear to safeguard the Codex, protect the relics and people of the Order, and render judgment without cruelty or favor?\"'],
+    ['Commander','\"I swear.\"'],
+    ['Oathswearer','\"Do you swear to stand accountable for those beneath your banner, to lead in unity, and to bear the weight of consequence in all you decree?\"'],
+    ['Commander','\"I swear.\"'],
+    ['Oathswearer','\"Then rise as a Lord of the Order. You are no longer only a blade, but a steward of law and legacy. Rule with wisdom, stand with resolve, and let your authority serve the Fallen Star.\"']
+  ],
+  oath2:[
+    ['Oathswearer','\"Kneel, Lord of the Order. You stand before elevation to Chapter Master.\"'],
+    ['Lord / Lord Commander','\"I kneel, bearing the weight of those I have led and the trust placed in me by the Order.\"'],
+    ['Oathswearer','\"Do you swear to place the Order and your Chapter above self, to guard their future, and to serve the will entrusted to you by the community?\"'],
+    ['Lord / Lord Commander','\"I swear.\"'],
+    ['Oathswearer','\"Do you swear to uphold the Codex as law within your Chapter, to govern with wisdom and restraint, and to preserve unity in times of trial?\"'],
+    ['Lord / Lord Commander','\"I swear.\"'],
+    ['Oathswearer','\"Do you swear to bear responsibility for those beneath your Chapter, to stand answerable to the Council and to history, and to lead even when no clear path is given?\"'],
+    ['Lord / Lord Commander','\"I swear.\"'],
+    ['Oathswearer','\"Then rise as a Chapter Master. You are entrusted with the stewardship of your Chapter and the legacy of the Fallen Star. Lead with judgment, guard with resolve, and govern in service to the Order. The Order endures, and through you, your Chapter is guided.\"']
+  ]
+};
 
 function isStructuredCodexEntry(entry){
   return entry && CODEX_STRUCTURED_IDS.includes(entry.id);
@@ -3442,6 +3474,73 @@ function collectRankDetailContent(){
   }).filter(Boolean).join('\n\n');
 }
 
+function splitTitleBodyLines(content, expectedTitles){
+  const known = (expectedTitles || []).map(function(t){ return t.toLowerCase(); });
+  const intro = [];
+  const rows = [];
+  String(content || '').split(/\n\n+/).forEach(function(block){
+    const text = block.trim();
+    if(!text) return;
+    const lines = text.split(/\r?\n/).map(function(line){ return line.trim(); }).filter(Boolean);
+    lines.forEach(function(line){
+      const m = line.match(/^(.+?)\s+[—-]\s+(.+)$/s);
+      if(m && (!known.length || known.includes(m[1].trim().toLowerCase()) || rows.length)){
+        rows.push({ title:m[1].trim(), body:m[2].trim() });
+      } else if(rows.length && line){
+        rows[rows.length - 1].body += '\n' + line;
+      } else {
+        intro.push(line);
+      }
+    });
+  });
+  return { intro:intro.join('\n\n'), rows:rows };
+}
+
+function splitBannerContent(content){
+  const parsed = splitTitleBodyLines(content, CODEX_BANNER_NAMES);
+  const byName = {};
+  parsed.rows.forEach(function(row){ byName[row.title.toLowerCase()] = row; });
+  const defaults = {};
+  CODEX_BANNER_NAMES.forEach(function(name){ defaults[name.toLowerCase()] = ''; });
+  String(_CODEX_DEFAULTS.find(function(e){ return e.id === 'banners'; }).content || '').split(/\r?\n/).forEach(function(line){
+    const m = line.match(/^(.+?)\s+[—-]\s+(.+)$/s);
+    if(m) defaults[m[1].trim().toLowerCase()] = m[2].trim();
+  });
+  return {
+    intro: parsed.intro,
+    banners: CODEX_BANNER_NAMES.map(function(name){
+      const found = byName[name.toLowerCase()];
+      return { title: found ? found.title : name, role: found ? found.body : (defaults[name.toLowerCase()] || '') };
+    })
+  };
+}
+
+function renderBannersEditor(entry){
+  const data = splitBannerContent(entry.content);
+  const fields = data.banners.map(function(b, i){
+    return `<div class="field-row codex-banner-field" data-banner-index="${i}">
+      <label>Banner Card ${i + 1}</label>
+      <input class="ce-banner-title" value="${escHtml(b.title)}" placeholder="The Artificer">
+      <textarea class="editor-textarea ce-banner-role" rows="2" placeholder="Banner role text…">${escHtml(b.role)}</textarea>
+    </div>`;
+  }).join('');
+  return `<div class="field-row">
+    <label>Intro Paragraph</label>
+    <textarea class="editor-textarea" id="ce-banners-intro" rows="5" placeholder="Banners intro…">${escHtml(data.intro)}</textarea>
+  </div>${fields}`;
+}
+
+function collectBannersContent(){
+  const intro = (document.getElementById('ce-banners-intro') || {}).value || '';
+  const cards = Array.from(document.querySelectorAll('.codex-banner-field')).map(function(row){
+    const title = ((row.querySelector('.ce-banner-title') || {}).value || '').trim();
+    const role  = ((row.querySelector('.ce-banner-role')  || {}).value || '').trim();
+    if(!title && !role) return '';
+    return (title || 'Banner') + ' — ' + role;
+  }).filter(Boolean);
+  return [intro.trim()].concat(cards).filter(Boolean).join('\n\n');
+}
+
 function renderRanksOverviewEditor(entry){
   return `<div class="field-row">
     <label>Rank Table Rows</label>
@@ -3451,21 +3550,15 @@ function renderRanksOverviewEditor(entry){
 }
 
 function splitArticleSevenContent(content){
-  const parts = String(content || '').split(/\n\n+/).map(function(p){ return p.trim(); }).filter(Boolean);
-  const tiers = [];
-  const introParts = [];
-  parts.forEach(function(part){
-    const m = part.match(/^(.+?)\s+[—-]\s+(.+)$/s);
-    if(m) tiers.push({ title:m[1].trim(), body:m[2].trim() });
-    else introParts.push(part);
-  });
+  const parsed = splitTitleBodyLines(content, CODEX_ARTICLE_SEVEN_TIERS);
+  const byTitle = {};
+  parsed.rows.forEach(function(row){ byTitle[row.title.toLowerCase()] = row; });
   return {
-    intro: introParts.join('\n\n'),
-    tiers: tiers.length ? tiers : [
-      { title:'Minor Violations', body:'' },
-      { title:'Intermediate Breaches', body:'' },
-      { title:'High Crimes', body:'' }
-    ]
+    intro: parsed.intro,
+    tiers: CODEX_ARTICLE_SEVEN_TIERS.map(function(title){
+      const found = byTitle[title.toLowerCase()];
+      return { title: found ? found.title : title, body: found ? found.body : '' };
+    })
   };
 }
 
@@ -3474,7 +3567,7 @@ function renderArticleSevenEditor(entry){
   const tierFields = data.tiers.map(function(t, i){
     return `<div class="field-row codex-tier-field" data-tier-index="${i}">
       <label>Violation Tier ${i + 1}</label>
-      <input class="ce-tier-title" value="${escHtml(t.title)}" placeholder="Minor Violations">
+      <input class="ce-tier-title" value="${escHtml(t.title)}" placeholder="${escHtml(CODEX_ARTICLE_SEVEN_TIERS[i] || 'Violation Tier')}">
       <textarea class="editor-textarea ce-tier-body" rows="3" placeholder="Tier description…">${escHtml(t.body)}</textarea>
     </div>`;
   }).join('');
@@ -3486,13 +3579,100 @@ function renderArticleSevenEditor(entry){
 
 function collectArticleSevenContent(){
   const intro = (document.getElementById('ce-art7-intro') || {}).value || '';
-  const tiers = Array.from(document.querySelectorAll('.codex-tier-field')).map(function(row){
+  const tiers = Array.from(document.querySelectorAll('.codex-tier-field')).map(function(row, i){
     const title = ((row.querySelector('.ce-tier-title') || {}).value || '').trim();
     const body  = ((row.querySelector('.ce-tier-body')  || {}).value || '').trim();
+    const fallbackTitle = CODEX_ARTICLE_SEVEN_TIERS[i] || 'Violation Tier';
     if(!title && !body) return '';
-    return (title || 'Violation Tier') + ' — ' + body;
+    return (title || fallbackTitle) + ' — ' + body;
   }).filter(Boolean);
   return [intro.trim()].concat(tiers).filter(Boolean).join('\n\n');
+}
+
+function splitAppendixOneContent(content){
+  const parts = String(content || '').split(/\n\n+/).map(function(p){ return p.trim(); }).filter(Boolean);
+  const data = { intro:[], questItems:[], crusadeItems:[] };
+  let mode = 'intro';
+  parts.forEach(function(part){
+    const heading = part.match(/^(Quests|Crusades):?\s*$/i);
+    if(heading){ mode = heading[1].toLowerCase() === 'quests' ? 'questItems' : 'crusadeItems'; return; }
+    const labeled = part.match(/^(Quests|Crusades):\s*([\s\S]*)$/i);
+    if(labeled){
+      mode = labeled[1].toLowerCase() === 'quests' ? 'questItems' : 'crusadeItems';
+      part = labeled[2].trim();
+    }
+    if(mode === 'intro') data.intro.push(part);
+    else {
+      part.split(/\r?\n/).map(function(line){ return line.replace(/^[-*•✦]\s*/, '').trim(); }).filter(Boolean).forEach(function(line){ data[mode].push(line); });
+    }
+  });
+  if(!data.questItems.length || !data.crusadeItems.length){
+    data.questItems = data.questItems.length ? data.questItems : [
+      'Impromptu or lightly planned operations','Small to moderate number of members','Practical, short-term, or exploratory objectives','Initiated by Knights or higher authority','Squires may act under direct Knight supervision','Outcomes and spoils must be recorded','Foundation of day-to-day service'
+    ];
+    data.crusadeItems = data.crusadeItems.length ? data.crusadeItems : [
+      'Planned in advance and formally sanctioned','Broad assembly across ranks, Paths, or Chapters','Strategic, ceremonial, or territorial objectives','Initiated or approved by senior leadership','Participation and outcomes formally reviewed','Represent collective effort and unified purpose','Advance long-term vision of the Order'
+    ];
+  }
+  return { intro:data.intro.join('\n\n'), questItems:data.questItems, crusadeItems:data.crusadeItems };
+}
+
+function renderLineListEditor(label, cls, items){
+  return `<div class="field-row">
+    <label>${label}</label>
+    <div class="editor-meta-label" style="margin-bottom:6px;letter-spacing:.08em;text-transform:none;color:var(--text-dim)">One bullet per line. The public Codex will keep the styled card list.</div>
+    <textarea class="editor-textarea ${cls}" rows="8">${escHtml((items || []).join('\n'))}</textarea>
+  </div>`;
+}
+
+function renderAppendixOneEditor(entry){
+  const data = splitAppendixOneContent(entry.content);
+  return `<div class="field-row">
+    <label>Intro Paragraphs</label>
+    <textarea class="editor-textarea" id="ce-app1-intro" rows="7" placeholder="Appendix intro…">${escHtml(data.intro)}</textarea>
+  </div>` + renderLineListEditor('Quest Card Bullets', 'ce-app1-quests', data.questItems)
+       + renderLineListEditor('Crusade Card Bullets', 'ce-app1-crusades', data.crusadeItems);
+}
+
+function collectAppendixOneContent(){
+  const intro = (document.getElementById('ce-app1-intro') || {}).value || '';
+  const quests = ((document.querySelector('.ce-app1-quests') || {}).value || '').split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
+  const crusades = ((document.querySelector('.ce-app1-crusades') || {}).value || '').split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
+  return [intro.trim(), 'Quests:\n' + quests.map(function(x){ return '- ' + x; }).join('\n'), 'Crusades:\n' + crusades.map(function(x){ return '- ' + x; }).join('\n')].filter(Boolean).join('\n\n');
+}
+
+function splitOathContent(entry){
+  const id = entry.id;
+  const responder = CODEX_OATH_SPEAKERS[id] || 'Response';
+  const lines = [];
+  String(entry.content || '').split(/\n\n+/).map(function(p){ return p.trim(); }).filter(Boolean).forEach(function(part, i){
+    const m = part.match(/^(.+?)\s+[—-]\s+([\s\S]+)$/);
+    if(m) lines.push({ speaker:m[1].trim(), text:m[2].trim() });
+    else lines.push({ speaker: i % 2 ? responder : 'Oathswearer', text:part });
+  });
+  const defaults = (CODEX_OATH_DEFAULT_LINES[id] || []).map(function(x){ return { speaker:x[0], text:x[1] }; });
+  if(lines.length < defaults.length) return defaults;
+  return lines.length ? lines : defaults;
+}
+
+function renderOathEditor(entry){
+  const lines = splitOathContent(entry);
+  return lines.map(function(line, i){
+    return `<div class="field-row codex-oath-line" data-oath-index="${i}">
+      <label>Oath Line ${i + 1}</label>
+      <input class="ce-oath-speaker" value="${escHtml(line.speaker)}" placeholder="Oathswearer / Commander">
+      <textarea class="editor-textarea ce-oath-text" rows="3" placeholder="Spoken oath text…">${escHtml(line.text)}</textarea>
+    </div>`;
+  }).join('');
+}
+
+function collectOathContent(){
+  return Array.from(document.querySelectorAll('.codex-oath-line')).map(function(row){
+    const speaker = ((row.querySelector('.ce-oath-speaker') || {}).value || '').trim();
+    const text = ((row.querySelector('.ce-oath-text') || {}).value || '').trim();
+    if(!speaker && !text) return '';
+    return (speaker || 'Speaker') + ' — ' + text;
+  }).filter(Boolean).join('\n\n');
 }
 
 function renderStandardCodexBody(entry){
@@ -3508,11 +3688,14 @@ function openCodexEditor(id){
   const entry = CODEX_DATA.find(e=>e.id===id);
   const ed = document.getElementById('codex-editor');
   const structured = isStructuredCodexEntry(entry);
-  const bodyFields = entry.id === 'ranks'
-    ? renderRanksOverviewEditor(entry)
-    : (entry.id === 'art7'
-      ? renderArticleSevenEditor(entry)
-      : (CODEX_RANK_DETAIL_IDS.includes(entry.id) ? renderRankDetailFields(entry) : renderStandardCodexBody(entry)));
+  let bodyFields;
+  if(entry.id === 'banners') bodyFields = renderBannersEditor(entry);
+  else if(entry.id === 'ranks') bodyFields = renderRanksOverviewEditor(entry);
+  else if(entry.id === 'art7') bodyFields = renderArticleSevenEditor(entry);
+  else if(entry.id === 'appendix1') bodyFields = renderAppendixOneEditor(entry);
+  else if(CODEX_OATH_IDS.includes(entry.id)) bodyFields = renderOathEditor(entry);
+  else if(CODEX_RANK_DETAIL_IDS.includes(entry.id)) bodyFields = renderRankDetailFields(entry);
+  else bodyFields = renderStandardCodexBody(entry);
   ed.innerHTML = `
     <div class="editor-topbar">
       <div>
@@ -3560,11 +3743,17 @@ async function saveCodexEntry(id){
   entry.title    = document.getElementById('ce-title').value.trim();
   entry.subtitle = document.getElementById('ce-subtitle').value.trim();
   entry.type     = document.getElementById('ce-type').value;
-  entry.content  = entry.id === 'art7'
-    ? collectArticleSevenContent()
-    : (CODEX_RANK_DETAIL_IDS.includes(entry.id)
-      ? collectRankDetailContent()
-      : document.getElementById('ce-content').value);
+  entry.content  = entry.id === 'banners'
+    ? collectBannersContent()
+    : (entry.id === 'art7'
+      ? collectArticleSevenContent()
+      : (entry.id === 'appendix1'
+        ? collectAppendixOneContent()
+        : (CODEX_OATH_IDS.includes(entry.id)
+          ? collectOathContent()
+          : (CODEX_RANK_DETAIL_IDS.includes(entry.id)
+            ? collectRankDetailContent()
+            : document.getElementById('ce-content').value))));
   savePageData();
   logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
   renderCodexList();

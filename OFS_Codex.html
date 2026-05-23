@@ -1178,6 +1178,32 @@ content.addEventListener('scroll', () => {
   }
 
   var RANK_DETAIL_IDS = ['r8','r7','r6','r5','r4t','r4p','r3','r2','r1'];
+  var ARTICLE_SEVEN_TIERS = ['Minor violations','Intermediate breaches','High crimes (treason, falsification of records, relic theft)'];
+  var BANNER_NAMES = ['The Artificer','The Astraeus','The Engineer','The Explorer','The Fang','The Forager','The Guardian','The Healer','The Merchant','The Privateer','The Talon'];
+  var OATH_DEFAULT_LINES = {
+    oath1:[
+      ['Oathswearer','"Kneel, Commander of the Order. You stand at the threshold of stewardship and rule."'],
+      ['Commander','"I kneel before the Oathswearer, the Council, and the Order I serve."'],
+      ['Oathswearer','"Do you swear to place the Order above ambition, to govern with restraint, and to wield authority as a trust, not a privilege?"'],
+      ['Commander','"I swear."'],
+      ['Oathswearer','"Do you swear to safeguard the Codex, protect the relics and people of the Order, and render judgment without cruelty or favor?"'],
+      ['Commander','"I swear."'],
+      ['Oathswearer','"Do you swear to stand accountable for those beneath your banner, to lead in unity, and to bear the weight of consequence in all you decree?"'],
+      ['Commander','"I swear."'],
+      ['Oathswearer','"Then rise as a Lord of the Order. You are no longer only a blade, but a steward of law and legacy. Rule with wisdom, stand with resolve, and let your authority serve the Fallen Star."']
+    ],
+    oath2:[
+      ['Oathswearer','"Kneel, Lord of the Order. You stand before elevation to Chapter Master."'],
+      ['Lord / Lord Commander','"I kneel, bearing the weight of those I have led and the trust placed in me by the Order."'],
+      ['Oathswearer','"Do you swear to place the Order and your Chapter above self, to guard their future, and to serve the will entrusted to you by the community?"'],
+      ['Lord / Lord Commander','"I swear."'],
+      ['Oathswearer','"Do you swear to uphold the Codex as law within your Chapter, to govern with wisdom and restraint, and to preserve unity in times of trial?"'],
+      ['Lord / Lord Commander','"I swear."'],
+      ['Oathswearer','"Do you swear to bear responsibility for those beneath your Chapter, to stand answerable to the Council and to history, and to lead even when no clear path is given?"'],
+      ['Lord / Lord Commander','"I swear."'],
+      ['Oathswearer','"Then rise as a Chapter Master. You are entrusted with the stewardship of your Chapter and the legacy of the Fallen Star. Lead with judgment, guard with resolve, and govern in service to the Order. The Order endures, and through you, your Chapter is guided."']
+    ]
+  };
 
   function rankDetailHTML(text){
     return String(text || '').split(/\n\n+/)
@@ -1208,23 +1234,83 @@ content.addEventListener('scroll', () => {
     }).join('');
   }
 
-  function splitArticleSevenContent(text){
-    var parts = String(text || '').split(/\n\n+/)
-      .map(function(p){ return p.trim(); })
-      .filter(Boolean);
+  function splitTitleBodyLines(text, expectedTitles){
+    var known = (expectedTitles || []).map(function(t){ return t.toLowerCase(); });
     var intro = [];
-    var tiers = [];
-    parts.forEach(function(part){
-      var m = part.match(/^(.+?)\s+[—-]\s+(.+)$/s);
-      if(m) tiers.push({ title:m[1].trim(), body:m[2].trim() });
-      else intro.push(part);
+    var rows = [];
+    String(text || '').split(/\n\n+/).forEach(function(block){
+      var lines = block.trim().split(/\r?\n/).map(function(line){ return line.trim(); }).filter(Boolean);
+      lines.forEach(function(line){
+        var m = line.match(/^(.+?)\s+[—-]\s+(.+)$/s);
+        if(m && (!known.length || known.indexOf(m[1].trim().toLowerCase()) !== -1 || rows.length)){
+          rows.push({ title:m[1].trim(), body:m[2].trim() });
+        } else if(rows.length && line){
+          rows[rows.length - 1].body += '\n' + line;
+        } else {
+          intro.push(line);
+        }
+      });
     });
-    return { intro:intro.join('\n\n'), tiers:tiers };
+    return { intro:intro.join('\n\n'), rows:rows };
+  }
+
+  function splitArticleSevenContent(text){
+    var parsed = splitTitleBodyLines(text, ARTICLE_SEVEN_TIERS);
+    var byTitle = {};
+    parsed.rows.forEach(function(row){ byTitle[row.title.toLowerCase()] = row; });
+    return { intro:parsed.intro, tiers:ARTICLE_SEVEN_TIERS.map(function(title){
+      var found = byTitle[title.toLowerCase()];
+      return { title: found ? found.title : title, body: found ? found.body : '' };
+    }) };
   }
 
   function tierListHTML(tiers){
     return tiers.map(function(t){
       return '<li><strong>' + esc(t.title) + '</strong> — ' + esc(t.body) + '</li>';
+    }).join('');
+  }
+
+  function splitBannerContent(text){
+    var parsed = splitTitleBodyLines(text, BANNER_NAMES);
+    return parsed;
+  }
+
+  function bannerCardsHTML(rows){
+    return rows.map(function(b){
+      var name = b.title || 'Banner';
+      return '<div class="banner-card" onclick="window.location.href=\'OFS_Banner.html?banner=' + esc(name).replace(/'/g, '&#39;') + '\'"><div class="banner-name">' + esc(name) + '</div><div class="banner-role">' + esc(b.body || '') + '</div></div>';
+    }).join('');
+  }
+
+  function splitAppendixOneContent(text){
+    var parts = String(text || '').split(/\n\n+/).map(function(p){ return p.trim(); }).filter(Boolean);
+    var data = { intro:[], questItems:[], crusadeItems:[] };
+    var mode = 'intro';
+    parts.forEach(function(part){
+      var heading = part.match(/^(Quests|Crusades):?\s*$/i);
+      if(heading){ mode = heading[1].toLowerCase() === 'quests' ? 'questItems' : 'crusadeItems'; return; }
+      var labeled = part.match(/^(Quests|Crusades):\s*([\s\S]*)$/i);
+      if(labeled){ mode = labeled[1].toLowerCase() === 'quests' ? 'questItems' : 'crusadeItems'; part = labeled[2].trim(); }
+      if(mode === 'intro') data.intro.push(part);
+      else part.split(/\r?\n/).map(function(line){ return line.replace(/^[-*•✦]\s*/, '').trim(); }).filter(Boolean).forEach(function(line){ data[mode].push(line); });
+    });
+    return { intro:data.intro.join('\n\n'), questItems:data.questItems, crusadeItems:data.crusadeItems };
+  }
+
+  function doctrineListHTML(items){
+    return (items || []).map(function(item){ return '<li>' + esc(item) + '</li>'; }).join('');
+  }
+
+  function oathLinesHTML(id, text){
+    var lines = String(text || '').split(/\n\n+/).map(function(p){ return p.trim(); }).filter(Boolean).map(function(part, i){
+      var m = part.match(/^(.+?)\s+[—-]\s+([\s\S]+)$/);
+      return m ? { speaker:m[1].trim(), text:m[2].trim() } : { speaker: i % 2 ? 'Response' : 'Oathswearer', text:part };
+    });
+    var defaults = (OATH_DEFAULT_LINES[id] || []).map(function(x){ return { speaker:x[0], text:x[1] }; });
+    if(lines.length < defaults.length) lines = defaults;
+    return lines.map(function(line){
+      var isResponse = line.speaker.toLowerCase() !== 'oathswearer';
+      return '<div class="oath-line' + (isResponse ? ' oath-response' : '') + '"><div class="oath-speaker">' + esc(line.speaker) + '</div><div class="oath-text">' + esc(line.text) + '</div></div>';
     }).join('');
   }
 
@@ -1258,12 +1344,43 @@ content.addEventListener('scroll', () => {
       var eyebrowEl = section.querySelector('.article-eyebrow');
       if(eyebrowEl && entry.type) eyebrowEl.textContent = entry.type;
 
+      if(entry.id === 'banners'){
+        var banners = splitBannerContent(entry.content);
+        var bBody = section.querySelector('.article-body');
+        var grid = section.querySelector('.banners-grid');
+        if(bBody && banners.intro) bBody.innerHTML = paragraphize(banners.intro);
+        if(grid && banners.rows.length) grid.innerHTML = bannerCardsHTML(banners.rows);
+        return;
+      }
+
       if(entry.id === 'art7'){
         var art7 = splitArticleSevenContent(entry.content);
         var artBody = section.querySelector('.article-body');
         var tierList = section.querySelector('.tier-list');
         if(artBody && art7.intro) artBody.innerHTML = paragraphize(art7.intro);
         if(tierList && art7.tiers.length) tierList.innerHTML = tierListHTML(art7.tiers);
+        return;
+      }
+
+      if(entry.id === 'appendix1'){
+        var app = splitAppendixOneContent(entry.content);
+        var appBody = section.querySelector('.article-body');
+        var cards = section.querySelectorAll('.doctrine-card');
+        if(appBody && app.intro) appBody.innerHTML = paragraphize(app.intro);
+        if(cards[0] && app.questItems.length){
+          var qUl = cards[0].querySelector('ul');
+          if(qUl) qUl.innerHTML = doctrineListHTML(app.questItems);
+        }
+        if(cards[1] && app.crusadeItems.length){
+          var cUl = cards[1].querySelector('ul');
+          if(cUl) cUl.innerHTML = doctrineListHTML(app.crusadeItems);
+        }
+        return;
+      }
+
+      if(entry.id === 'oath1' || entry.id === 'oath2'){
+        var oathBlock = section.querySelector('.oath-block');
+        if(oathBlock && entry.content) oathBlock.innerHTML = oathLinesHTML(entry.id, entry.content);
         return;
       }
 
