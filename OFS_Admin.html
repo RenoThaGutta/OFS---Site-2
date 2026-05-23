@@ -962,13 +962,13 @@
     <div class="tab-panel" id="tab-quests">
       <div class="sec-head"><h2>Quest Review</h2><div class="sec-line"></div></div>
       <div class="tav-subtabs" id="qr-subtabs">
-        <button class="tav-stab active" data-qrtab="pending">Pending Review</button>
-        <button class="tav-stab"        data-qrtab="active">Active Quests</button>
+        <button class="tav-stab active" data-qrtab="active">Active Quests</button>
+        <button class="tav-stab"        data-qrtab="pending">Pending Review</button>
         <button class="tav-stab"        data-qrtab="completed">Completed Quests</button>
       </div>
 
       <!-- Pending subtab -->
-      <div id="qr-pending">
+      <div id="qr-pending" style="display:none">
         <div class="controls">
           <input class="ctrl-input" id="quest-review-search" placeholder="Filter by quest name, leader, or ID…" oninput="renderQuestReview()">
           <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestReview()">Refresh</button>
@@ -989,7 +989,7 @@
       </div>
 
       <!-- Active subtab -->
-      <div id="qr-active" style="display:none">
+      <div id="qr-active">
         <div class="controls">
           <input class="ctrl-input" id="qr-active-search" placeholder="Filter by quest name, leader, or Patrol ID…" oninput="renderQuestActive()">
           <button class="ctrl-btn" style="margin-left:auto" onclick="refreshQuestActive()">Refresh</button>
@@ -1846,6 +1846,18 @@ function _qrFmtSince(iso) {
   return Math.floor(mins/1440) + 'd ago';
 }
 
+var QUEST_REVIEW_RECENT_DAYS = 20;
+
+function _qrWithinDays(iso, days) {
+  if (!iso) return false;
+  var s = String(iso).trim().replace(' ', 'T');
+  if (!s) return false;
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z';
+  var d = new Date(s);
+  if (isNaN(d.getTime())) return false;
+  return (Date.now() - d.getTime()) <= (days * 24 * 60 * 60 * 1000);
+}
+
 /* Pick the leader row out of a patrol's rows. Mirrors editor's findLeaderIndex:
    1) prefer the row where col X (PAUSED_DUR) is populated, else
    2) fall back to a row where col K (PLAYER_ID) is empty and col C (LEADER_ID) is set,
@@ -1901,13 +1913,18 @@ function _qrGroup(rows) {
 
 function _qrBuild(rows) {
   return _qrGroup(rows)
-    .filter(function (q) { return (q.y || q.completed) && !q.approved && !q.cancelled; })
+    .filter(function (q) {
+      var reviewDate = q.y || q.completed;
+      return reviewDate && _qrWithinDays(reviewDate, QUEST_REVIEW_RECENT_DAYS) && !q.approved && !q.cancelled;
+    })
     .sort(function (a, b) { return new Date(b.y || b.completed || 0) - new Date(a.y || a.completed || 0); });
 }
 
 function _qrBuildActive(rows) {
   return _qrGroup(rows)
-    .filter(function (q) { return !q.y && !q.completed && !q.approved && !q.cancelled; })
+    .filter(function (q) {
+      return !q.y && !q.completed && !q.approved && !q.cancelled && _qrWithinDays(q.startTime, QUEST_REVIEW_RECENT_DAYS);
+    })
     .sort(function (a, b) { return new Date(b.startTime || 0) - new Date(a.startTime || 0); });
 }
 
@@ -2105,7 +2122,7 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
     document.getElementById('tab-'+t.dataset.tab).classList.add('active');
     if(t.dataset.tab==='quests'){
       var activeQr = document.querySelector('#qr-subtabs .tav-stab.active');
-      var k = activeQr ? activeQr.getAttribute('data-qrtab') : 'pending';
+      var k = activeQr ? activeQr.getAttribute('data-qrtab') : 'active';
       if (k === 'completed') renderQuestCompleted();
       else if (k === 'active') renderQuestActive();
       else renderQuestReview();
