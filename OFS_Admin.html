@@ -2347,7 +2347,7 @@ function openModal(id){
 
 function closeModal(){ document.getElementById('modal-overlay').classList.remove('open'); editingId=null; }
 
-function saveModal(){
+async function saveModal(){
   PLAYERS = window.OFSData.getPlayers();
   const username = document.getElementById('f-username').value.trim();
   if(!username){ alert('Username is required.'); return; }
@@ -2405,6 +2405,34 @@ function saveModal(){
       const newMedalList=BANNER_NAMES.filter(function(bn){return newBanners[bn].m;});
       const oldMedalList=BANNER_NAMES.filter(function(bn){return (existing.banners[bn]||{}).m;});
       if(newMedalList.join(',')!==oldMedalList.join(',')) OFSSheets.updateMedals(existing.id, newMedalList);
+    }
+    const walletDelta = {
+      gold:   newWallet.gold   - (existing.wallet.gold   || 0),
+      silver: newWallet.silver - (existing.wallet.silver || 0),
+      copper: newWallet.copper - (existing.wallet.copper || 0)
+    };
+    const hasWalletChange = walletDelta.gold !== 0 || walletDelta.silver !== 0 || walletDelta.copper !== 0;
+    if(hasWalletChange){
+      if(!window.OFSSheets){
+        alert('Wallet sync is unavailable. No wallet changes were saved.');
+        return;
+      }
+      try{
+        await OFSSheets.updateWallet(existing.id, newWallet);
+        await OFSSheets.appendBankLog(
+          existing.id,
+          walletDelta.gold,
+          walletDelta.silver,
+          walletDelta.copper,
+          'MANUAL_ADJUST',
+          newWallet,
+          'admin_roster'
+        );
+      }catch(e){
+        console.error('Wallet sync failed', e);
+        alert('Wallet sync failed. No local wallet changes were saved. Please try again.');
+        return;
+      }
     }
     diff('Gold',   existing.wallet.gold,   newWallet.gold);
     diff('Silver', existing.wallet.silver, newWallet.silver);
