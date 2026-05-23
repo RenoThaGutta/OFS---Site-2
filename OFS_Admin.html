@@ -3401,7 +3401,7 @@ function renderCodexList(){
 }
 
 const CODEX_RANK_DETAIL_IDS = ['r8','r7','r6','r5','r4t','r4p','r3','r2','r1'];
-const CODEX_STRUCTURED_IDS = CODEX_RANK_DETAIL_IDS.concat(['ranks']);
+const CODEX_STRUCTURED_IDS = CODEX_RANK_DETAIL_IDS.concat(['ranks','art7']);
 
 function isStructuredCodexEntry(entry){
   return entry && CODEX_STRUCTURED_IDS.includes(entry.id);
@@ -3450,6 +3450,51 @@ function renderRanksOverviewEditor(entry){
   </div>`;
 }
 
+function splitArticleSevenContent(content){
+  const parts = String(content || '').split(/\n\n+/).map(function(p){ return p.trim(); }).filter(Boolean);
+  const tiers = [];
+  const introParts = [];
+  parts.forEach(function(part){
+    const m = part.match(/^(.+?)\s+[—-]\s+(.+)$/s);
+    if(m) tiers.push({ title:m[1].trim(), body:m[2].trim() });
+    else introParts.push(part);
+  });
+  return {
+    intro: introParts.join('\n\n'),
+    tiers: tiers.length ? tiers : [
+      { title:'Minor Violations', body:'' },
+      { title:'Intermediate Breaches', body:'' },
+      { title:'High Crimes', body:'' }
+    ]
+  };
+}
+
+function renderArticleSevenEditor(entry){
+  const data = splitArticleSevenContent(entry.content);
+  const tierFields = data.tiers.map(function(t, i){
+    return `<div class="field-row codex-tier-field" data-tier-index="${i}">
+      <label>Violation Tier ${i + 1}</label>
+      <input class="ce-tier-title" value="${escHtml(t.title)}" placeholder="Minor Violations">
+      <textarea class="editor-textarea ce-tier-body" rows="3" placeholder="Tier description…">${escHtml(t.body)}</textarea>
+    </div>`;
+  }).join('');
+  return `<div class="field-row">
+    <label>Intro Paragraph</label>
+    <textarea class="editor-textarea" id="ce-art7-intro" rows="5" placeholder="Article VII intro…">${escHtml(data.intro)}</textarea>
+  </div>${tierFields}`;
+}
+
+function collectArticleSevenContent(){
+  const intro = (document.getElementById('ce-art7-intro') || {}).value || '';
+  const tiers = Array.from(document.querySelectorAll('.codex-tier-field')).map(function(row){
+    const title = ((row.querySelector('.ce-tier-title') || {}).value || '').trim();
+    const body  = ((row.querySelector('.ce-tier-body')  || {}).value || '').trim();
+    if(!title && !body) return '';
+    return (title || 'Violation Tier') + ' — ' + body;
+  }).filter(Boolean);
+  return [intro.trim()].concat(tiers).filter(Boolean).join('\n\n');
+}
+
 function renderStandardCodexBody(entry){
   return `<div class="field-row">
     <label>Content</label>
@@ -3465,7 +3510,9 @@ function openCodexEditor(id){
   const structured = isStructuredCodexEntry(entry);
   const bodyFields = entry.id === 'ranks'
     ? renderRanksOverviewEditor(entry)
-    : (CODEX_RANK_DETAIL_IDS.includes(entry.id) ? renderRankDetailFields(entry) : renderStandardCodexBody(entry));
+    : (entry.id === 'art7'
+      ? renderArticleSevenEditor(entry)
+      : (CODEX_RANK_DETAIL_IDS.includes(entry.id) ? renderRankDetailFields(entry) : renderStandardCodexBody(entry)));
   ed.innerHTML = `
     <div class="editor-topbar">
       <div>
@@ -3513,9 +3560,11 @@ async function saveCodexEntry(id){
   entry.title    = document.getElementById('ce-title').value.trim();
   entry.subtitle = document.getElementById('ce-subtitle').value.trim();
   entry.type     = document.getElementById('ce-type').value;
-  entry.content  = CODEX_RANK_DETAIL_IDS.includes(entry.id)
-    ? collectRankDetailContent()
-    : document.getElementById('ce-content').value;
+  entry.content  = entry.id === 'art7'
+    ? collectArticleSevenContent()
+    : (CODEX_RANK_DETAIL_IDS.includes(entry.id)
+      ? collectRankDetailContent()
+      : document.getElementById('ce-content').value);
   savePageData();
   logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
   renderCodexList();

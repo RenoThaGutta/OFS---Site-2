@@ -1208,6 +1208,26 @@ content.addEventListener('scroll', () => {
     }).join('');
   }
 
+  function splitArticleSevenContent(text){
+    var parts = String(text || '').split(/\n\n+/)
+      .map(function(p){ return p.trim(); })
+      .filter(Boolean);
+    var intro = [];
+    var tiers = [];
+    parts.forEach(function(part){
+      var m = part.match(/^(.+?)\s+[—-]\s+(.+)$/s);
+      if(m) tiers.push({ title:m[1].trim(), body:m[2].trim() });
+      else intro.push(part);
+    });
+    return { intro:intro.join('\n\n'), tiers:tiers };
+  }
+
+  function tierListHTML(tiers){
+    return tiers.map(function(t){
+      return '<li><strong>' + esc(t.title) + '</strong> — ' + esc(t.body) + '</li>';
+    }).join('');
+  }
+
   function updateNavLinkText(sectionId, newTitle){
     // The sidebar nav uses <a class="nav-link" onclick="codexNav('<id>',...)">
     // <span class="nav-num">...</span>Label</a>. Replace the trailing text node.
@@ -1237,6 +1257,15 @@ content.addEventListener('scroll', () => {
 
       var eyebrowEl = section.querySelector('.article-eyebrow');
       if(eyebrowEl && entry.type) eyebrowEl.textContent = entry.type;
+
+      if(entry.id === 'art7'){
+        var art7 = splitArticleSevenContent(entry.content);
+        var artBody = section.querySelector('.article-body');
+        var tierList = section.querySelector('.tier-list');
+        if(artBody && art7.intro) artBody.innerHTML = paragraphize(art7.intro);
+        if(tierList && art7.tiers.length) tierList.innerHTML = tierListHTML(art7.tiers);
+        return;
+      }
 
       if(entry.id === 'ranks'){
         var tbody = section.querySelector('.rank-table tbody');
