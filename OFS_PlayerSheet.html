@@ -405,20 +405,17 @@
       border-radius: 4px;
       padding: 16px 20px;
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 0;
+      grid-template-columns: 180px minmax(0, 1fr);
+      column-gap: 18px;
+      row-gap: 6px;
       align-items: start;
     }
     .quest-card-body {
       min-width: 0;
-      display: grid;
-      grid-template-columns: minmax(132px, .34fr) 1fr;
-      column-gap: 18px;
-      row-gap: 4px;
-      align-items: start;
+      display: block;
     }
     .quest-card.has-img {
-      grid-template-columns: 68px 1fr;
+      grid-template-columns: 68px 180px minmax(0, 1fr);
       gap: 14px;
     }
     .quest-card-img {
@@ -434,19 +431,19 @@
     .quest-card-label {
       font-family: 'Cinzel', serif;
       font-size: .58rem;
-      letter-spacing: .14em;
+      letter-spacing: .12em;
       text-transform: uppercase;
       color: var(--text-dim);
       margin-bottom: 0;
       white-space: nowrap;
       align-self: start;
+      grid-column: 1;
     }
     .quest-card.active .quest-card-label { color: var(--gold-dim); }
-    .quest-card-body > .quest-card-label { grid-column: 1; grid-row: 1 / span 3; }
-    .quest-card-body > .quest-card-name,
-    .quest-card-body > .quest-card-desc,
-    .quest-card-body > .quest-card-leader,
-    .quest-card-body > .quest-card-none { grid-column: 2; }
+    .quest-card-body { grid-column: 2; }
+    .quest-card.has-img .quest-card-img { grid-column: 1; }
+    .quest-card.has-img .quest-card-label { grid-column: 2; }
+    .quest-card.has-img .quest-card-body { grid-column: 3; }
     .quest-card-name {
       font-family: 'Cinzel', serif;
       font-size: .9rem;
@@ -615,12 +612,14 @@
 
     @media (max-width: 700px) {
       .quests-row { grid-template-columns: 1fr; }
-      .quest-card-body { grid-template-columns: 1fr; }
-      .quest-card-body > .quest-card-label,
-      .quest-card-body > .quest-card-name,
-      .quest-card-body > .quest-card-desc,
-      .quest-card-body > .quest-card-leader,
-      .quest-card-body > .quest-card-none { grid-column: 1; grid-row: auto; }
+      .quest-card,
+      .quest-card.has-img { grid-template-columns: 1fr; }
+      .quest-card-img,
+      .quest-card-label,
+      .quest-card-body,
+      .quest-card.has-img .quest-card-img,
+      .quest-card.has-img .quest-card-label,
+      .quest-card.has-img .quest-card-body { grid-column: 1; grid-row: auto; }
       .quest-card-label { margin-bottom: 8px; white-space: normal; }
       .quest-history-all { grid-template-columns: 1fr; }
       .led-quests-row { grid-template-columns: 1fr; }
@@ -1123,8 +1122,8 @@ function renderPlayerQuests(p, section, container) {
   var aqPid = aq && aq.id ? aq.id : '';
   html += '<div class="quest-card active' + (aq && aq.image ? ' has-img' : '') + '"' + (aqPid ? ' data-pid="' + _esc(aqPid) + '"' : '') + '>';
   if (aq && aq.image) html += '<img class="quest-card-img" src="' + _esc(aq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
-  html += '<div class="quest-card-body">';
   html += '<div class="quest-card-label">Active Quest</div>';
+  html += '<div class="quest-card-body">';
   if (aq) {
     html += '<div class="quest-card-name">' + _esc(aq.name) + '</div>';
     if (aq.description) html += '<div class="quest-card-desc">' + _esc(aq.description) + '</div>';
@@ -1138,8 +1137,8 @@ function renderPlayerQuests(p, section, container) {
   var lqPid = lq && lq.id ? lq.id : '';
   html += '<div class="quest-card' + (lq && lq.image ? ' has-img' : '') + '"' + (lqPid ? ' data-pid="' + _esc(lqPid) + '"' : '') + '>';
   if (lq && lq.image) html += '<img class="quest-card-img" src="' + _esc(lq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
-  html += '<div class="quest-card-body">';
   html += '<div class="quest-card-label">Latest Completed Quest</div>';
+  html += '<div class="quest-card-body">';
   if (lq) {
     html += '<div class="quest-card-name">' + _esc(lq.name) + '</div>';
     if (lq.description) html += '<div class="quest-card-desc">' + _esc(lq.description) + '</div>';
