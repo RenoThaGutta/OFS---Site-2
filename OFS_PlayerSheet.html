@@ -460,6 +460,60 @@
       color: var(--text-dim);
       font-style: italic;
     }
+    .quest-section-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -28px;
+      margin-bottom: 44px;
+    }
+    .quest-history-toggle {
+      background: none;
+      border: 0;
+      padding: 0;
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      cursor: pointer;
+      opacity: .85;
+      transition: opacity .15s, color .15s;
+    }
+    .quest-history-toggle:hover { opacity: 1; color: var(--gold-lt); }
+    .quest-history-all {
+      display: none;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: -28px;
+      margin-bottom: 44px;
+    }
+    .quest-history-all.open { display: grid; }
+    .quest-history-item {
+      display: block;
+      background: rgba(14,14,28,.72);
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      padding: 12px 14px;
+      color: inherit;
+      text-decoration: none;
+      transition: background .15s, border-color .15s;
+    }
+    .quest-history-item:hover { background: rgba(201,168,76,.06); border-color: var(--b-gold); }
+    .quest-history-name {
+      font-family: 'Cinzel', serif;
+      font-size: .78rem;
+      letter-spacing: .06em;
+      color: var(--gold-lt);
+      margin-bottom: 5px;
+    }
+    .quest-history-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      font-size: .62rem;
+      color: var(--silver-dim);
+    }
+    .quest-history-meta .pid { font-family: 'Cinzel', serif; letter-spacing: .09em; color: var(--text-dim); }
 
     /* ── Led-quests section (self-view only) ─────────────── */
     .led-quests-row {
@@ -515,6 +569,7 @@
 
     @media (max-width: 700px) {
       .quests-row { grid-template-columns: 1fr; }
+      .quest-history-all { grid-template-columns: 1fr; }
       .led-quests-row { grid-template-columns: 1fr; }
     }
 
@@ -722,6 +777,10 @@
   <section id="js-quests-section" style="display:none">
     <div class="sec-head"><h2>Quests</h2><div class="sec-line"></div></div>
     <div class="quests-row" id="js-quests"></div>
+    <div class="quest-section-footer">
+      <button class="quest-history-toggle" id="js-quest-history-toggle" type="button" onclick="toggleQuestHistory()">See all quests →</button>
+    </div>
+    <div class="quest-history-all" id="js-quest-history-all"></div>
   </section>
 
   <!-- Active Quests (as Leader) — shown only when viewing your own profile -->
@@ -824,73 +883,123 @@ function _parseDate(str) {
 }
 
 function _buildPlayerQuests(rows, playerId) {
-  if (!rows || rows.length < 2 || !playerId) return { active: null, lastCompleted: null };
+  if (!rows || rows.length < 2 || !playerId) return { active: [], completed: [], activeOne: null, completedOne: null };
 
-  // Build quest map (same as Tavern buildQuestMap)
   var map = {};
   rows.slice(1).forEach(function (row) {
     var pid = String(row[0] || '').trim();
     if (!pid || !/^P\d/.test(pid)) return;
 
     if (!map[pid]) {
-      var colH = String(row[7] || '').trim();
-      var isDone = /quest completed/i.test(colH);
       map[pid] = {
         id:          pid,
-        leaderName:  String(row[1] || ''),
+        leaderName:  String(row[1] || '').trim(),
         leaderId:    String(row[2] || '').trim(),
         name:        String(row[4] || '').trim(),
         description: String(row[5] || ''),
-        startTime:   (!isDone && _parseDate(colH)) ? colH : '',
-        completed:   isDone ? 'Quest Completed' : '',
+        image:       String(row[6] || ''),
+        startTime:   '',
+        reviewDate:  '',
+        approved:    '',
+        cancelled:   '',
+        completed:   '',
         type:        String(row[32] || 'Quest').trim(),
         participants: []
       };
-    } else {
-      if (!map[pid].startTime) {
-        var ts = String(row[7] || '');
-        if (_parseDate(ts)) map[pid].startTime = ts;
-      }
-      if (!map[pid].name        && row[4]) map[pid].name        = String(row[4]).trim();
-      if (!map[pid].description && row[5]) map[pid].description = String(row[5]);
     }
 
+    var q = map[pid];
+    if (!q.leaderName && row[1]) q.leaderName = String(row[1]).trim();
+    if (!q.leaderId   && row[2]) q.leaderId   = String(row[2]).trim();
+    if (!q.name       && row[4]) q.name       = String(row[4]).trim();
+    if (!q.description && row[5]) q.description = String(row[5]);
+    if (!q.image      && row[6]) q.image      = String(row[6]);
+    if (!q.type       && row[32]) q.type      = String(row[32]).trim();
+
+    var colH = String(row[7] || '').trim();
+    if (!q.startTime && _parseDate(colH)) q.startTime = colH;
+
+    var sentForReview = String(row[24] || '').trim();
+    var approved = String(row[25] || '').trim();
+    var cancelled = String(row[29] || '').trim();
+    var completed = String(row[30] || '').trim();
+    if (!q.reviewDate && sentForReview) q.reviewDate = sentForReview;
+    if (!q.approved && approved) q.approved = approved;
+    if (!q.cancelled && cancelled) q.cancelled = cancelled;
+    if (!q.completed && completed) q.completed = completed;
+    if (!q.completed && /quest completed/i.test(colH)) q.completed = 'Quest Completed';
+
     var partId = String(row[10] || '').trim();
-    if (partId && partId !== '❓' && map[pid].participants.indexOf(partId) === -1) {
-      map[pid].participants.push(partId);
+    if (partId && partId !== '❓' && q.participants.indexOf(partId) === -1) {
+      q.participants.push(partId);
     }
   });
 
-  // Classify active vs completed, filter to this player
   var now = Date.now();
-  var MAX_ACTIVE_MS = 24 * 60 * 60 * 1000;
+  var MAX_ACTIVE_MS = 20 * 24 * 60 * 60 * 1000;
   var myActive = [], myCompleted = [];
 
   Object.keys(map).forEach(function (pid) {
     var q = map[pid];
     if (!q.name) return;
-    // Only include quests this player participated in
-    if (q.participants.indexOf(playerId) === -1) return;
+    if (q.cancelled) return;
 
-    if (q.completed) {
+    var isMine = q.leaderId === String(playerId) || q.participants.indexOf(String(playerId)) !== -1;
+    if (!isMine) return;
+
+    // Completed history should show finalized, admin-approved quests.
+    if (q.approved) {
       myCompleted.push(q);
-    } else {
+      return;
+    }
+
+    // Active summary should only show genuinely current operational quests.
+    if (!q.reviewDate && !q.completed) {
       var startD = _parseDate(q.startTime);
-      if (startD && (now - startD.getTime()) > MAX_ACTIVE_MS) {
-        q.completed = 'Expired';
-        myCompleted.push(q);
-      } else {
-        myActive.push(q);
-      }
+      if (startD && (now - startD.getTime()) <= MAX_ACTIVE_MS) myActive.push(q);
     }
   });
 
-  // Sort by start time descending (most recent first)
-  var sortFn = function (a, b) { return (_parseDate(b.startTime)||0) - (_parseDate(a.startTime)||0); };
-  myActive.sort(sortFn);
-  myCompleted.sort(sortFn);
+  var sortActive = function (a, b) { return (_parseDate(b.startTime)||0) - (_parseDate(a.startTime)||0); };
+  var sortCompleted = function (a, b) {
+    return (_parseDate(b.completed)||_parseDate(b.reviewDate)||_parseDate(b.startTime)||0) -
+           (_parseDate(a.completed)||_parseDate(a.reviewDate)||_parseDate(a.startTime)||0);
+  };
+  myActive.sort(sortActive);
+  myCompleted.sort(sortCompleted);
 
-  return { active: myActive[0] || null, lastCompleted: myCompleted[0] || null };
+  return {
+    active: myActive,
+    completed: myCompleted,
+    activeOne: myActive[0] || null,
+    completedOne: myCompleted[0] || null
+  };
+}
+
+function _questMetaDate(q) {
+  return q.completed || q.reviewDate || q.startTime || '';
+}
+
+function _questHistoryItemHTML(q, label) {
+  var meta = [
+    '<span class="pid">' + _esc(q.id) + '</span>',
+    _esc(label),
+    _esc(q.type || 'Quest')
+  ];
+  var when = _questMetaDate(q);
+  if (when) meta.push(_esc(when));
+  return '<a class="quest-history-item" href="OFS_QuestEdit.html?patrol=' + encodeURIComponent(q.id) + '">' +
+    '<div class="quest-history-name">' + _esc(q.name || '(Untitled Quest)') + '</div>' +
+    '<div class="quest-history-meta">' + meta.join(' ') + '</div>' +
+    '</a>';
+}
+
+function toggleQuestHistory() {
+  var historyEl = document.getElementById('js-quest-history-all');
+  var btn = document.getElementById('js-quest-history-toggle');
+  if (!historyEl || !btn) return;
+  var open = historyEl.classList.toggle('open');
+  btn.textContent = open ? 'Hide all quests ↑' : 'See all quests →';
 }
 
 function renderPlayerQuests(p, section, container) {
@@ -898,10 +1007,10 @@ function renderPlayerQuests(p, section, container) {
   var questRows = (tavData && tavData.quests) || [];
   var result = _buildPlayerQuests(questRows, p.id);
 
-  var aq = result.active;
-  var lq = result.lastCompleted;
-
-  if (!aq && !lq) { section.style.display = 'none'; return; }
+  var aq = result.activeOne;
+  var lq = result.completedOne;
+  var historyEl = document.getElementById('js-quest-history-all');
+  var toggleBtn = document.getElementById('js-quest-history-toggle');
 
   section.style.display = '';
   var html = '';
@@ -921,24 +1030,37 @@ function renderPlayerQuests(p, section, container) {
   }
   html += '</div></div>';
 
-  // Last completed quest card
+  // Latest completed quest card
   var lqPid = lq && lq.id ? lq.id : '';
   html += '<div class="quest-card' + (lq && lq.image ? ' has-img' : '') + '"' + (lqPid ? ' data-pid="' + _esc(lqPid) + '"' : '') + '>';
   if (lq && lq.image) html += '<img class="quest-card-img" src="' + _esc(lq.image) + '" alt="" onerror="this.remove();this.parentNode.classList.remove(\'has-img\')">';
   html += '<div class="quest-card-body">';
-  html += '<div class="quest-card-label">Last Completed Quest</div>';
+  html += '<div class="quest-card-label">Latest Completed Quest</div>';
   if (lq) {
     html += '<div class="quest-card-name">' + _esc(lq.name) + '</div>';
     if (lq.description) html += '<div class="quest-card-desc">' + _esc(lq.description) + '</div>';
     if (lq.leaderName)  html += '<div class="quest-card-leader">Led by <span>' + _esc(lq.leaderName) + '</span></div>';
   } else {
-    html += '<div class="quest-card-none">No completed quests</div>';
+    html += '<div class="quest-card-none">No completed quests yet</div>';
   }
   html += '</div></div>';
 
   container.innerHTML = html;
 
-  // Make cards clickable → quest editor (skips clicks on inner anchors)
+  var allHistory = result.active.map(function (q) { return { q: q, label: 'Active' }; })
+    .concat(result.completed.map(function (q) { return { q: q, label: 'Completed' }; }));
+  if (historyEl) {
+    historyEl.classList.remove('open');
+    historyEl.innerHTML = allHistory.length
+      ? allHistory.map(function (entry) { return _questHistoryItemHTML(entry.q, entry.label); }).join('')
+      : '<div class="quest-card-none">No quest history yet.</div>';
+  }
+  if (toggleBtn) {
+    toggleBtn.style.display = allHistory.length > 2 ? '' : 'none';
+    toggleBtn.textContent = 'See all quests →';
+  }
+
+  // Make summary cards clickable → quest editor (skips clicks on inner anchors)
   if (!container.__navBound) {
     container.__navBound = true;
     container.addEventListener('click', function (e) {
