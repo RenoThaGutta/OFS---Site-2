@@ -400,15 +400,17 @@
   }
   .tl-modal-hero {
     display: none;
-    width: calc(100% - 60px);
+    width: auto;
+    max-width: calc(100% - 60px);
     height: auto;
-    max-height: none;
+    max-height: min(52vh, 560px);
     object-fit: contain;
-    margin: 26px 30px 0;
+    margin: 26px auto 0;
     border: 1px solid rgba(201,168,76,.28);
     border-radius: 4px;
     box-shadow: 0 16px 34px rgba(0,0,0,.45);
     background: rgba(0,0,0,.22);
+    clear: both;
   }
   .tl-modal-hero[src]:not([src='']) { display: block; }
   .tl-modal-body {
@@ -466,7 +468,9 @@
   .tl-modal-gallery:not(:empty) { display: grid; }
   .tl-modal-gallery figure { margin: 0; }
   .tl-modal-gallery img {
-    width: 100%; height: auto; object-fit: contain;
+    display: block;
+    width: auto; max-width: 100%; height: auto; max-height: min(42vh, 420px); object-fit: contain;
+    margin: 0 auto;
     border: 1px solid rgba(201,168,76,.25); border-radius: 4px;
     background: rgba(0,0,0,.22);
   }
