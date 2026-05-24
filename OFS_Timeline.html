@@ -413,6 +413,47 @@
     clear: both;
   }
   .tl-modal-hero[src]:not([src='']) { display: block; }
+  .tl-modal-hero[src]:not([src='']), .tl-modal-gallery img, .tl-modal-body img {
+    cursor: zoom-in;
+  }
+  .tl-image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 28px;
+    background: rgba(0,0,0,.88);
+    backdrop-filter: blur(4px);
+  }
+  .tl-image-lightbox.open { display: flex; }
+  .tl-image-lightbox img {
+    display: block;
+    max-width: 96vw;
+    max-height: 92vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 1px solid rgba(201,168,76,.4);
+    border-radius: 4px;
+    box-shadow: 0 22px 60px rgba(0,0,0,.72);
+    background: rgba(0,0,0,.34);
+  }
+  .tl-image-lightbox-close {
+    position: fixed;
+    top: 14px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: var(--silver);
+    font-size: 34px;
+    line-height: 1;
+    cursor: pointer;
+    opacity: .78;
+    padding: 8px 12px;
+  }
+  .tl-image-lightbox-close:hover { color: var(--gold-lt); opacity: 1; }
   .tl-modal-body {
     padding: 26px 30px 0;
     font-family: 'Crimson Text', Georgia, serif;
@@ -1113,6 +1154,15 @@
     '</div>';
   document.body.appendChild(modal);
 
+  var imageLightbox = document.createElement('div');
+  imageLightbox.id = 'tl-image-lightbox';
+  imageLightbox.className = 'tl-image-lightbox';
+  imageLightbox.setAttribute('role', 'dialog');
+  imageLightbox.setAttribute('aria-modal', 'true');
+  imageLightbox.setAttribute('aria-label', 'Expanded Chronicle image');
+  imageLightbox.innerHTML = '<img id="tl-image-lightbox-img" alt="Expanded Chronicle image"><button class="tl-image-lightbox-close" id="tl-image-lightbox-close" aria-label="Close expanded image">&times;</button>';
+  document.body.appendChild(imageLightbox);
+
   function escHtml(v){
     return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
@@ -1166,10 +1216,32 @@
     modal.classList.add('open');
   }
   function closeModal() { modal.classList.remove('open'); }
+  function openImageLightbox(src, alt){
+    if(!src) return;
+    var img = document.getElementById('tl-image-lightbox-img');
+    img.src = src;
+    img.alt = alt || 'Expanded Chronicle image';
+    imageLightbox.classList.add('open');
+  }
+  function closeImageLightbox(){ imageLightbox.classList.remove('open'); }
 
   document.getElementById('tl-modal-close').addEventListener('click', closeModal);
   modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
-  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+  imageLightbox.addEventListener('click', function(e){ if(e.target === imageLightbox || e.target.id === 'tl-image-lightbox-close') closeImageLightbox(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){
+      if(imageLightbox.classList.contains('open')) closeImageLightbox();
+      else closeModal();
+    }
+  });
+  modal.addEventListener('click', function(e){
+    var img = e.target && e.target.closest ? e.target.closest('.tl-modal-hero, .tl-modal-gallery img, .tl-modal-body img') : null;
+    if(img && img.src){
+      e.preventDefault();
+      e.stopPropagation();
+      openImageLightbox(img.src, img.alt || document.getElementById('tl-modal-title').textContent);
+    }
+  });
 
   /* Attach click to every Chronicle card. DETAILS supplies rich archive records;
      otherwise the modal falls back to the card's preview content so no event is dead. */
