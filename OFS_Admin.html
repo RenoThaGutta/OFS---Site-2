@@ -1885,10 +1885,40 @@ let PLAYERS = [
 
 PLAYERS = window.OFSData.getPlayers();
 
-// Audit log (localStorage-backed for demo)
+// Audit log. LocalStorage is the fast cache; the Worker /content store is the durable cross-device source.
 let AUDIT_LOG = JSON.parse(localStorage.getItem('ofs_audit') || '[]');
+let _auditSaveTimer = null;
 
-function saveAudit() { localStorage.setItem('ofs_audit', JSON.stringify(AUDIT_LOG)); }
+function saveAudit(options) {
+  localStorage.setItem('ofs_audit', JSON.stringify(AUDIT_LOG));
+  if(!options || options.remote !== false) scheduleAuditServerSave();
+}
+
+function scheduleAuditServerSave(){
+  clearTimeout(_auditSaveTimer);
+  _auditSaveTimer = setTimeout(function(){
+    fetch('https://ofs-api.orderofthefallenstar.workers.dev/content', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ key:'audit_log', value:AUDIT_LOG.slice(0, 500) })
+    }).catch(function(e){ console.warn('Audit sync failed', e); });
+  }, 250);
+}
+
+function loadAuditFromServer(){
+  return fetch('https://ofs-api.orderofthefallenstar.workers.dev/content')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(res){
+      const remote = res && res.ok && res.data && res.data.audit_log;
+      if(Array.isArray(remote)){
+        AUDIT_LOG = remote;
+        saveAudit({ remote:false });
+        const tb = document.getElementById('audit-tbody');
+        if(tb) renderAudit();
+      }
+    })
+    .catch(function(){});
+}
 
 function logChange(player, field, oldVal, newVal) {
   AUDIT_LOG.unshift({
@@ -2235,6 +2265,7 @@ function renderAll(){
   // Sync BANNER_NAMES from sheet if available
   const defs = window.OFSSheets && OFSSheets.getBannerDefs ? OFSSheets.getBannerDefs() : [];
   if(defs.length) BANNER_NAMES = defs.map(d=>d.name);
+  loadAuditFromServer();
   renderRoster();
   renderBanManageList();
   seedFleetForm();
@@ -2899,10 +2930,19 @@ function syncCodexToServer(){
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key: 'codex_data', value: CODEX_DATA })
   }).then(function(r){
-    if(!r.ok) throw new Error('Server ' + r.status);
+    if(!r.ok){
+      return r.text().then(function(txt){
+        let detail = txt || '';
+        try {
+          const parsed = JSON.parse(txt);
+          detail = parsed.error || parsed.reason || txt;
+        } catch(_) {}
+        throw new Error('Server ' + r.status + (detail ? ': ' + detail : ''));
+      });
+    }
     return r.json();
   }).then(function(res){
-    if(!res || !res.ok) throw new Error((res && res.error) || 'Save rejected');
+    if(!res || !res.ok) throw new Error((res && (res.error || res.reason)) || 'Save rejected');
     return res;
   });
 }
@@ -3680,6 +3720,7 @@ function collectRankDetailContent(){
 
 function splitTitleBodyLines(content, expectedTitles){
   const known = (expectedTitles || []).map(function(t){ return t.toLowerCase(); });
+  const expectedCount = known.length;
   const intro = [];
   const rows = [];
   String(content || '').split(/\n\n+/).forEach(function(block){
@@ -3688,7 +3729,13 @@ function splitTitleBodyLines(content, expectedTitles){
     const lines = text.split(/\r?\n/).map(function(line){ return line.trim(); }).filter(Boolean);
     lines.forEach(function(line){
       const m = line.match(/^(.+?)\s+[—-]\s+(.+)$/s);
-      if(m && (!known.length || known.includes(m[1].trim().toLowerCase()) || rows.length)){
+      const titleKey = m ? m[1].trim().toLowerCase() : '';
+      const knownRow = m && (!known.length || known.includes(titleKey));
+      // Styled Codex rows are identified by section id/position, not by editable visible title.
+      // Once an intro exists, or once a row list has started, delimiter rows remain structured
+      // even if an admin renames the visible card/tier title away from the default label.
+      const positionalRow = m && expectedCount && rows.length < expectedCount && (rows.length || intro.length);
+      if(m && (knownRow || rows.length || positionalRow)){
         rows.push({ title:m[1].trim(), body:m[2].trim() });
       } else if(rows.length && line){
         rows[rows.length - 1].body += '\n' + line;
@@ -3943,31 +3990,43 @@ function _reloadCodexPreview(){
 
 async function saveCodexEntry(id){
   const entry = CODEX_DATA.find(e=>e.id===id);
+  if(!entry) return;
+  const oldEntry = Object.assign({}, entry);
   const oldTitle = entry.title;
-  entry.title    = document.getElementById('ce-title').value.trim();
-  entry.subtitle = document.getElementById('ce-subtitle').value.trim();
-  entry.type     = document.getElementById('ce-type').value;
-  entry.content  = entry.id === 'banners'
-    ? collectBannersContent()
-    : (entry.id === 'art7'
-      ? collectArticleSevenContent()
-      : (entry.id === 'appendix1'
-        ? collectAppendixOneContent()
-        : (CODEX_OATH_IDS.includes(entry.id)
-          ? collectOathContent()
-          : (CODEX_RANK_DETAIL_IDS.includes(entry.id)
-            ? collectRankDetailContent()
-            : document.getElementById('ce-content').value))));
-  savePageData();
-  logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
-  renderCodexList();
+  const nextEntry = {
+    id: entry.id,
+    num: entry.num,
+    title:    document.getElementById('ce-title').value.trim(),
+    subtitle: document.getElementById('ce-subtitle').value.trim(),
+    type:     document.getElementById('ce-type').value,
+    content:  entry.id === 'banners'
+      ? collectBannersContent()
+      : (entry.id === 'art7'
+        ? collectArticleSevenContent()
+        : (entry.id === 'appendix1'
+          ? collectAppendixOneContent()
+          : (CODEX_OATH_IDS.includes(entry.id)
+            ? collectOathContent()
+            : (CODEX_RANK_DETAIL_IDS.includes(entry.id)
+              ? collectRankDetailContent()
+              : document.getElementById('ce-content').value))))
+  };
+
+  Object.assign(entry, nextEntry);
   showToast('Saving…');
   try {
     await syncCodexToServer();
+    savePageData();
+    logChange('—', `Codex: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
+    renderCodexList();
     _reloadCodexPreview();
     showToast('Section saved.');
   } catch(e){
+    Object.assign(entry, oldEntry);
+    savePageData();
+    renderCodexList();
     showToast('Save failed: ' + (e && e.message ? e.message : 'network error'));
+    console.error('Codex save failed', e);
   }
 }
 

@@ -1236,13 +1236,18 @@ content.addEventListener('scroll', () => {
 
   function splitTitleBodyLines(text, expectedTitles){
     var known = (expectedTitles || []).map(function(t){ return t.toLowerCase(); });
+    var expectedCount = known.length;
     var intro = [];
     var rows = [];
     String(text || '').split(/\n\n+/).forEach(function(block){
       var lines = block.trim().split(/\r?\n/).map(function(line){ return line.trim(); }).filter(Boolean);
       lines.forEach(function(line){
         var m = line.match(/^(.+?)\s+[—-]\s+(.+)$/s);
-        if(m && (!known.length || known.indexOf(m[1].trim().toLowerCase()) !== -1 || rows.length)){
+        var titleKey = m ? m[1].trim().toLowerCase() : '';
+        var knownRow = m && (!known.length || known.indexOf(titleKey) !== -1);
+        // Styled rows are preserved by section id/position, not by the editable visible label.
+        var positionalRow = m && expectedCount && rows.length < expectedCount && (rows.length || intro.length);
+        if(m && (knownRow || rows.length || positionalRow)){
           rows.push({ title:m[1].trim(), body:m[2].trim() });
         } else if(rows.length && line){
           rows[rows.length - 1].body += '\n' + line;
