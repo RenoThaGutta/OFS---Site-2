@@ -380,7 +380,11 @@
         role: String(row[9] || '').trim(),
         sortOrder: Number(row[10]) || 0,
         notes: String(row[11] || '').trim(),
-        active: String(row[12] == null ? 'TRUE' : row[12]).trim().toUpperCase() !== 'FALSE'
+        active: String(row[12] == null ? 'TRUE' : row[12]).trim().toUpperCase() !== 'FALSE',
+        fighterCap: Number(row[13]) || 0,
+        medEvacCap: Number(row[14]) || 0,
+        commandCap: Number(row[15]) || 0,
+        supportCap: Number(row[16]) || 0
       };
     }).filter(function (f) { return f.id && f.fleetName && String(f.id).toLowerCase() !== 'fleet id'; });
   }
@@ -612,7 +616,8 @@
     return [
       item.id, item.fleetName, item.userId, item.username, item.house, item.banner,
       item.shipModel, item.shipMake, item.shipImageUrl, item.role, item.sortOrder || 0, item.notes || '',
-      item.active === false ? 'FALSE' : 'TRUE'
+      item.active === false ? 'FALSE' : 'TRUE',
+      item.fighterCap || 0, item.medEvacCap || 0, item.commandCap || 0, item.supportCap || 0
     ];
   }
 

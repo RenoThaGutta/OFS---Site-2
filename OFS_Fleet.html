@@ -38,7 +38,7 @@ const ROLE_ORDER=['Command','Fighter','Med Evac','Support','Transport','Recon','
 function roleRank(role){const i=ROLE_ORDER.indexOf(role||'');return i===-1?ROLE_ORDER.length:i;}
 function isRuleRow(f){return f&&(f.userId==='__rules__'||f.role==='__RULES__'||String(f.id||'').indexOf('fleet-rules-')===0);}
 function ruleKey(role){role=String(role||'').toLowerCase();if(role.includes('fighter'))return'fighter';if(role.includes('med')||role.includes('evac'))return'medEvac';if(role.includes('command'))return'command';if(role.includes('support'))return'support';return'';}
-function rulesFor(name,all){const row=all.find(f=>isRuleRow(f)&&f.fleetName===name), rules={fighter:2,medEvac:1,command:1,support:0};if(row&&row.notes){try{Object.assign(rules,JSON.parse(row.notes));}catch(e){}}return rules;}
+function rulesFor(name,all){const row=all.find(f=>!isRuleRow(f)&&f.fleetName===name&&(f.fighterCap||f.medEvacCap||f.commandCap||f.supportCap)), rules={fighter:2,medEvac:1,command:1,support:0};if(row){if(row.fighterCap)rules.fighter=row.fighterCap;if(row.medEvacCap)rules.medEvac=row.medEvacCap;if(row.commandCap)rules.command=row.commandCap;if(row.supportCap)rules.support=row.supportCap;}return rules;}
 let activeFleet=new URLSearchParams(location.search).get('fleet') || '';
 function renderFleet(){
   const root=document.getElementById('fleet-root'), tabs=document.getElementById('fleet-tabs');

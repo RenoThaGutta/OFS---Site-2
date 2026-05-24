@@ -1046,12 +1046,10 @@
         </section>
       </div>
 
-      <table class="data-table" id="fleet-table" style="margin-top:22px;">
-        <thead><tr>
-          <th>Fleet</th><th>Member</th><th>House</th><th>Banner</th><th>Ship</th><th>Position</th><th>Active</th><th></th>
-        </tr></thead>
-        <tbody id="fleet-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr></tbody>
-      </table>
+      <div class="field-discord-note" style="margin-top:18px;">
+        <strong>Fleets tab header row for A1:Q1:</strong><br>
+        Fleet ID | Fleet Name | User ID | Username | House | Banner | Ship Model | Ship Make | Ship Image URL | Role | Sort Order | Notes | Active | Fighter Cap | Med Evac Cap | Command Cap | Support Cap
+      </div>
     </div>
 
     <!-- ── Quest Review ── -->
@@ -2451,11 +2449,16 @@ function shipRegistry(){ return (window.OFSSheets && OFSSheets.getShipRegistry) 
 function fleetSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'fleet'; }
 function fleetIsRuleRow(f){ return f && (f.userId==='__rules__' || f.role==='__RULES__' || String(f.id||'').indexOf('fleet-rules-')===0); }
 function fleetVisibleData(){ return fleetData().filter(function(f){ return !fleetIsRuleRow(f); }); }
-function fleetRuleRow(name){ return fleetData().find(function(f){ return fleetIsRuleRow(f) && (f.fleetName||'')===(name||''); }); }
+function fleetRuleRow(name){ return fleetVisibleData().find(function(f){ return (f.fleetName||'')===(name||'') && (f.fighterCap || f.medEvacCap || f.commandCap || f.supportCap); }); }
 function fleetDefaultRules(){ return { fighter:2, medEvac:1, command:1, support:0 }; }
 function fleetParseRules(name){
   var rules=fleetDefaultRules(), row=fleetRuleRow(name);
-  if(row && row.notes){ try{ Object.assign(rules, JSON.parse(row.notes)); } catch(e){} }
+  if(row){
+    if(row.fighterCap) rules.fighter=row.fighterCap;
+    if(row.medEvacCap) rules.medEvac=row.medEvacCap;
+    if(row.commandCap) rules.command=row.commandCap;
+    if(row.supportCap) rules.support=row.supportCap;
+  }
   return rules;
 }
 function fleetReadRules(){ return {
@@ -2496,20 +2499,8 @@ function fleetRuleStatus(items){
 function fleetRulesChanged(){ renderFleetBuild(); renderFleetRosterPreview(); }
 function renderFleetAdmin(){
   seedFleetForm();
-  var tb=document.getElementById('fleet-tbody'); if(!tb) return;
-  var q=(document.getElementById('fleet-filter').value||'').toLowerCase();
-  var list=fleetVisibleData().filter(function(f){
-    var hay=[f.fleetName,f.username,f.house,f.banner,f.shipModel,f.shipMake,f.role].join(' ').toLowerCase();
-    return !q || hay.indexOf(q)!==-1;
-  }).sort(function(a,b){return (a.fleetName||'').localeCompare(b.fleetName||'') || (a.sortOrder||0)-(b.sortOrder||0) || (a.username||'').localeCompare(b.username||'');});
-  tb.innerHTML='';
-  if(!list.length){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">No fleet assignments loaded. Confirm the Fleets tab has headers and Worker /data includes rows.</td></tr>'; renderFleetRosterPreview(); return; }
-  list.forEach(function(f){
-    var tr=document.createElement('tr');
-    tr.innerHTML='<td><strong>'+fleetEsc(f.fleetName)+'</strong></td><td>'+fleetEsc(f.username)+'</td><td>'+fleetEsc(f.house)+'</td><td>'+fleetEsc(f.banner)+'</td><td>'+fleetEsc(f.shipModel)+'<div style="color:var(--text-dim);font-size:.72rem">'+fleetEsc(f.shipMake)+'</div></td><td>'+fleetEsc(f.role)+'</td><td><span class="badge '+(f.active?'badge-gold':'badge-dim')+'">'+(f.active?'Active':'Inactive')+'</span></td><td><button class="edit-btn" onclick="fleetEdit(\''+fleetEsc(f.id)+'\')">Edit</button></td>';
-    tb.appendChild(tr);
-  });
-  renderFleetBuild(); renderFleetRosterPreview();
+  renderFleetBuild();
+  renderFleetRosterPreview();
 }
 function fleetNew(){ FLEET_BUILD=[]; fleetClearForm(); document.getElementById('fleet-form-title').textContent='Fleet Builder'; renderFleetBuild(); renderFleetRosterPreview(); }
 function fleetEdit(id){
@@ -2525,9 +2516,10 @@ function fleetEdit(id){
 function fleetClearForm(){ ['fleet-id','fleet-member-search','fleet-user','fleet-house','fleet-banner','fleet-ship','fleet-ship-search','fleet-ship-make','fleet-ship-img','fleet-notes'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); document.getElementById('fleet-sort').value=0; document.getElementById('fleet-active').value='TRUE'; }
 function fleetCurrentItem(){
   var uid=document.getElementById('fleet-user').value, p=PLAYERS.find(function(x){return x.id===uid;});
-  return { id: document.getElementById('fleet-id').value || ('fleet-'+Date.now()+'-'+Math.floor(Math.random()*1000)), fleetName: document.getElementById('fleet-name').value.trim(), userId: uid, username: p ? p.username : document.getElementById('fleet-member-search').value.trim(), house: document.getElementById('fleet-house').value.trim(), banner: document.getElementById('fleet-banner').value.trim(), shipModel: document.getElementById('fleet-ship').value.trim() || document.getElementById('fleet-ship-search').value.trim(), shipMake: document.getElementById('fleet-ship-make').value.trim(), shipImageUrl: document.getElementById('fleet-ship-img').value.trim(), role: document.getElementById('fleet-role').value.trim(), sortOrder: Number(document.getElementById('fleet-sort').value)||0, notes: document.getElementById('fleet-notes').value.trim(), active: document.getElementById('fleet-active').value !== 'FALSE' };
+  var rules=fleetReadRules();
+  return { id: document.getElementById('fleet-id').value || ('fleet-'+Date.now()+'-'+Math.floor(Math.random()*1000)), fleetName: document.getElementById('fleet-name').value.trim(), userId: uid, username: p ? p.username : document.getElementById('fleet-member-search').value.trim(), house: document.getElementById('fleet-house').value.trim(), banner: document.getElementById('fleet-banner').value.trim(), shipModel: document.getElementById('fleet-ship').value.trim() || document.getElementById('fleet-ship-search').value.trim(), shipMake: document.getElementById('fleet-ship-make').value.trim(), shipImageUrl: document.getElementById('fleet-ship-img').value.trim(), role: document.getElementById('fleet-role').value.trim(), sortOrder: Number(document.getElementById('fleet-sort').value)||0, notes: document.getElementById('fleet-notes').value.trim(), active: document.getElementById('fleet-active').value !== 'FALSE', fighterCap: rules.fighter, medEvacCap: rules.medEvac, commandCap: rules.command, supportCap: rules.support };
 }
-function fleetAddToBuild(){ var item=fleetCurrentItem(); if(!item.fleetName || !item.userId || !item.shipModel){ alert('Fleet Name, Member, and Ship are required.'); return; } FLEET_BUILD=FLEET_BUILD.filter(function(x){return x.userId!==item.userId || x.fleetName!==item.fleetName;}); FLEET_BUILD.push(item); fleetClearForm(); document.getElementById('fleet-name').value=item.fleetName; renderFleetBuild(); renderFleetRosterPreview(item.fleetName); }
+function fleetAddToBuild(){ var item=fleetCurrentItem(); if(!item.fleetName || !item.userId || !item.shipModel){ alert('Fleet Name, Member, and Ship are required.'); return; } FLEET_BUILD=FLEET_BUILD.filter(function(x){return x.userId!==item.userId || x.fleetName!==item.fleetName;}); FLEET_BUILD.push(item); var rules=fleetReadRules(); FLEET_BUILD.forEach(function(x){ if(x.fleetName===item.fleetName){ x.fighterCap=rules.fighter; x.medEvacCap=rules.medEvac; x.commandCap=rules.command; x.supportCap=rules.support; }}); fleetClearForm(); document.getElementById('fleet-name').value=item.fleetName; renderFleetBuild(); renderFleetRosterPreview(item.fleetName); }
 function renderFleetBuild(){ var box=document.getElementById('fleet-build-list'); if(!box) return; if(!FLEET_BUILD.length){ box.innerHTML='<div class="tav-list-empty">No members staged yet.</div>'; fleetRuleStatus([]); return; } var warnings=fleetRuleStatus(FLEET_BUILD); box.innerHTML=FLEET_BUILD.map(function(f,i){ var over=warnings.length && fleetRoleKey(f.role) ? ' fleet-over-cap' : ''; return '<div class="fleet-build-row'+over+'"><div><strong>'+fleetEsc(f.username)+'</strong><div class="fleet-build-meta">'+fleetEsc(f.role)+' / '+fleetEsc(f.shipModel)+' / '+fleetEsc(f.banner||f.house)+'</div></div><button class="edit-btn" onclick="fleetRemoveBuild('+i+')">Remove</button></div>'; }).join(''); }
 function fleetRemoveBuild(i){ FLEET_BUILD.splice(i,1); renderFleetBuild(); renderFleetRosterPreview(); }
 function renderFleetRosterPreview(name){
@@ -2538,16 +2530,16 @@ function renderFleetRosterPreview(name){
   fleetRuleStatus(items); var grouped={}; items.forEach(function(f){ var r=f.role||'Assigned Vessels'; (grouped[r]||(grouped[r]=[])).push(f); });
   box.innerHTML=Object.keys(grouped).sort(function(a,b){return FLEET_ROLE_ORDER.indexOf(a)-FLEET_ROLE_ORDER.indexOf(b);}).map(function(role){ return '<div class="fleet-admin-tier"><h5>'+fleetEsc(role)+'</h5>'+grouped[role].map(function(f){return '<div class="fleet-roster-row"><div><strong>'+fleetEsc(f.username)+'</strong><div class="fleet-roster-meta">'+fleetEsc(f.shipModel)+' — '+fleetEsc(f.shipMake)+'<br>'+fleetEsc(f.banner||f.house||'')+'</div></div><span class="badge '+(f.active?'badge-gold':'badge-dim')+'">'+(f.active?'Active':'Inactive')+'</span></div>';}).join('')+'</div>'; }).join('');
 }
-function fleetRulesItem(name){ return { id:'fleet-rules-'+fleetSlug(name), fleetName:name, userId:'__rules__', username:'Fleet Rules', house:'', banner:'', shipModel:'', shipMake:'', shipImageUrl:'', role:'__RULES__', sortOrder:-999, notes:JSON.stringify(fleetReadRules()), active:false }; }
 async function fleetSaveBuild(){
   if(!window.OFSSheets || !OFSSheets.saveFleetAssignment){ alert('Fleet write helper unavailable.'); return; }
   var items=FLEET_BUILD.length?FLEET_BUILD:[fleetCurrentItem()];
   if(!items.length || !items[0].fleetName || !items[0].userId || !items[0].shipModel){ alert('Add at least one valid fleet member first.'); return; }
+  var rules=fleetReadRules();
+  items.forEach(function(x){ x.fighterCap=rules.fighter; x.medEvacCap=rules.medEvac; x.commandCap=rules.command; x.supportCap=rules.support; });
   var warnings=fleetRuleStatus(items); if(warnings.length && !confirm('This build exceeds fleet caps: '+warnings.join(', ')+'. Save anyway?')) return;
   try{
-    await OFSSheets.saveFleetAssignment(fleetRulesItem(items[0].fleetName));
     for(var i=0;i<items.length;i++) await OFSSheets.saveFleetAssignment(items[i]);
-    alert('Fleet roster saved. Refresh after Worker /data updates to see the table.'); FLEET_BUILD=[]; fleetClearForm(); renderFleetBuild(); renderFleetAdmin();
+    alert('Fleet roster saved. Refresh after Worker /data updates to see the roster.'); FLEET_BUILD=[]; fleetClearForm(); renderFleetBuild(); renderFleetAdmin();
   } catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
 }
 async function fleetSave(){ return fleetSaveBuild(); }
