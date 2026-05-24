@@ -1316,85 +1316,9 @@ document.querySelectorAll('.event').forEach(ev => {
 </footer>
 
 <script>
-/* ── Admin edit-mode: only active when loaded inside the admin iframe ── */
+/* ── Chronicle block overrides: public + admin iframe ── */
 (function(){
-  if(window.parent === window) return;
-  window.parent.postMessage({ type:'ofs-page-load', page:'timeline' }, '*');
-
   var STORAGE_BLOCKS = 'ofs_timeline_blocks';
-
-  /* Hover / selection styles */
-  var s = document.createElement('style');
-  s.textContent =
-    '[data-tl-id]{cursor:pointer;transition:outline .15s;}' +
-    '[data-tl-id]:hover{outline:2px solid rgba(201,168,76,.55)!important;outline-offset:3px;}' +
-    '[data-tl-id].ofs-tl-sel{outline:2px solid #c9a84c!important;outline-offset:3px;}';
-  document.head.appendChild(s);
-
-  /* Helper: read color from inline style attribute (returns raw value e.g. "#e8a040") */
-  function getInlineColor(el){
-    if(!el) return '';
-    var attr = el.getAttribute('style') || '';
-    var m = attr.match(/color:\s*([^;]+)/);
-    return m ? m[1].trim() : '';
-  }
-
-  /* Apply a saved block edit to the live DOM */
-  function applyBlockEdit(data){
-    if(data.kind === 'age'){
-      var banner = document.querySelector('[data-tl-id="' + data.tlId + '"]');
-      if(!banner) return;
-      var labelEl = banner.querySelector('.age-label');
-      if(labelEl && data.ageLabel) labelEl.textContent = data.ageLabel;
-      if(data.ageColor){
-        banner.style.color = data.ageColor;
-        if(labelEl){ labelEl.style.borderColor = data.ageColor; }
-      }
-    } else {
-      /* Find card by its original title (blockId) */
-      var found = null;
-      document.querySelectorAll('.card-title').forEach(function(el){
-        if(!found && el.textContent.trim() === data.blockId) found = el.closest('.event');
-      });
-      if(!found) return;
-      var tagEl   = found.querySelector('.card-tag');
-      var titleEl = found.querySelector('.card-title');
-      var bodyEl  = found.querySelector('.card-body');
-      if(tagEl){
-        if(data.tag)      tagEl.textContent  = data.tag;
-        if(data.tagColor) tagEl.style.color  = data.tagColor;
-      }
-      if(titleEl && data.title) titleEl.textContent = data.title;
-      if(bodyEl  && data.body !== undefined) bodyEl.innerHTML  = data.body;
-      // Update DETAILS for modal popup (via shared window reference)
-      if(data.detailBody !== undefined || data.detailTitle !== undefined){
-        var key = data.blockId;
-        var D = window._tlDETAILS;
-        if(D){
-          if(!D[key]) D[key] = {};
-          if(data.detailTag   !== undefined) D[key].tag   = data.detailTag;
-          if(data.detailTitle !== undefined) D[key].title = data.detailTitle;
-          if(data.detailBody  !== undefined) D[key].body  = data.detailBody;
-          // Forward-compatible archive fields for future lore review approvals.
-          if(data.detailSubtitle  !== undefined) D[key].subtitle = data.detailSubtitle;
-          if(data.detailHeroImage !== undefined) D[key].heroImage = data.detailHeroImage;
-          if(data.detailImages    !== undefined) D[key].detailImages    = data.detailImages;
-          if(data.sourceLabel     !== undefined) D[key].sourceLabel     = data.sourceLabel;
-          if(data.source          !== undefined) D[key].source          = data.source;
-          if(data.reviewStatus    !== undefined) D[key].reviewStatus    = data.reviewStatus;
-          // If the visible card title changes, keep the archive detail reachable by the new title too.
-          if(data.title && data.title !== key) D[data.title] = D[key];
-        }
-      }
-    }
-  }
-
-  /* On load: patch DOM from any previously saved block edits */
-  var savedBlocks = JSON.parse(localStorage.getItem(STORAGE_BLOCKS) || '{}');
-  Object.keys(savedBlocks).forEach(function(origTitle){
-    var d = savedBlocks[origTitle];
-    applyBlockEdit(Object.assign({ blockId: origTitle }, d));
-  });
 
   /* Map specific card-titles to their TIMELINE_DATA ids */
   var CHRON_MAP = {
@@ -1411,19 +1335,111 @@ document.querySelectorAll('.event').forEach(ev => {
     'First Fleet Raised \u2014 The Pillars of the Citadel': 'chron7'
   };
 
-  /* Assign data-tl-id dynamically to all .event divs */
-  var currentAge = null, ageIdx = 0;
-  var allNodes = Array.from(document.querySelectorAll('.age-banner, .event'));
-  allNodes.forEach(function(el){
-    if(el.classList.contains('age-banner')){
-      ageIdx++;
-      currentAge = 'age' + ageIdx;
-      return;
+  function assignTimelineIds(){
+    var currentAge = null, ageIdx = 0;
+    var allNodes = Array.from(document.querySelectorAll('.age-banner, .event'));
+    allNodes.forEach(function(el){
+      if(el.classList.contains('age-banner')){
+        ageIdx++;
+        currentAge = 'age' + ageIdx;
+        el.dataset.tlId = currentAge;
+        return;
+      }
+      var titleEl = el.querySelector('.card-title');
+      var title   = titleEl ? titleEl.textContent.trim() : '';
+      el.dataset.tlId = CHRON_MAP[title] || currentAge;
+    });
+  }
+
+  /* Helper: read color from inline style attribute (returns raw value e.g. "#e8a040") */
+  function getInlineColor(el){
+    if(!el) return '';
+    var attr = el.getAttribute('style') || '';
+    var m = attr.match(/color:\s*([^;]+)/);
+    return m ? m[1].trim() : '';
+  }
+
+  function findEventByBlockId(blockId){
+    var found = null;
+    document.querySelectorAll('.card-title').forEach(function(el){
+      if(found) return;
+      if(el.textContent.trim() === blockId) found = el.closest('.event');
+    });
+    return found;
+  }
+
+  /* Apply a saved block edit to the live DOM. This is intentionally public-safe:
+     public pages need Sheets/Worker overrides too, not only the admin iframe. */
+  function applyBlockEdit(data){
+    if(!data) return;
+    if(data.kind === 'age'){
+      var banner = document.querySelector('[data-tl-id="' + data.tlId + '"]');
+      if(!banner) return;
+      var labelEl = banner.querySelector('.age-label');
+      if(labelEl && data.ageLabel) labelEl.textContent = data.ageLabel;
+      if(data.ageColor){
+        banner.style.color = data.ageColor;
+        if(labelEl){ labelEl.style.borderColor = data.ageColor; }
+      }
+    } else {
+      var found = findEventByBlockId(data.blockId);
+      if(!found) return;
+      var tagEl   = found.querySelector('.card-tag');
+      var titleEl = found.querySelector('.card-title');
+      var bodyEl  = found.querySelector('.card-body');
+      if(tagEl){
+        if(data.tag)      tagEl.textContent  = data.tag;
+        if(data.tagColor) tagEl.style.color  = data.tagColor;
+      }
+      if(titleEl && data.title) titleEl.textContent = data.title;
+      if(bodyEl  && data.body !== undefined) bodyEl.innerHTML  = data.body;
+      // Update DETAILS for modal popup (via shared window reference)
+      if(data.detailBody !== undefined || data.detailTitle !== undefined || data.detailSubtitle !== undefined || data.detailHeroImage !== undefined || data.detailImages !== undefined){
+        var key = data.blockId;
+        var D = window._tlDETAILS;
+        if(D){
+          if(!D[key]) D[key] = {};
+          if(data.detailTag        !== undefined) D[key].tag          = data.detailTag;
+          if(data.detailTitle      !== undefined) D[key].title        = data.detailTitle;
+          if(data.detailBody       !== undefined) D[key].body         = data.detailBody;
+          if(data.detailSubtitle   !== undefined) D[key].subtitle     = data.detailSubtitle;
+          if(data.detailHeroImage  !== undefined) D[key].heroImage    = data.detailHeroImage;
+          if(data.detailImages     !== undefined) D[key].detailImages = data.detailImages;
+          if(data.sourceLabel      !== undefined) D[key].sourceLabel  = data.sourceLabel;
+          if(data.source           !== undefined) D[key].source       = data.source;
+          if(data.reviewStatus     !== undefined) D[key].reviewStatus = data.reviewStatus;
+          // If the visible card title changes, keep the archive detail reachable by the new title too.
+          if(data.title && data.title !== key) D[data.title] = D[key];
+        }
+      }
+      // Card titles may have changed, so refresh edit ids for subsequent admin clicks.
+      assignTimelineIds();
     }
-    var titleEl = el.querySelector('.card-title');
-    var title   = titleEl ? titleEl.textContent.trim() : '';
-    el.dataset.tlId = CHRON_MAP[title] || currentAge;
-  });
+  }
+
+  assignTimelineIds();
+  window._tlApplyBlockEdit = applyBlockEdit;
+
+  /* Local preview cache. Public page can safely consume it; Worker data overwrites after load. */
+  try {
+    var savedBlocks = JSON.parse(localStorage.getItem(STORAGE_BLOCKS) || '{}');
+    Object.keys(savedBlocks).forEach(function(origTitle){
+      var d = savedBlocks[origTitle];
+      applyBlockEdit(Object.assign({ blockId: origTitle }, d));
+    });
+  } catch(e) {}
+
+  // Everything below is admin-iframe-only.
+  if(window.parent === window) return;
+  window.parent.postMessage({ type:'ofs-page-load', page:'timeline' }, '*');
+
+  /* Hover / selection styles */
+  var s = document.createElement('style');
+  s.textContent =
+    '[data-tl-id]{cursor:pointer;transition:outline .15s;}' +
+    '[data-tl-id]:hover{outline:2px solid rgba(201,168,76,.55)!important;outline-offset:3px;}' +
+    '[data-tl-id].ofs-tl-sel{outline:2px solid #c9a84c!important;outline-offset:3px;}';
+  document.head.appendChild(s);
 
   /* Click handler — sends actual block content */
   document.addEventListener('click', function(e){
@@ -1447,26 +1463,25 @@ document.querySelectorAll('.event').forEach(ev => {
       var titleEl = target.querySelector('.card-title');
       var bodyEl  = target.querySelector('.card-body');
       var numEl   = target.querySelector('.card-tl-num');
-      var tagText   = tagEl   ? tagEl.textContent.trim()   : '';
-      var tagColor  = getInlineColor(tagEl);
       var titleText = titleEl ? titleEl.textContent.trim() : '';
-      var bodyHtml  = bodyEl  ? bodyEl.innerHTML.replace(/^\s+|\s+$/g,'') : '';
-      if(numEl && titleText){
-        var numText = numEl.textContent.trim();
-        if(titleText.startsWith(numText)) titleText = titleText.slice(numText.length).trim();
+      var tagText = tagEl ? tagEl.textContent.trim() : '';
+      if(numEl && tagText.indexOf(numEl.textContent.trim()) === 0) tagText = tagText.replace(numEl.textContent.trim(), '').trim();
+      var bodyHtml = bodyEl ? bodyEl.innerHTML.trim() : '';
+      var tagColor = getInlineColor(tagEl);
+      if(!tagColor && target.dataset.category){
+        tagColor = ({ war:'#b05050', political:'#5080b0', exploration:'#50a070', founding:'#a07030' })[target.dataset.category] || '';
       }
-      console.log('[TL] _tlDETAILS defined:', !!window._tlDETAILS, 'titleText:', JSON.stringify(titleText));
-      function normTitle(v){ return String(v || '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/–|—/g, '—').replace(/\s+/g, ' ').trim().toLowerCase(); }
+      function normTitle(v){
+        return String(v || '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/–|—/g, '—').replace(/\s+/g, ' ').trim().toLowerCase();
+      }
       function lookupDetail(title){
-        if(!window._tlDETAILS) return {};
-        if(window._tlDETAILS[title]) return window._tlDETAILS[title];
-        var want = normTitle(title);
-        var keys = Object.keys(window._tlDETAILS);
-        for(var i=0;i<keys.length;i++){ if(normTitle(keys[i]) === want) return window._tlDETAILS[keys[i]]; }
+        var D = window._tlDETAILS || {};
+        if(D[title]) return D[title];
+        var want = normTitle(title), keys = Object.keys(D);
+        for(var i=0;i<keys.length;i++){ if(normTitle(keys[i]) === want) return D[keys[i]]; }
         return {};
       }
       var detail = lookupDetail(titleText);
-      console.log('[TL] detail found:', !!detail && !!(detail.title || detail.body || detail.heroImage || detail.detailHeroImage));
       msg = { type:'ofs-timeline-block-edit', kind:'card', tlId:tlId,
               tag:tagText, tagColor:tagColor, title:titleText, body:bodyHtml,
               detailTag:detail.tag||detail.detailTag||'', detailTitle:detail.title||detail.detailTitle||'',
@@ -1482,9 +1497,6 @@ document.querySelectorAll('.event').forEach(ev => {
       applyBlockEdit(e.data);
     }
   });
-
-  /* Expose for Sheets-based block loading (called after external scripts load) */
-  window._tlApplyBlockEdit = applyBlockEdit;
 })();
 </script>
 <script src="header_bar.js"></script>
