@@ -1518,8 +1518,18 @@
                       <input id="tlb-detail-subtitle" class="hf-input" type="text" placeholder="e.g. The archive record of the battle">
                     </div>
                     <div style="margin-top:8px">
-                      <div class="hf-label">Detail Hero Image URL <span style="color:var(--text-dim);font-size:.7rem">(optional; use assets/chronicles/... or https://...)</span></div>
-                      <input id="tlb-detail-hero" class="hf-input" type="text" placeholder="assets/chronicles/example.png">
+                      <div class="hf-label">Detail Hero Image <span style="color:var(--text-dim);font-size:.7rem">(preview current image, paste URL, or upload a replacement)</span></div>
+                      <input id="tlb-detail-hero" class="hf-input" type="text" placeholder="assets/chronicles/example.png" oninput="updateTimelineHeroPreview()">
+                      <div style="margin-top:8px;border:1px solid rgba(201,168,76,.22);background:rgba(10,14,24,.48);border-radius:4px;padding:10px">
+                        <img id="tlb-detail-hero-preview" alt="Current Chronicle hero image" style="display:none;max-width:100%;max-height:180px;object-fit:contain;margin:0 auto 8px;border:1px solid rgba(201,168,76,.25);border-radius:3px;background:rgba(0,0,0,.28)">
+                        <div id="tlb-detail-hero-preview-empty" style="color:var(--text-dim);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">No hero image selected</div>
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                          <input id="tlb-detail-hero-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="uploadTimelineHeroImage(this.files && this.files[0])">
+                          <button type="button" class="small-btn" onclick="document.getElementById('tlb-detail-hero-file').click()">Upload Image</button>
+                          <button type="button" class="small-btn" onclick="document.getElementById('tlb-detail-hero').value='';updateTimelineHeroPreview()">Clear Image</button>
+                          <span id="tlb-detail-hero-upload-status" style="color:var(--text-dim);font-size:.72rem"></span>
+                        </div>
+                      </div>
                     </div>
                     <div style="margin-top:8px">
                       <div class="hf-label">Detail Body</div>
@@ -4182,7 +4192,70 @@ function rteGet(fieldId) {
   });
 })();
 
-function openTimelineBlockEditor(data){
+  function timelineHeroDisplayUrl(url){
+    const v = String(url || '').trim();
+    if(!v) return '';
+    if(/^data:|^https?:\/\//i.test(v)) return v;
+    return v.replace(/^\/?/, '');
+  }
+
+  function updateTimelineHeroPreview(){
+    const input = document.getElementById('tlb-detail-hero');
+    const img = document.getElementById('tlb-detail-hero-preview');
+    const empty = document.getElementById('tlb-detail-hero-preview-empty');
+    if(!input || !img || !empty) return;
+    const url = timelineHeroDisplayUrl(input.value);
+    if(url){
+      img.src = url;
+      img.style.display = 'block';
+      empty.style.display = 'none';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      empty.style.display = 'block';
+    }
+  }
+
+  async function uploadTimelineHeroImage(file){
+    const status = document.getElementById('tlb-detail-hero-upload-status');
+    const field = document.getElementById('tlb-detail-hero');
+    const chooser = document.getElementById('tlb-detail-hero-file');
+    if(!file || !field) return;
+    if(!/^image\/(png|jpeg|jpg|webp|gif)$/i.test(file.type || '')){
+      if(status) status.textContent = 'Only PNG, JPG, WEBP, or GIF images are allowed.';
+      if(chooser) chooser.value = '';
+      return;
+    }
+    if(file.size > 5 * 1024 * 1024){
+      if(status) status.textContent = 'Image too large. Max upload is 5 MB.';
+      if(chooser) chooser.value = '';
+      return;
+    }
+    try{
+      if(status) status.textContent = 'Uploading image…';
+      const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+      if(!session || !session.token || !session.isAdmin) throw new Error('Admin session expired. Please log in again.');
+      const form = new FormData();
+      form.append('file', file);
+      form.append('folder', 'chronicles');
+      const res = await fetch('https://ofs-api.orderofthefallenstar.workers.dev/media/upload', {
+        method:'POST',
+        headers:{ Authorization:'Bearer ' + session.token },
+        body: form
+      });
+      const body = await res.json().catch(() => ({}));
+      if(!res.ok || !body.ok || !body.url) throw new Error(body.error || body.reason || ('Upload failed with HTTP ' + res.status));
+      field.value = body.url;
+      updateTimelineHeroPreview();
+      if(status) status.textContent = 'Uploaded. Save Changes to publish this image on the Chronicle.';
+    } catch(err){
+      if(status) status.textContent = err.message || 'Upload failed.';
+    } finally {
+      if(chooser) chooser.value = '';
+    }
+  }
+
+  function openTimelineBlockEditor(data){
   const panel  = document.getElementById('tl-block-editor');
   const cardF  = document.getElementById('tl-block-card-fields');
   const ageF   = document.getElementById('tl-block-age-fields');
@@ -4213,6 +4286,9 @@ function openTimelineBlockEditor(data){
     document.getElementById('tlb-detail-title').value = data.detailTitle || '';
     document.getElementById('tlb-detail-subtitle').value = data.detailSubtitle || '';
     document.getElementById('tlb-detail-hero').value = data.detailHeroImage || '';
+    updateTimelineHeroPreview();
+    const uploadStatus = document.getElementById('tlb-detail-hero-upload-status');
+    if(uploadStatus) uploadStatus.textContent = '';
     rteSet('tlb-detail-body', data.detailBody  || '');
   }
 
