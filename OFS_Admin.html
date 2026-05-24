@@ -1160,7 +1160,7 @@
             <div class="pages-sub-nav" id="pages-sub-nav">
               <div class="pages-sub-tab active" data-page="home">Home</div>
               <div class="pages-sub-tab"        data-page="codex">Codex</div>
-              <div class="pages-sub-tab"        data-page="timeline">Timeline</div>
+              <div class="pages-sub-tab"        data-page="timeline">Chronicles</div>
             </div>
           </div>
           <div class="edit-mode-bar" id="edit-mode-bar" style="display:none">Click any element to jump to its field</div>
@@ -1450,7 +1450,7 @@
             </div>
           </div>
 
-          <!-- Timeline edit panel -->
+          <!-- Chronicles edit panel -->
           <div id="edit-timeline" class="edit-sub-panel" style="display:none">
             <div class="section-list" id="timeline-list"></div>
             <div class="pages-editor" id="timeline-editor">
@@ -1459,7 +1459,7 @@
 
             <!-- Block edit request (populated when user clicks a block in iframe) -->
             <div id="tl-block-editor" style="display:none;border-top:1px solid var(--b-dim);margin-top:16px;padding:16px 0 0;">
-              <div class="editor-meta-label" style="margin-bottom:10px;">Block Editor</div>
+              <div class="editor-meta-label" style="margin-bottom:10px;">Chronicle Block Editor</div>
               <div class="tl-template" id="tl-block-form">
                 <div>
                   <div class="hf-label">Block Identifier <span style="color:var(--text-dim);font-size:.7rem">(read-only — used to find the block)</span></div>
@@ -1486,7 +1486,7 @@
                     <input id="tlb-title" class="hf-input" type="text">
                   </div>
                   <div>
-                    <div class="hf-label">Card Body</div>
+                    <div class="hf-label">Timeline Preview Summary</div>
                     <div class="ofs-rte">
                       <div class="ofs-rte-toolbar">
                         <button class="ofs-rte-btn" onmousedown="event.preventDefault();rteCmd('tlb-body','bold')" title="Bold"><b>B</b></button>
@@ -1504,7 +1504,7 @@
                     </div>
                   </div>
                   <div style="border-top:1px solid var(--b-dim);margin-top:14px;padding-top:14px;">
-                    <div class="editor-meta-label" style="margin-bottom:10px;">Detail / Lore Modal</div>
+                    <div class="editor-meta-label" style="margin-bottom:10px;">Expanded Chronicle Entry</div>
                     <div>
                       <div class="hf-label">Detail Tag <span style="color:var(--text-dim);font-size:.7rem">(breadcrumb path shown above modal title)</span></div>
                       <input id="tlb-detail-tag" class="hf-input" type="text" placeholder="e.g. Prologue · Age I — The Age of Severance">
@@ -1551,18 +1551,18 @@
             </div>
           </div>
 
-            <!-- New entry request template -->
+            <!-- New Chronicle entry request template -->
             <div style="border-top:1px solid var(--b-dim);margin-top:16px;padding:16px 0 0;">
               <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;padding:6px 0 10px;"
                    onclick="var b=document.getElementById('tl-template-body');var a=document.getElementById('tl-template-arrow');var open=b.style.display!=='none';b.style.display=open?'none':'';a.textContent=open?'▶':'▼';">
-                <div style="font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);">📜 &nbsp;Add New Timeline Entry</div>
+                <div style="font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--gold);">📜 &nbsp;Add New Chronicle Entry</div>
                 <span id="tl-template-arrow" style="font-size:.6rem;color:var(--gold-dim);">▶</span>
               </div>
               <div id="tl-template-body" style="display:none">
               <div class="tl-notice">
                 <div class="tl-notice-icon">📜</div>
                 <div class="tl-notice-text">
-                  <strong>Timeline adds go through Reno.</strong><br>
+                  <strong>Chronicle additions go through Reno.</strong><br>
                   Fill out the template below, copy the request, and send it to Reno. He will work with the lorekeeper to add the entry with proper styling and placement.
                 </div>
               </div>
@@ -1611,7 +1611,7 @@
                 </div>
                 <div class="tl-copy-row">
                   <span class="tl-copied-msg" id="tl-copied">Copied to clipboard</span>
-                  <button class="save-btn" onclick="copyTimelineRequest()">Copy Request for Reno</button>
+                  <button class="save-btn" onclick="copyTimelineRequest()">Copy Chronicle Request for Reno</button>
                 </div>
               </div>
               </div><!-- /tl-template-body -->
@@ -3576,7 +3576,7 @@ function copyTimelineRequest(){
 
   const lines = [
     '═══════════════════════════════════════',
-    '  OFS TIMELINE — NEW ENTRY REQUEST',
+    '  OFS CHRONICLES — NEW ENTRY REQUEST',
     '═══════════════════════════════════════',
     '',
     `Type:     ${type}`,
@@ -4054,7 +4054,7 @@ async function newCodexEntry(){
 }
 
 /* ══════════════════════════════════════════════════════════
-   TIMELINE EDITOR
+   CHRONICLES EDITOR
 ══════════════════════════════════════════════════════════ */
 let activeTimelineId = null;
 const ENTRY_TYPES = ['Prologue','Age','Interlude','Chronicle','Proclamation','Epilogue','Other'];
@@ -4310,7 +4310,7 @@ function saveTimelineEntry(id){
   entry.num      = document.getElementById('te-num').value.trim();
   entry.content  = document.getElementById('te-content').value;
   savePageData();
-  logChange('—', `Timeline: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
+  logChange('—', `Chronicles: ${oldTitle}`, oldTitle, entry.title + ' (content updated)');
   renderTimelineList();
   showToast('Entry saved.');
 }
@@ -4318,7 +4318,7 @@ function saveTimelineEntry(id){
 function deleteTimelineEntry(id){
   const entry = TIMELINE_DATA.find(e=>e.id===id);
   if(!confirm(`Delete "${entry.title}"? This cannot be undone.`)) return;
-  logChange('—', `Timeline: ${entry.title}`, entry.title, 'DELETED');
+  logChange('—', `Chronicles: ${entry.title}`, entry.title, 'DELETED');
   TIMELINE_DATA = TIMELINE_DATA.filter(e=>e.id!==id);
   activeTimelineId = null;
   savePageData();
