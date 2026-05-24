@@ -1514,6 +1514,14 @@
                       <input id="tlb-detail-title" class="hf-input" type="text" placeholder="e.g. The Star That Would Not Dim">
                     </div>
                     <div style="margin-top:8px">
+                      <div class="hf-label">Detail Subtitle <span style="color:var(--text-dim);font-size:.7rem">(optional deck under modal title)</span></div>
+                      <input id="tlb-detail-subtitle" class="hf-input" type="text" placeholder="e.g. The archive record of the battle">
+                    </div>
+                    <div style="margin-top:8px">
+                      <div class="hf-label">Detail Hero Image URL <span style="color:var(--text-dim);font-size:.7rem">(optional; use assets/chronicles/... or https://...)</span></div>
+                      <input id="tlb-detail-hero" class="hf-input" type="text" placeholder="assets/chronicles/example.png">
+                    </div>
+                    <div style="margin-top:8px">
                       <div class="hf-label">Detail Body</div>
                       <div class="ofs-rte">
                         <div class="ofs-rte-toolbar">
@@ -3112,9 +3120,22 @@ window.addEventListener('message', function(e){
       const tldet = iframeWin._tlDETAILS;
       console.log('[Detail] iframeWin._tlDETAILS:', tldet ? Object.keys(tldet).length + ' keys' : 'UNDEFINED');
       console.log('[Detail] d.title:', JSON.stringify(d.title));
-      const det = tldet && tldet[d.title];
+      function normTitle(v){ return String(v || '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/–|—/g, '—').replace(/\s+/g, ' ').trim().toLowerCase(); }
+      let det = tldet && tldet[d.title];
+      if(!det && tldet){
+        const want = normTitle(d.title);
+        const k = Object.keys(tldet).find(key => normTitle(key) === want);
+        if(k) det = tldet[k];
+      }
       console.log('[Detail] lookup result:', det);
-      if(det){ d.detailTag = det.tag||''; d.detailTitle = det.title||''; d.detailBody = det.body||''; }
+      if(det){
+        d.detailTag = det.tag||det.detailTag||'';
+        d.detailTitle = det.title||det.detailTitle||'';
+        d.detailSubtitle = det.subtitle||det.detailSubtitle||'';
+        d.detailHeroImage = det.heroImage||det.detailHeroImage||'';
+        d.detailBody = det.body||det.detailBody||'';
+        d.sourceLabel = det.sourceLabel||det.source||'';
+      }
     } catch(ex){ console.error('[Detail] Exception:', ex); }
     openTimelineBlockEditor(d);
   }
@@ -4190,6 +4211,8 @@ function openTimelineBlockEditor(data){
     rteSet('tlb-body',        data.body        || '');
     document.getElementById('tlb-detail-tag').value   = data.detailTag   || '';
     document.getElementById('tlb-detail-title').value = data.detailTitle || '';
+    document.getElementById('tlb-detail-subtitle').value = data.detailSubtitle || '';
+    document.getElementById('tlb-detail-hero').value = data.detailHeroImage || '';
     rteSet('tlb-detail-body', data.detailBody  || '');
   }
 
@@ -4226,10 +4249,12 @@ async function saveBlockEdit(){
     const body        = rteGet('tlb-body');
     const detailTag   = document.getElementById('tlb-detail-tag').value.trim();
     const detailTitle = document.getElementById('tlb-detail-title').value.trim();
+    const detailSubtitle = document.getElementById('tlb-detail-subtitle').value.trim();
+    const detailHeroImage = document.getElementById('tlb-detail-hero').value.trim();
     const detailBody  = rteGet('tlb-detail-body');
-    msg = { type:'ofs-timeline-block-update', kind:'card', blockId, tag, tagColor, title, body, detailTag, detailTitle, detailBody };
+    msg = { type:'ofs-timeline-block-update', kind:'card', blockId, tag, tagColor, title, body, detailTag, detailTitle, detailSubtitle, detailHeroImage, detailBody };
     storageKey = blockId;
-    storageVal = { kind:'card', tag, tagColor, title, body, detailTag, detailTitle, detailBody };
+    storageVal = { kind:'card', tag, tagColor, title, body, detailTag, detailTitle, detailSubtitle, detailHeroImage, detailBody };
     // Update panel identifier if title was changed
     panel.dataset.blockId = title || blockId;
     document.getElementById('tlb-id').value = title || blockId;

@@ -401,12 +401,14 @@
   .tl-modal-hero {
     display: none;
     width: calc(100% - 60px);
-    max-height: 360px;
-    object-fit: cover;
+    height: auto;
+    max-height: none;
+    object-fit: contain;
     margin: 26px 30px 0;
     border: 1px solid rgba(201,168,76,.28);
     border-radius: 4px;
     box-shadow: 0 16px 34px rgba(0,0,0,.45);
+    background: rgba(0,0,0,.22);
   }
   .tl-modal-hero[src]:not([src='']) { display: block; }
   .tl-modal-body {
@@ -464,8 +466,9 @@
   .tl-modal-gallery:not(:empty) { display: grid; }
   .tl-modal-gallery figure { margin: 0; }
   .tl-modal-gallery img {
-    width: 100%; height: 180px; object-fit: cover;
+    width: 100%; height: auto; object-fit: contain;
     border: 1px solid rgba(201,168,76,.25); border-radius: 4px;
+    background: rgba(0,0,0,.22);
   }
   .tl-modal-gallery figcaption {
     color: var(--silver); font-size: 13px; line-height: 1.35; margin-top: 6px; font-style: italic;
@@ -1118,8 +1121,34 @@
         (img.caption ? '<figcaption>' + escHtml(img.caption) + '</figcaption>' : '') + '</figure>';
     }).join('');
   }
-  function openModal(title) {
-    var d = DETAILS[title];
+  function normTitle(v){
+    return String(v || '')
+      .replace(/[‘’]/g, "'")
+      .replace(/[“”]/g, '"')
+      .replace(/–|—/g, '—')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+  }
+  function findDetail(title){
+    if(DETAILS[title]) return { key:title, data:DETAILS[title] };
+    var want = normTitle(title);
+    var keys = Object.keys(DETAILS);
+    for(var i=0;i<keys.length;i++){
+      if(normTitle(keys[i]) === want) return { key:keys[i], data:DETAILS[keys[i]] };
+    }
+    return null;
+  }
+  function cardFallbackDetail(card, title){
+    return {
+      tag: (card && card.querySelector('.card-tag') ? card.querySelector('.card-tag').textContent.trim() : ''),
+      title: title,
+      body: card && card.querySelector('.card-body') ? card.querySelector('.card-body').innerHTML : ''
+    };
+  }
+  function openModal(title, fallbackCard) {
+    var found = findDetail(title);
+    var d = found ? found.data : cardFallbackDetail(fallbackCard, title);
     if(!d) return;
     document.getElementById('tl-modal-tag').textContent   = d.tag   || d.detailTag || '';
     document.getElementById('tl-modal-title').textContent = d.title || d.detailTitle || title;
@@ -1138,16 +1167,17 @@
   modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
 
-  /* Attach click to each .card that has a known detail entry */
+  /* Attach click to every Chronicle card. DETAILS supplies rich archive records;
+     otherwise the modal falls back to the card's preview content so no event is dead. */
   document.querySelectorAll('.event').forEach(function(ev){
     var titleEl = ev.querySelector('.card-title');
     if(!titleEl) return;
-    var titleText = titleEl.textContent.trim();
-    if(!DETAILS[titleText]) return;
     var card = ev.querySelector('.card');
     if(card) {
       card.style.cursor = 'pointer';
-      card.addEventListener('click', function(){ openModal(titleText); });
+      card.addEventListener('click', function(){
+        openModal(titleEl.textContent.trim(), card);
+      });
     }
   });
 })();
@@ -1270,12 +1300,14 @@ document.querySelectorAll('.event').forEach(ev => {
           if(data.detailTitle !== undefined) D[key].title = data.detailTitle;
           if(data.detailBody  !== undefined) D[key].body  = data.detailBody;
           // Forward-compatible archive fields for future lore review approvals.
-          if(data.detailSubtitle  !== undefined) D[key].detailSubtitle  = data.detailSubtitle;
-          if(data.detailHeroImage !== undefined) D[key].detailHeroImage = data.detailHeroImage;
+          if(data.detailSubtitle  !== undefined) D[key].subtitle = data.detailSubtitle;
+          if(data.detailHeroImage !== undefined) D[key].heroImage = data.detailHeroImage;
           if(data.detailImages    !== undefined) D[key].detailImages    = data.detailImages;
           if(data.sourceLabel     !== undefined) D[key].sourceLabel     = data.sourceLabel;
           if(data.source          !== undefined) D[key].source          = data.source;
           if(data.reviewStatus    !== undefined) D[key].reviewStatus    = data.reviewStatus;
+          // If the visible card title changes, keep the archive detail reachable by the new title too.
+          if(data.title && data.title !== key) D[data.title] = D[key];
         }
       }
     }
@@ -1348,11 +1380,22 @@ document.querySelectorAll('.event').forEach(ev => {
         if(titleText.startsWith(numText)) titleText = titleText.slice(numText.length).trim();
       }
       console.log('[TL] _tlDETAILS defined:', !!window._tlDETAILS, 'titleText:', JSON.stringify(titleText));
-      var detail = (window._tlDETAILS && window._tlDETAILS[titleText]) || {};
-      console.log('[TL] detail found:', !!window._tlDETAILS && !!window._tlDETAILS[titleText]);
+      function normTitle(v){ return String(v || '').replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/–|—/g, '—').replace(/\s+/g, ' ').trim().toLowerCase(); }
+      function lookupDetail(title){
+        if(!window._tlDETAILS) return {};
+        if(window._tlDETAILS[title]) return window._tlDETAILS[title];
+        var want = normTitle(title);
+        var keys = Object.keys(window._tlDETAILS);
+        for(var i=0;i<keys.length;i++){ if(normTitle(keys[i]) === want) return window._tlDETAILS[keys[i]]; }
+        return {};
+      }
+      var detail = lookupDetail(titleText);
+      console.log('[TL] detail found:', !!detail && !!(detail.title || detail.body || detail.heroImage || detail.detailHeroImage));
       msg = { type:'ofs-timeline-block-edit', kind:'card', tlId:tlId,
               tag:tagText, tagColor:tagColor, title:titleText, body:bodyHtml,
-              detailTag:detail.tag||'', detailTitle:detail.title||'', detailBody:detail.body||'' };
+              detailTag:detail.tag||detail.detailTag||'', detailTitle:detail.title||detail.detailTitle||'',
+              detailSubtitle:detail.subtitle||detail.detailSubtitle||'', detailHeroImage:detail.heroImage||detail.detailHeroImage||'',
+              detailBody:detail.body||detail.detailBody||'', sourceLabel:detail.sourceLabel||detail.source||'' };
     }
     window.parent.postMessage(msg, '*');
   });
