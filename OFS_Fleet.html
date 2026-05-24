@@ -34,18 +34,27 @@
 (function(){const cv=document.getElementById('starfield'),cx=cv.getContext('2d');let st=[];function resize(){cv.width=innerWidth;cv.height=innerHeight;st=[];const n=Math.floor(cv.width*cv.height/4200);for(let i=0;i<n;i++)st.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1+.2,a:Math.random()*.5+.1,s:Math.random()*.0004+.0001});}function draw(t){cx.clearRect(0,0,cv.width,cv.height);for(const s of st){const p=Math.sin(t*s.s*900+s.x*.01)*.18+.82;cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(190,210,255,${(s.a*p).toFixed(3)})`;cx.fill();}requestAnimationFrame(draw);}resize();addEventListener('resize',resize);requestAnimationFrame(draw);})();
 function esc(s){var el=document.createElement('span');el.textContent=s==null?'':String(s);return el.innerHTML;}
 function imgUrl(url){if(!url)return'';var m=String(url).match(/\/file\/d\/([^/?#]+)/);return m?'https://lh3.googleusercontent.com/d/'+m[1]:url;}
+const ROLE_ORDER=['Command','Fighter','Med Evac','Support','Transport','Recon','Crew','Assigned Vessels'];
+function roleRank(role){const i=ROLE_ORDER.indexOf(role||'');return i===-1?ROLE_ORDER.length:i;}
+function isRuleRow(f){return f&&(f.userId==='__rules__'||f.role==='__RULES__'||String(f.id||'').indexOf('fleet-rules-')===0);}
+function ruleKey(role){role=String(role||'').toLowerCase();if(role.includes('fighter'))return'fighter';if(role.includes('med')||role.includes('evac'))return'medEvac';if(role.includes('command'))return'command';if(role.includes('support'))return'support';return'';}
+function rulesFor(name,all){const row=all.find(f=>isRuleRow(f)&&f.fleetName===name), rules={fighter:2,medEvac:1,command:1,support:0};if(row&&row.notes){try{Object.assign(rules,JSON.parse(row.notes));}catch(e){}}return rules;}
 let activeFleet=new URLSearchParams(location.search).get('fleet') || '';
 function renderFleet(){
   const root=document.getElementById('fleet-root'), tabs=document.getElementById('fleet-tabs');
-  const data=(window.OFSSheets&&OFSSheets.getFleets?OFSSheets.getFleets():[]).filter(f=>f.active!==false);
-  if(!data.length){root.innerHTML='<div class="empty">No fleet assignments are available yet. Confirm the Worker /data endpoint exposes the Fleets tab.</div>';tabs.innerHTML='';return;}
+  const all=(window.OFSSheets&&OFSSheets.getFleets?OFSSheets.getFleets():[]);
+  const data=all.filter(f=>!isRuleRow(f)&&f.active!==false);
+  if(!data.length){root.innerHTML='<div class="empty">No fleet assignments are available yet. Confirm the Fleets sheet has headers and the Worker /data endpoint exposes the Fleets tab.</div>';tabs.innerHTML='';return;}
   const names=[...new Set(data.map(f=>f.fleetName).filter(Boolean))].sort();
   if(!activeFleet||names.indexOf(activeFleet)===-1) activeFleet=names[0];
   tabs.innerHTML=names.map(n=>`<button class="fleet-tab ${n===activeFleet?'active':''}" onclick="activeFleet='${esc(n).replace(/'/g,'&#39;')}';history.replaceState(null,'','?fleet='+encodeURIComponent(activeFleet));renderFleet()">${esc(n)}</button>`).join('');
-  const grouped={}; data.filter(f=>f.fleetName===activeFleet).sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)||(a.username||'').localeCompare(b.username||'')).forEach(f=>{(grouped[f.role||'Assigned Vessels']||(grouped[f.role||'Assigned Vessels']=[])).push(f);});
-  root.innerHTML=Object.keys(grouped).map(role=>`<section class="fleet-section"><div class="fleet-head"><h2>${esc(role)}</h2><div class="fleet-line"></div></div><div class="ship-grid">${grouped[role].map(card).join('')}</div></section>`).join('');
+  const selected=data.filter(f=>f.fleetName===activeFleet).sort((a,b)=>roleRank(a.role)-roleRank(b.role)||(a.sortOrder||0)-(b.sortOrder||0)||(a.username||'').localeCompare(b.username||''));
+  const rules=rulesFor(activeFleet,all), counts={}; selected.forEach(f=>{const k=ruleKey(f.role); if(k) counts[k]=(counts[k]||0)+1;});
+  const ruleLine=Object.keys(rules).filter(k=>rules[k]).map(k=>`${k.replace('medEvac','Med Evac')}: ${(counts[k]||0)}/${rules[k]}`).join(' · ');
+  const grouped={}; selected.forEach(f=>{(grouped[f.role||'Assigned Vessels']||(grouped[f.role||'Assigned Vessels']=[])).push(f);});
+  root.innerHTML=(ruleLine?`<div class="empty" style="margin-bottom:18px;padding:14px">Fleet rules: ${esc(ruleLine)}</div>`:'')+Object.keys(grouped).sort((a,b)=>roleRank(a)-roleRank(b)).map(role=>`<section class="fleet-section"><div class="fleet-head"><h2>${esc(role)} <span style="color:var(--silver-dim);font-size:.72em">${grouped[role].length}</span></h2><div class="fleet-line"></div></div><div class="ship-grid">${grouped[role].map(card).join('')}</div></section>`).join('');
 }
-function card(f){const bg=imgUrl(f.shipImageUrl);return `<article class="ship-card"><div class="ship-img" ${bg?`style="background-image:url('${esc(bg)}')"`:''}>${bg?'':'No Ship Image'}</div><div class="ship-body"><div class="member">${esc(f.username)}</div><div class="ship">${esc(f.shipModel)}</div><div class="make">${esc(f.shipMake)}</div>${f.banner?`<span class="badge">${esc(f.banner)}</span>`:''}<div class="meta">${f.house?`House: ${esc(f.house)}<br>`:''}${f.fleetName?`Fleet: ${esc(f.fleetName)}`:''}</div>${f.notes?`<div class="notes">${esc(f.notes)}</div>`:''}</div></article>`;}
+function card(f){const bg=imgUrl(f.shipImageUrl);return `<article class="ship-card"><div class="ship-img" ${bg?`style="background-image:url('${esc(bg)}')"`:''}>${bg?'':'No Ship Image'}</div><div class="ship-body"><div class="member">${esc(f.username)}</div><div class="ship">${esc(f.shipModel)}</div><div class="make">${esc(f.shipMake)}</div>${f.role?`<span class="badge">${esc(f.role)}</span>`:''}${f.banner?`<span class="badge">${esc(f.banner)}</span>`:''}<div class="meta">${f.house?`House: ${esc(f.house)}<br>`:''}${f.fleetName?`Fleet: ${esc(f.fleetName)}`:''}</div>${f.notes?`<div class="notes">${esc(f.notes)}</div>`:''}</div></article>`;}
 OFSSheets.load().then(function(){ if(window.OFSHeaderBar) OFSHeaderBar.refreshBanners(); renderFleet(); }).catch(renderFleet);
 </script>
 </body>

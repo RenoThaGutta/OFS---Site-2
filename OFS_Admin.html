@@ -201,6 +201,39 @@
     }
     .edit-btn:hover { border-color: var(--b-gold); color: var(--gold); }
 
+    /* ── Fleet builder ── */
+    .fleet-admin-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(320px, .85fr); gap: 18px; align-items: start; }
+    .fleet-builder-card, .fleet-roster-card, .fleet-rule-panel {
+      background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px;
+    }
+    .fleet-builder-card h4, .fleet-roster-card h4 {
+      font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .fleet-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .field-row { display: flex; flex-direction: column; gap: 6px; }
+    .field-row label { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--silver-dim); }
+    .field-row input, .field-row select {
+      background: var(--bg-card2); border: 1px solid var(--b-dim); border-radius: 3px; color: var(--text);
+      padding: 9px 11px; font-family: 'Inter', sans-serif; font-size: .84rem; outline: none; min-width: 0;
+    }
+    .field-row input:focus, .field-row select:focus { border-color: var(--b-gold); }
+    .fleet-rule-panel { margin-top: 14px; background: rgba(201,168,76,.035); }
+    .fleet-rule-head { font-family: 'Cinzel', serif; color: var(--gold); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; }
+    .fleet-rule-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+    .fleet-rule-grid label { color: var(--silver); font-size: .76rem; display: flex; flex-direction: column; gap: 5px; }
+    .fleet-rule-grid input { background: var(--bg-card2); border: 1px solid var(--b-dim); color: var(--text); padding: 7px 8px; border-radius: 3px; }
+    .fleet-rule-note { margin-top: 10px; color: var(--text-dim); font-size: .76rem; }
+    .fleet-rule-note.warn { color: #e8ca6a; }
+    .fleet-builder-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; justify-content: flex-end; }
+    .fleet-build-list { display: grid; gap: 8px; }
+    .fleet-build-row, .fleet-roster-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; }
+    .fleet-build-row strong, .fleet-roster-row strong { color: var(--gold-lt); font-size: .88rem; }
+    .fleet-build-meta, .fleet-roster-meta { color: var(--silver-dim); font-size: .75rem; margin-top: 3px; }
+    .fleet-admin-tier { margin-bottom: 14px; }
+    .fleet-admin-tier h5 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; border-bottom: 1px solid var(--b-dim); padding-bottom: 7px; margin-bottom: 8px; }
+    .fleet-over-cap { border-color: rgba(192,57,43,.55) !important; background: rgba(192,57,43,.08) !important; }
+    @media (max-width: 980px) { .fleet-admin-layout { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid { grid-template-columns: 1fr; } }
+
 
     /* ── Banner population cards ── */
     .banner-pop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
@@ -964,38 +997,61 @@
     <div class="tab-panel" id="tab-fleet">
       <div class="sec-head"><h2>Fleet</h2><div class="sec-line"></div></div>
       <div class="controls">
-        <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, user, ship…" oninput="renderFleetAdmin()">
-        <button class="add-btn" onclick="fleetNew()">+ Add Assignment</button>
+        <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, member, ship, role…" oninput="renderFleetAdmin()">
+        <button class="add-btn" onclick="fleetNew()">+ New Build</button>
         <button class="ctrl-btn" onclick="renderFleetAdmin()">Refresh</button>
       </div>
-      <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleets</strong> sheet. Ship choices come from <strong>Ship Registry</strong>. No Discord sync in this phase.</div>
-      <table class="data-table" id="fleet-table">
+      <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleets</strong> sheet. Ship choices come from <strong>Ship Registry</strong>. Use the builder below to add multiple members, set role caps, then save the built roster.</div>
+
+      <div class="fleet-admin-layout">
+        <section class="fleet-builder-card">
+          <h4 id="fleet-form-title">Fleet Builder</h4>
+          <div class="field-group fleet-field-grid">
+            <input id="fleet-id" type="hidden">
+            <div class="field-row"><label>Fleet Name</label><input id="fleet-name" placeholder="1st Fleet" oninput="fleetRulesChanged()"></div>
+            <div class="field-row"><label>Member Search</label><input id="fleet-member-search" list="fleet-member-options" placeholder="Type a member name…" oninput="fleetSearchChanged(event)" onkeydown="fleetSearchKey(event)"><datalist id="fleet-member-options"></datalist><input id="fleet-user" type="hidden"></div>
+            <div class="field-row"><label>House</label><input id="fleet-house" placeholder="Auto-filled / optional"></div>
+            <div class="field-row"><label>Banner</label><input id="fleet-banner" placeholder="Defaults from roster"></div>
+            <div class="field-row"><label>Ship Search</label><input id="fleet-ship-search" list="fleet-ship-options" placeholder="Type a ship model…" oninput="fleetShipSearchChanged(event)" onkeydown="fleetShipKey(event)"><datalist id="fleet-ship-options"></datalist><input id="fleet-ship" type="hidden"></div>
+            <div class="field-row"><label>Ship Make</label><input id="fleet-ship-make" placeholder="Auto-filled from registry"></div>
+            <div class="field-row"><label>Ship Image URL</label><input id="fleet-ship-img" placeholder="Auto-filled from registry"></div>
+            <div class="field-row"><label>Position / Role</label><input id="fleet-role" list="fleet-role-options" value="Fighter" placeholder="Fighter, Med Evac, Command…"><datalist id="fleet-role-options"><option>Command</option><option>Fighter</option><option>Med Evac</option><option>Support</option><option>Crew</option><option>Transport</option><option>Recon</option><option>Pilot</option><option>Assigned Vessels</option></datalist></div>
+            <div class="field-row"><label>Sort Order</label><input id="fleet-sort" type="number" value="0"></div>
+            <div class="field-row"><label>Active</label><select id="fleet-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
+            <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="fleet-notes" placeholder="Optional display/admin note"></div>
+          </div>
+
+          <div class="fleet-rule-panel">
+            <div class="fleet-rule-head">Fleet Rules / Role Caps</div>
+            <div class="fleet-rule-grid">
+              <label>Fighters <input id="fleet-cap-fighter" type="number" min="0" value="2" oninput="fleetRulesChanged()"></label>
+              <label>Med Evac <input id="fleet-cap-med-evac" type="number" min="0" value="1" oninput="fleetRulesChanged()"></label>
+              <label>Command <input id="fleet-cap-command" type="number" min="0" value="1" oninput="fleetRulesChanged()"></label>
+              <label>Support <input id="fleet-cap-support" type="number" min="0" value="0" oninput="fleetRulesChanged()"></label>
+            </div>
+            <div class="fleet-rule-note" id="fleet-rule-status">Caps warn before save; zero means no cap.</div>
+          </div>
+
+          <div class="fleet-builder-actions">
+            <button class="ctrl-btn" onclick="fleetAddToBuild()">Add Member to Build</button>
+            <button class="cancel-btn" onclick="fleetClearForm()">Clear Form</button>
+            <button class="save-btn" onclick="fleetSaveBuild()">Save Built Roster</button>
+          </div>
+          <div id="fleet-build-list" class="fleet-build-list"><div class="tav-list-empty">No members staged yet.</div></div>
+        </section>
+
+        <section class="fleet-roster-card">
+          <h4>Built Fleet Members</h4>
+          <div id="fleet-admin-roster" class="fleet-admin-roster"><div class="tav-list-empty">Select or build a fleet to preview its roster.</div></div>
+        </section>
+      </div>
+
+      <table class="data-table" id="fleet-table" style="margin-top:22px;">
         <thead><tr>
-          <th>Fleet</th><th>Member</th><th>House</th><th>Banner</th><th>Ship</th><th>Role</th><th>Active</th><th></th>
+          <th>Fleet</th><th>Member</th><th>House</th><th>Banner</th><th>Ship</th><th>Position</th><th>Active</th><th></th>
         </tr></thead>
         <tbody id="fleet-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr></tbody>
       </table>
-      <div class="modal-section full" style="margin-top:24px;">
-        <h4 id="fleet-form-title">Add Fleet Assignment</h4>
-        <div class="field-group">
-          <input id="fleet-id" type="hidden">
-          <div class="field-row"><label>Fleet Name</label><input id="fleet-name" placeholder="1st Fleet"></div>
-          <div class="field-row"><label>Member</label><select id="fleet-user" onchange="fleetUserChanged()"></select></div>
-          <div class="field-row"><label>House</label><input id="fleet-house" placeholder="Optional house"></div>
-          <div class="field-row"><label>Banner</label><input id="fleet-banner" placeholder="Defaults from roster"></div>
-          <div class="field-row"><label>Ship</label><select id="fleet-ship" onchange="fleetShipChanged()"></select></div>
-          <div class="field-row"><label>Ship Make</label><input id="fleet-ship-make" placeholder="Auto-filled from registry"></div>
-          <div class="field-row"><label>Ship Image URL</label><input id="fleet-ship-img" placeholder="Auto-filled from registry"></div>
-          <div class="field-row"><label>Role</label><input id="fleet-role" placeholder="Commander, Pilot, Crew…"></div>
-          <div class="field-row"><label>Sort Order</label><input id="fleet-sort" type="number" value="0"></div>
-          <div class="field-row"><label>Active</label><select id="fleet-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
-          <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="fleet-notes" placeholder="Optional display/admin note"></div>
-        </div>
-        <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end">
-          <button class="cancel-btn" onclick="fleetClearForm()">Clear</button>
-          <button class="save-btn" onclick="fleetSave()">Save Assignment</button>
-        </div>
-      </div>
     </div>
 
     <!-- ── Quest Review ── -->
@@ -2388,87 +2444,113 @@ document.getElementById('bp-popup-overlay').addEventListener('click', function(e
    FLEET ADMIN
 ══════════════════════════════════════════════════════════ */
 function fleetEsc(s){ var el=document.createElement('span'); el.textContent=s==null?'':String(s); return el.innerHTML; }
+var FLEET_BUILD=[];
+var FLEET_ROLE_ORDER=['Command','Fighter','Med Evac','Support','Transport','Recon','Crew','Assigned Vessels'];
 function fleetData(){ return (window.OFSSheets && OFSSheets.getFleets) ? OFSSheets.getFleets() : []; }
 function shipRegistry(){ return (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : []; }
+function fleetSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || 'fleet'; }
+function fleetIsRuleRow(f){ return f && (f.userId==='__rules__' || f.role==='__RULES__' || String(f.id||'').indexOf('fleet-rules-')===0); }
+function fleetVisibleData(){ return fleetData().filter(function(f){ return !fleetIsRuleRow(f); }); }
+function fleetRuleRow(name){ return fleetData().find(function(f){ return fleetIsRuleRow(f) && (f.fleetName||'')===(name||''); }); }
+function fleetDefaultRules(){ return { fighter:2, medEvac:1, command:1, support:0 }; }
+function fleetParseRules(name){
+  var rules=fleetDefaultRules(), row=fleetRuleRow(name);
+  if(row && row.notes){ try{ Object.assign(rules, JSON.parse(row.notes)); } catch(e){} }
+  return rules;
+}
+function fleetReadRules(){ return {
+  fighter:Number(document.getElementById('fleet-cap-fighter').value)||0,
+  medEvac:Number(document.getElementById('fleet-cap-med-evac').value)||0,
+  command:Number(document.getElementById('fleet-cap-command').value)||0,
+  support:Number(document.getElementById('fleet-cap-support').value)||0
+}; }
+function fleetApplyRules(name){
+  var r=fleetParseRules(name||document.getElementById('fleet-name').value.trim());
+  [['fleet-cap-fighter',r.fighter],['fleet-cap-med-evac',r.medEvac],['fleet-cap-command',r.command],['fleet-cap-support',r.support]].forEach(function(pair){ var el=document.getElementById(pair[0]); if(el) el.value=pair[1]; });
+}
 function seedFleetForm(){
-  var userSel=document.getElementById('fleet-user');
-  var shipSel=document.getElementById('fleet-ship');
-  if(!userSel || !shipSel) return;
+  var memberList=document.getElementById('fleet-member-options');
+  var shipList=document.getElementById('fleet-ship-options');
+  if(!memberList || !shipList) return;
   PLAYERS = window.OFSData.getPlayers();
-  userSel.innerHTML='<option value="">Select member…</option>'+PLAYERS.map(function(p){return '<option value="'+fleetEsc(p.id)+'">'+fleetEsc(p.username)+'</option>';}).join('');
+  memberList.innerHTML=PLAYERS.slice().sort(function(a,b){return (a.username||'').localeCompare(b.username||'');}).map(function(p){return '<option value="'+fleetEsc(p.username)+'" label="'+fleetEsc((p.rank||'')+' '+(p.id||''))+'"></option>';}).join('');
   var ships=shipRegistry();
-  shipSel.innerHTML='<option value="">Select ship…</option>'+ships.map(function(s){return '<option value="'+fleetEsc(s.model)+'">'+fleetEsc(s.model+(s.make?' — '+s.make:''))+'</option>';}).join('');
+  shipList.innerHTML=ships.map(function(s){return '<option value="'+fleetEsc(s.model)+'" label="'+fleetEsc(s.make||'')+'"></option>';}).join('');
 }
-function fleetUserChanged(){
-  var uid=document.getElementById('fleet-user').value;
-  var p=PLAYERS.find(function(x){return x.id===uid;});
-  if(!p) return;
-  document.getElementById('fleet-banner').value=p.activeBanner||'';
+function fleetFindPlayer(q){ q=String(q||'').toLowerCase().trim(); if(!q) return null; return PLAYERS.find(function(p){ return String(p.username||'').toLowerCase()===q || String(p.id||'')===q; }) || PLAYERS.find(function(p){ return String(p.username||'').toLowerCase().indexOf(q)!==-1 || String(p.id||'').indexOf(q)!==-1; }); }
+function fleetFindShip(q){ q=String(q||'').toLowerCase().trim(); if(!q) return null; return shipRegistry().find(function(s){ return String(s.model||'').toLowerCase()===q; }) || shipRegistry().find(function(s){ return String(s.model||'').toLowerCase().indexOf(q)!==-1 || String(s.make||'').toLowerCase().indexOf(q)!==-1; }); }
+function fleetSearchChanged(){ var p=fleetFindPlayer(document.getElementById('fleet-member-search').value); if(p) fleetSetPlayer(p); }
+function fleetSearchKey(e){ if(e.key==='Enter'){ e.preventDefault(); var p=fleetFindPlayer(e.target.value); if(p) fleetSetPlayer(p); }}
+function fleetShipSearchChanged(){ var s=fleetFindShip(document.getElementById('fleet-ship-search').value); if(s) fleetSetShip(s); }
+function fleetShipKey(e){ if(e.key==='Enter'){ e.preventDefault(); var s=fleetFindShip(e.target.value); if(s) fleetSetShip(s); }}
+function fleetSetPlayer(p){ document.getElementById('fleet-user').value=p.id||''; document.getElementById('fleet-member-search').value=p.username||''; document.getElementById('fleet-house').value=p.faction||''; document.getElementById('fleet-banner').value=p.activeBanner||''; if(p.ship && !document.getElementById('fleet-ship-search').value){ var s=fleetFindShip(p.ship); if(s) fleetSetShip(s); else document.getElementById('fleet-ship-search').value=p.ship; } }
+function fleetSetShip(s){ document.getElementById('fleet-ship').value=s.model||''; document.getElementById('fleet-ship-search').value=s.model||''; document.getElementById('fleet-ship-make').value=s.make||''; document.getElementById('fleet-ship-img').value=s.imageUrl||''; }
+function fleetRoleKey(role){ role=String(role||'').toLowerCase(); if(role.indexOf('fighter')!==-1) return 'fighter'; if(role.indexOf('med')!==-1 || role.indexOf('evac')!==-1) return 'medEvac'; if(role.indexOf('command')!==-1) return 'command'; if(role.indexOf('support')!==-1) return 'support'; return ''; }
+function fleetRuleStatus(items){
+  var counts={}, rules=fleetReadRules(), warnings=[];
+  items.forEach(function(f){ var k=fleetRoleKey(f.role); if(k) counts[k]=(counts[k]||0)+1; });
+  Object.keys(rules).forEach(function(k){ if(rules[k] && (counts[k]||0)>rules[k]) warnings.push(k+' '+(counts[k]||0)+'/'+rules[k]); });
+  var el=document.getElementById('fleet-rule-status'); if(el){ el.className='fleet-rule-note'+(warnings.length?' warn':''); el.textContent=warnings.length ? ('Over cap: '+warnings.join(', ')) : 'Caps satisfied. Zero means no cap.'; }
+  return warnings;
 }
-function fleetShipChanged(){
-  var model=document.getElementById('fleet-ship').value;
-  var s=shipRegistry().find(function(x){return x.model===model;});
-  document.getElementById('fleet-ship-make').value=s?s.make:'';
-  document.getElementById('fleet-ship-img').value=s?s.imageUrl:'';
-}
+function fleetRulesChanged(){ renderFleetBuild(); renderFleetRosterPreview(); }
 function renderFleetAdmin(){
   seedFleetForm();
   var tb=document.getElementById('fleet-tbody'); if(!tb) return;
   var q=(document.getElementById('fleet-filter').value||'').toLowerCase();
-  var list=fleetData().filter(function(f){
+  var list=fleetVisibleData().filter(function(f){
     var hay=[f.fleetName,f.username,f.house,f.banner,f.shipModel,f.shipMake,f.role].join(' ').toLowerCase();
     return !q || hay.indexOf(q)!==-1;
   }).sort(function(a,b){return (a.fleetName||'').localeCompare(b.fleetName||'') || (a.sortOrder||0)-(b.sortOrder||0) || (a.username||'').localeCompare(b.username||'');});
   tb.innerHTML='';
-  if(!list.length){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">No fleet assignments loaded. Confirm Worker /data includes the Fleets tab.</td></tr>'; return; }
+  if(!list.length){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">No fleet assignments loaded. Confirm the Fleets tab has headers and Worker /data includes rows.</td></tr>'; renderFleetRosterPreview(); return; }
   list.forEach(function(f){
     var tr=document.createElement('tr');
     tr.innerHTML='<td><strong>'+fleetEsc(f.fleetName)+'</strong></td><td>'+fleetEsc(f.username)+'</td><td>'+fleetEsc(f.house)+'</td><td>'+fleetEsc(f.banner)+'</td><td>'+fleetEsc(f.shipModel)+'<div style="color:var(--text-dim);font-size:.72rem">'+fleetEsc(f.shipMake)+'</div></td><td>'+fleetEsc(f.role)+'</td><td><span class="badge '+(f.active?'badge-gold':'badge-dim')+'">'+(f.active?'Active':'Inactive')+'</span></td><td><button class="edit-btn" onclick="fleetEdit(\''+fleetEsc(f.id)+'\')">Edit</button></td>';
     tb.appendChild(tr);
   });
+  renderFleetBuild(); renderFleetRosterPreview();
 }
-function fleetNew(){ fleetClearForm(); document.getElementById('fleet-form-title').textContent='Add Fleet Assignment'; }
+function fleetNew(){ FLEET_BUILD=[]; fleetClearForm(); document.getElementById('fleet-form-title').textContent='Fleet Builder'; renderFleetBuild(); renderFleetRosterPreview(); }
 function fleetEdit(id){
-  var f=fleetData().find(function(x){return x.id===id;}); if(!f) return;
-  seedFleetForm();
+  var f=fleetVisibleData().find(function(x){return x.id===id;}); if(!f) return;
+  seedFleetForm(); FLEET_BUILD=[];
   document.getElementById('fleet-form-title').textContent='Edit Fleet Assignment';
-  document.getElementById('fleet-id').value=f.id;
-  document.getElementById('fleet-name').value=f.fleetName;
-  document.getElementById('fleet-user').value=f.userId;
-  document.getElementById('fleet-house').value=f.house;
-  document.getElementById('fleet-banner').value=f.banner;
-  document.getElementById('fleet-ship').value=f.shipModel;
-  document.getElementById('fleet-ship-make').value=f.shipMake;
-  document.getElementById('fleet-ship-img').value=f.shipImageUrl;
-  document.getElementById('fleet-role').value=f.role;
-  document.getElementById('fleet-sort').value=f.sortOrder||0;
-  document.getElementById('fleet-notes').value=f.notes;
-  document.getElementById('fleet-active').value=f.active?'TRUE':'FALSE';
+  document.getElementById('fleet-id').value=f.id; document.getElementById('fleet-name').value=f.fleetName; document.getElementById('fleet-user').value=f.userId;
+  document.getElementById('fleet-member-search').value=f.username; document.getElementById('fleet-house').value=f.house; document.getElementById('fleet-banner').value=f.banner;
+  document.getElementById('fleet-ship').value=f.shipModel; document.getElementById('fleet-ship-search').value=f.shipModel; document.getElementById('fleet-ship-make').value=f.shipMake; document.getElementById('fleet-ship-img').value=f.shipImageUrl;
+  document.getElementById('fleet-role').value=f.role||'Assigned Vessels'; document.getElementById('fleet-sort').value=f.sortOrder||0; document.getElementById('fleet-notes').value=f.notes; document.getElementById('fleet-active').value=f.active?'TRUE':'FALSE';
+  fleetApplyRules(f.fleetName); renderFleetBuild(); renderFleetRosterPreview(f.fleetName);
 }
-function fleetClearForm(){ ['fleet-id','fleet-name','fleet-house','fleet-banner','fleet-ship-make','fleet-ship-img','fleet-role','fleet-notes'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); document.getElementById('fleet-user').value=''; document.getElementById('fleet-ship').value=''; document.getElementById('fleet-sort').value=0; document.getElementById('fleet-active').value='TRUE'; }
-async function fleetSave(){
+function fleetClearForm(){ ['fleet-id','fleet-member-search','fleet-user','fleet-house','fleet-banner','fleet-ship','fleet-ship-search','fleet-ship-make','fleet-ship-img','fleet-notes'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); document.getElementById('fleet-sort').value=0; document.getElementById('fleet-active').value='TRUE'; }
+function fleetCurrentItem(){
+  var uid=document.getElementById('fleet-user').value, p=PLAYERS.find(function(x){return x.id===uid;});
+  return { id: document.getElementById('fleet-id').value || ('fleet-'+Date.now()+'-'+Math.floor(Math.random()*1000)), fleetName: document.getElementById('fleet-name').value.trim(), userId: uid, username: p ? p.username : document.getElementById('fleet-member-search').value.trim(), house: document.getElementById('fleet-house').value.trim(), banner: document.getElementById('fleet-banner').value.trim(), shipModel: document.getElementById('fleet-ship').value.trim() || document.getElementById('fleet-ship-search').value.trim(), shipMake: document.getElementById('fleet-ship-make').value.trim(), shipImageUrl: document.getElementById('fleet-ship-img').value.trim(), role: document.getElementById('fleet-role').value.trim(), sortOrder: Number(document.getElementById('fleet-sort').value)||0, notes: document.getElementById('fleet-notes').value.trim(), active: document.getElementById('fleet-active').value !== 'FALSE' };
+}
+function fleetAddToBuild(){ var item=fleetCurrentItem(); if(!item.fleetName || !item.userId || !item.shipModel){ alert('Fleet Name, Member, and Ship are required.'); return; } FLEET_BUILD=FLEET_BUILD.filter(function(x){return x.userId!==item.userId || x.fleetName!==item.fleetName;}); FLEET_BUILD.push(item); fleetClearForm(); document.getElementById('fleet-name').value=item.fleetName; renderFleetBuild(); renderFleetRosterPreview(item.fleetName); }
+function renderFleetBuild(){ var box=document.getElementById('fleet-build-list'); if(!box) return; if(!FLEET_BUILD.length){ box.innerHTML='<div class="tav-list-empty">No members staged yet.</div>'; fleetRuleStatus([]); return; } var warnings=fleetRuleStatus(FLEET_BUILD); box.innerHTML=FLEET_BUILD.map(function(f,i){ var over=warnings.length && fleetRoleKey(f.role) ? ' fleet-over-cap' : ''; return '<div class="fleet-build-row'+over+'"><div><strong>'+fleetEsc(f.username)+'</strong><div class="fleet-build-meta">'+fleetEsc(f.role)+' / '+fleetEsc(f.shipModel)+' / '+fleetEsc(f.banner||f.house)+'</div></div><button class="edit-btn" onclick="fleetRemoveBuild('+i+')">Remove</button></div>'; }).join(''); }
+function fleetRemoveBuild(i){ FLEET_BUILD.splice(i,1); renderFleetBuild(); renderFleetRosterPreview(); }
+function renderFleetRosterPreview(name){
+  var box=document.getElementById('fleet-admin-roster'); if(!box) return; name=name||document.getElementById('fleet-name').value.trim();
+  var items=FLEET_BUILD.length?FLEET_BUILD:fleetVisibleData().filter(function(f){return !name || f.fleetName===name;});
+  items=items.slice().sort(function(a,b){ return FLEET_ROLE_ORDER.indexOf(a.role)-FLEET_ROLE_ORDER.indexOf(b.role) || (a.sortOrder||0)-(b.sortOrder||0) || (a.username||'').localeCompare(b.username||''); });
+  if(!items.length){ box.innerHTML='<div class="tav-list-empty">No members assigned to this fleet yet.</div>'; return; }
+  fleetRuleStatus(items); var grouped={}; items.forEach(function(f){ var r=f.role||'Assigned Vessels'; (grouped[r]||(grouped[r]=[])).push(f); });
+  box.innerHTML=Object.keys(grouped).sort(function(a,b){return FLEET_ROLE_ORDER.indexOf(a)-FLEET_ROLE_ORDER.indexOf(b);}).map(function(role){ return '<div class="fleet-admin-tier"><h5>'+fleetEsc(role)+'</h5>'+grouped[role].map(function(f){return '<div class="fleet-roster-row"><div><strong>'+fleetEsc(f.username)+'</strong><div class="fleet-roster-meta">'+fleetEsc(f.shipModel)+' — '+fleetEsc(f.shipMake)+'<br>'+fleetEsc(f.banner||f.house||'')+'</div></div><span class="badge '+(f.active?'badge-gold':'badge-dim')+'">'+(f.active?'Active':'Inactive')+'</span></div>';}).join('')+'</div>'; }).join('');
+}
+function fleetRulesItem(name){ return { id:'fleet-rules-'+fleetSlug(name), fleetName:name, userId:'__rules__', username:'Fleet Rules', house:'', banner:'', shipModel:'', shipMake:'', shipImageUrl:'', role:'__RULES__', sortOrder:-999, notes:JSON.stringify(fleetReadRules()), active:false }; }
+async function fleetSaveBuild(){
   if(!window.OFSSheets || !OFSSheets.saveFleetAssignment){ alert('Fleet write helper unavailable.'); return; }
-  var uid=document.getElementById('fleet-user').value;
-  var p=PLAYERS.find(function(x){return x.id===uid;});
-  var item={
-    id: document.getElementById('fleet-id').value || ('fleet-'+Date.now()),
-    fleetName: document.getElementById('fleet-name').value.trim(),
-    userId: uid,
-    username: p ? p.username : '',
-    house: document.getElementById('fleet-house').value.trim(),
-    banner: document.getElementById('fleet-banner').value.trim(),
-    shipModel: document.getElementById('fleet-ship').value.trim(),
-    shipMake: document.getElementById('fleet-ship-make').value.trim(),
-    shipImageUrl: document.getElementById('fleet-ship-img').value.trim(),
-    role: document.getElementById('fleet-role').value.trim(),
-    sortOrder: Number(document.getElementById('fleet-sort').value)||0,
-    notes: document.getElementById('fleet-notes').value.trim(),
-    active: document.getElementById('fleet-active').value !== 'FALSE'
-  };
-  if(!item.fleetName || !item.userId || !item.shipModel){ alert('Fleet Name, Member, and Ship are required.'); return; }
-  try{ await OFSSheets.saveFleetAssignment(item); alert('Fleet assignment saved. Refresh after Worker /data includes Fleets to see it in the table.'); fleetClearForm(); }
-  catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
+  var items=FLEET_BUILD.length?FLEET_BUILD:[fleetCurrentItem()];
+  if(!items.length || !items[0].fleetName || !items[0].userId || !items[0].shipModel){ alert('Add at least one valid fleet member first.'); return; }
+  var warnings=fleetRuleStatus(items); if(warnings.length && !confirm('This build exceeds fleet caps: '+warnings.join(', ')+'. Save anyway?')) return;
+  try{
+    await OFSSheets.saveFleetAssignment(fleetRulesItem(items[0].fleetName));
+    for(var i=0;i<items.length;i++) await OFSSheets.saveFleetAssignment(items[i]);
+    alert('Fleet roster saved. Refresh after Worker /data updates to see the table.'); FLEET_BUILD=[]; fleetClearForm(); renderFleetBuild(); renderFleetAdmin();
+  } catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
 }
+async function fleetSave(){ return fleetSaveBuild(); }
 
 /* ══════════════════════════════════════════════════════════
    AUDIT LOG

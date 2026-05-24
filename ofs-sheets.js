@@ -362,8 +362,11 @@
   }
 
   function parseFleets(rows) {
-    if (!rows || rows.length < 2) return [];
-    return rows.slice(1).map(function (row) {
+    if (!rows || !rows.length) return [];
+    const first = rows[0] || [];
+    const hasHeader = String(first[0] || '').trim().toLowerCase() === 'fleet id' ||
+                      String(first[1] || '').trim().toLowerCase() === 'fleet name';
+    return rows.slice(hasHeader ? 1 : 0).map(function (row) {
       return {
         id: String(row[0] || '').trim(),
         fleetName: String(row[1] || '').trim(),
@@ -379,7 +382,7 @@
         notes: String(row[11] || '').trim(),
         active: String(row[12] == null ? 'TRUE' : row[12]).trim().toUpperCase() !== 'FALSE'
       };
-    }).filter(function (f) { return f.id && f.fleetName; });
+    }).filter(function (f) { return f.id && f.fleetName && String(f.id).toLowerCase() !== 'fleet id'; });
   }
 
   function getShipRegistry() { return _shipRegistry || []; }
@@ -605,13 +608,21 @@
     return deleteTavernRow('Banners', name);
   }
 
-  function saveFleetAssignment(item) {
-    const row = [
+  function fleetAssignmentRow(item) {
+    return [
       item.id, item.fleetName, item.userId, item.username, item.house, item.banner,
       item.shipModel, item.shipMake, item.shipImageUrl, item.role, item.sortOrder || 0, item.notes || '',
       item.active === false ? 'FALSE' : 'TRUE'
     ];
-    return _apiPost('/write', { op: 'overwrite', sheet: 'Fleets', keyCol: 0, keyVal: item.id, row: row });
+  }
+
+  function saveFleetAssignment(item) {
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Fleets', keyCol: 0, keyVal: item.id, row: fleetAssignmentRow(item) });
+  }
+
+  async function saveFleetAssignments(items) {
+    for (const item of (items || [])) await saveFleetAssignment(item);
+    return { ok: true };
   }
 
   function deleteFleetAssignment(id) {
@@ -642,6 +653,7 @@
     saveBannerDef,
     deleteBannerDef,
     saveFleetAssignment,
+    saveFleetAssignments,
     deleteFleetAssignment,
     appendStatAdjustment,
     updateWallet,
