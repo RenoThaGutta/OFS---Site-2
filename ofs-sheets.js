@@ -212,6 +212,10 @@
   /* ── Tavern data cache (in-memory, set on each load) ─ */
   let _tavernData = null;
 
+  /* ── Fleet/ship data cache (in-memory) ─ */
+  let _shipRegistry = [];
+  let _fleets = [];
+
   /* ── Cache ───────────────────────────────────────── */
   function saveCache(players) {
     try {
@@ -299,6 +303,10 @@
       saveBannerDefsCache(_bannerDefs);
     }
 
+    // Cache ship/fleet data for Fleet pages and admin. These keys require Worker /data support.
+    _shipRegistry = parseShipRegistry(data.shipRegistry || data.ship_registry || data['Ship Registry'] || []);
+    _fleets = parseFleets(data.fleets || data.Fleets || []);
+
     // Cache tavern data for OFS_TavernHall.html to consume
     _tavernData = {
       quests:            data.quests            || [],
@@ -341,6 +349,41 @@
   function getTavernData() {
     return _tavernData;
   }
+
+  function parseShipRegistry(rows) {
+    if (!rows || rows.length < 2) return [];
+    return rows.slice(1).map(function (row) {
+      return {
+        model: String(row[0] || '').trim(),
+        make:  String(row[1] || '').trim(),
+        imageUrl: String(row[2] || '').trim()
+      };
+    }).filter(function (s) { return s.model; });
+  }
+
+  function parseFleets(rows) {
+    if (!rows || rows.length < 2) return [];
+    return rows.slice(1).map(function (row) {
+      return {
+        id: String(row[0] || '').trim(),
+        fleetName: String(row[1] || '').trim(),
+        userId: String(row[2] || '').trim(),
+        username: String(row[3] || '').trim(),
+        house: String(row[4] || '').trim(),
+        banner: String(row[5] || '').trim(),
+        shipModel: String(row[6] || '').trim(),
+        shipMake: String(row[7] || '').trim(),
+        shipImageUrl: String(row[8] || '').trim(),
+        role: String(row[9] || '').trim(),
+        sortOrder: Number(row[10]) || 0,
+        notes: String(row[11] || '').trim(),
+        active: String(row[12] == null ? 'TRUE' : row[12]).trim().toUpperCase() !== 'FALSE'
+      };
+    }).filter(function (f) { return f.id && f.fleetName; });
+  }
+
+  function getShipRegistry() { return _shipRegistry || []; }
+  function getFleets() { return _fleets || []; }
 
   function _fallbackToCache() {
     const cached = loadCache();
@@ -562,6 +605,19 @@
     return deleteTavernRow('Banners', name);
   }
 
+  function saveFleetAssignment(item) {
+    const row = [
+      item.id, item.fleetName, item.userId, item.username, item.house, item.banner,
+      item.shipModel, item.shipMake, item.shipImageUrl, item.role, item.sortOrder || 0, item.notes || '',
+      item.active === false ? 'FALSE' : 'TRUE'
+    ];
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Fleets', keyCol: 0, keyVal: item.id, row: row });
+  }
+
+  function deleteFleetAssignment(id) {
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'Fleets', keyCol: 0, keyVal: id });
+  }
+
   /** Return the cached timeline block overrides keyed by original block title/id. */
   function getTimelineBlocks() {
     return _timelineBlocks;
@@ -580,9 +636,13 @@
   global.OFSSheets = {
     load,
     getTavernData,
+    getShipRegistry,
+    getFleets,
     getBannerDefs,
     saveBannerDef,
     deleteBannerDef,
+    saveFleetAssignment,
+    deleteFleetAssignment,
     appendStatAdjustment,
     updateWallet,
     appendBankLog,

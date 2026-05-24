@@ -14,7 +14,8 @@
     { href: 'OFS_Codex.html',       label: 'Codex'        },
     { href: 'OFS_Timeline.html',    label: 'Chronicles'   },
     { href: 'OFS_Roster.html',      label: 'Roster'       },
-    { label: 'Banners',             dropdown: true         },
+    { label: 'Banners',             dropdown: 'banners'    },
+    { label: 'Fleet',               dropdown: 'fleet'      },
     { href: 'OFS_TavernHall.html',  label: 'Tavern Hall'  },
     { href: 'OFS_Admin.html',       label: 'Admin'        },
   ];
@@ -25,6 +26,7 @@
     'The Fang','The Forager','The Guardian','The Healer',
     'The Merchant','The Privateer','The Talon'
   ];
+  var FALLBACK_FLEETS = ['1st Fleet','2nd Fleet','3rd Fleet'];
 
   /* ── Canonical nav CSS (hardcoded px — immune to font-size inheritance) ── */
   var CSS =
@@ -148,22 +150,24 @@
     var ul = document.createElement('ul');
     ul.className = 'nav-links';
 
-    var ddPanel = null;
+    var bannerPanel = null;
+    var fleetPanel = null;
 
     LINKS.forEach(function (link) {
       var li = document.createElement('li');
 
       if (link.dropdown) {
-        /* Banners dropdown */
+        /* Data dropdown */
         li.className = 'nav-dd-wrap';
         var trigger = document.createElement('a');
         trigger.className = 'nav-dd-trigger';
         trigger.textContent = link.label;
         trigger.href = '#';
-        if (filename === 'ofs_banner.html') trigger.classList.add('active');
+        if ((link.dropdown === 'banners' && filename === 'ofs_banner.html') || (link.dropdown === 'fleet' && filename === 'ofs_fleet.html')) trigger.classList.add('active');
 
-        ddPanel = document.createElement('div');
+        var ddPanel = document.createElement('div');
         ddPanel.className = 'nav-dd-panel';
+        if (link.dropdown === 'fleet') ddPanel.className += ' nav-dd-panel-fleet';
 
         trigger.addEventListener('click', function (e) {
           e.preventDefault();
@@ -173,6 +177,8 @@
 
         li.appendChild(trigger);
         li.appendChild(ddPanel);
+        if (link.dropdown === 'banners') bannerPanel = ddPanel;
+        if (link.dropdown === 'fleet') fleetPanel = ddPanel;
       } else {
         var a = document.createElement('a');
         a.href = link.href;
@@ -190,21 +196,27 @@
     nav.appendChild(logo);
     nav.appendChild(ul);
 
-    /* Populate banner dropdown */
-    if (ddPanel) {
-      _ddPanel = ddPanel;
-      populateBannerDropdown(ddPanel);
+    /* Populate data dropdowns */
+    if (bannerPanel) {
+      _ddPanel = bannerPanel;
+      populateBannerDropdown(bannerPanel);
+    }
+    if (fleetPanel) {
+      _fleetPanel = fleetPanel;
+      populateFleetDropdown(fleetPanel);
     }
 
     /* Close dropdown when clicking outside */
     document.addEventListener('click', function (e) {
-      if (ddPanel && !e.target.closest('.nav-dd-wrap')) {
-        ddPanel.classList.remove('open');
+      if (!e.target.closest('.nav-dd-wrap')) {
+        if (bannerPanel) bannerPanel.classList.remove('open');
+        if (fleetPanel) fleetPanel.classList.remove('open');
       }
     });
   }
 
   var _ddPanel = null;
+  var _fleetPanel = null;
 
   function driveDirect(url) {
     if (!url) return '';
@@ -266,6 +278,31 @@
     });
   }
 
+
+
+  function populateFleetDropdown(panel) {
+    var fleets = null;
+    if (window.OFSSheets && OFSSheets.getFleets) {
+      var rows = OFSSheets.getFleets() || [];
+      var names = {};
+      rows.forEach(function (f) { if (f && f.active !== false && f.fleetName) names[f.fleetName] = true; });
+      fleets = Object.keys(names).sort();
+      if (!fleets.length) fleets = null;
+    }
+    fleets = fleets || FALLBACK_FLEETS;
+    panel.innerHTML = '';
+    fleets.forEach(function (name) {
+      var card = document.createElement('a');
+      card.className = 'nav-dd-card';
+      card.href = 'OFS_Fleet.html?fleet=' + encodeURIComponent(name);
+      var nameEl = document.createElement('span');
+      nameEl.className = 'nav-dd-name';
+      nameEl.textContent = name;
+      card.appendChild(nameEl);
+      panel.appendChild(card);
+    });
+  }
+
   function init() {
     // Hide nav entirely when embedded in an iframe (e.g. admin page manager preview)
     if (window.self !== window.top) {
@@ -287,6 +324,10 @@
   window.OFSHeaderBar = {
     refreshBanners: function () {
       if (_ddPanel) populateBannerDropdown(_ddPanel);
+      if (_fleetPanel) populateFleetDropdown(_fleetPanel);
+    },
+    refreshFleets: function () {
+      if (_fleetPanel) populateFleetDropdown(_fleetPanel);
     }
   };
 

@@ -890,6 +890,7 @@
     <div class="nav-tabs">
       <div class="nav-tab active" data-tab="roster">Roster</div>
       <div class="nav-tab"        data-tab="banners">Banners</div>
+      <div class="nav-tab"        data-tab="fleet">Fleet</div>
       <div class="nav-tab"        data-tab="quests">Quest Review</div>
       <div class="nav-tab"        data-tab="audit">Audit Log</div>
       <div class="nav-tab"        data-tab="pages">Pages</div>
@@ -954,6 +955,45 @@
           <div class="tav-form" id="ban-manage-form">
             <div class="tav-form-empty">Select a banner to edit, or add a new one.</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ── Fleet ── -->
+    <div class="tab-panel" id="tab-fleet">
+      <div class="sec-head"><h2>Fleet</h2><div class="sec-line"></div></div>
+      <div class="controls">
+        <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, user, ship…" oninput="renderFleetAdmin()">
+        <button class="add-btn" onclick="fleetNew()">+ Add Assignment</button>
+        <button class="ctrl-btn" onclick="renderFleetAdmin()">Refresh</button>
+      </div>
+      <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleets</strong> sheet. Ship choices come from <strong>Ship Registry</strong>. No Discord sync in this phase.</div>
+      <table class="data-table" id="fleet-table">
+        <thead><tr>
+          <th>Fleet</th><th>Member</th><th>House</th><th>Banner</th><th>Ship</th><th>Role</th><th>Active</th><th></th>
+        </tr></thead>
+        <tbody id="fleet-tbody"><tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr></tbody>
+      </table>
+      <div class="modal-section full" style="margin-top:24px;">
+        <h4 id="fleet-form-title">Add Fleet Assignment</h4>
+        <div class="field-group">
+          <input id="fleet-id" type="hidden">
+          <div class="field-row"><label>Fleet Name</label><input id="fleet-name" placeholder="1st Fleet"></div>
+          <div class="field-row"><label>Member</label><select id="fleet-user" onchange="fleetUserChanged()"></select></div>
+          <div class="field-row"><label>House</label><input id="fleet-house" placeholder="Optional house"></div>
+          <div class="field-row"><label>Banner</label><input id="fleet-banner" placeholder="Defaults from roster"></div>
+          <div class="field-row"><label>Ship</label><select id="fleet-ship" onchange="fleetShipChanged()"></select></div>
+          <div class="field-row"><label>Ship Make</label><input id="fleet-ship-make" placeholder="Auto-filled from registry"></div>
+          <div class="field-row"><label>Ship Image URL</label><input id="fleet-ship-img" placeholder="Auto-filled from registry"></div>
+          <div class="field-row"><label>Role</label><input id="fleet-role" placeholder="Commander, Pilot, Crew…"></div>
+          <div class="field-row"><label>Sort Order</label><input id="fleet-sort" type="number" value="0"></div>
+          <div class="field-row"><label>Active</label><select id="fleet-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
+          <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="fleet-notes" placeholder="Optional display/admin note"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end">
+          <button class="cancel-btn" onclick="fleetClearForm()">Clear</button>
+          <button class="save-btn" onclick="fleetSave()">Save Assignment</button>
         </div>
       </div>
     </div>
@@ -2131,6 +2171,7 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
       renderBannerPop();
       renderBanManageList();
     }
+    if(t.dataset.tab==='fleet') renderFleetAdmin();
     if(t.dataset.tab==='audit')        renderAudit();
   });
 });
@@ -2142,6 +2183,7 @@ function renderAll(){
   if(defs.length) BANNER_NAMES = defs.map(d=>d.name);
   renderRoster();
   renderBanManageList();
+  seedFleetForm();
   // Pre-seed tavern data so it's ready when the tab opens
   if(window._tavSeedFromSheet) window._tavSeedFromSheet();
 }
@@ -2339,6 +2381,94 @@ function openBannerPopup(bn, members){
 document.getElementById('bp-popup-overlay').addEventListener('click', function(e){
   if(e.target===this) this.classList.remove('open');
 });
+
+
+
+/* ══════════════════════════════════════════════════════════
+   FLEET ADMIN
+══════════════════════════════════════════════════════════ */
+function fleetEsc(s){ var el=document.createElement('span'); el.textContent=s==null?'':String(s); return el.innerHTML; }
+function fleetData(){ return (window.OFSSheets && OFSSheets.getFleets) ? OFSSheets.getFleets() : []; }
+function shipRegistry(){ return (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : []; }
+function seedFleetForm(){
+  var userSel=document.getElementById('fleet-user');
+  var shipSel=document.getElementById('fleet-ship');
+  if(!userSel || !shipSel) return;
+  PLAYERS = window.OFSData.getPlayers();
+  userSel.innerHTML='<option value="">Select member…</option>'+PLAYERS.map(function(p){return '<option value="'+fleetEsc(p.id)+'">'+fleetEsc(p.username)+'</option>';}).join('');
+  var ships=shipRegistry();
+  shipSel.innerHTML='<option value="">Select ship…</option>'+ships.map(function(s){return '<option value="'+fleetEsc(s.model)+'">'+fleetEsc(s.model+(s.make?' — '+s.make:''))+'</option>';}).join('');
+}
+function fleetUserChanged(){
+  var uid=document.getElementById('fleet-user').value;
+  var p=PLAYERS.find(function(x){return x.id===uid;});
+  if(!p) return;
+  document.getElementById('fleet-banner').value=p.activeBanner||'';
+}
+function fleetShipChanged(){
+  var model=document.getElementById('fleet-ship').value;
+  var s=shipRegistry().find(function(x){return x.model===model;});
+  document.getElementById('fleet-ship-make').value=s?s.make:'';
+  document.getElementById('fleet-ship-img').value=s?s.imageUrl:'';
+}
+function renderFleetAdmin(){
+  seedFleetForm();
+  var tb=document.getElementById('fleet-tbody'); if(!tb) return;
+  var q=(document.getElementById('fleet-filter').value||'').toLowerCase();
+  var list=fleetData().filter(function(f){
+    var hay=[f.fleetName,f.username,f.house,f.banner,f.shipModel,f.shipMake,f.role].join(' ').toLowerCase();
+    return !q || hay.indexOf(q)!==-1;
+  }).sort(function(a,b){return (a.fleetName||'').localeCompare(b.fleetName||'') || (a.sortOrder||0)-(b.sortOrder||0) || (a.username||'').localeCompare(b.username||'');});
+  tb.innerHTML='';
+  if(!list.length){ tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text-dim);padding:24px">No fleet assignments loaded. Confirm Worker /data includes the Fleets tab.</td></tr>'; return; }
+  list.forEach(function(f){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td><strong>'+fleetEsc(f.fleetName)+'</strong></td><td>'+fleetEsc(f.username)+'</td><td>'+fleetEsc(f.house)+'</td><td>'+fleetEsc(f.banner)+'</td><td>'+fleetEsc(f.shipModel)+'<div style="color:var(--text-dim);font-size:.72rem">'+fleetEsc(f.shipMake)+'</div></td><td>'+fleetEsc(f.role)+'</td><td><span class="badge '+(f.active?'badge-gold':'badge-dim')+'">'+(f.active?'Active':'Inactive')+'</span></td><td><button class="edit-btn" onclick="fleetEdit(\''+fleetEsc(f.id)+'\')">Edit</button></td>';
+    tb.appendChild(tr);
+  });
+}
+function fleetNew(){ fleetClearForm(); document.getElementById('fleet-form-title').textContent='Add Fleet Assignment'; }
+function fleetEdit(id){
+  var f=fleetData().find(function(x){return x.id===id;}); if(!f) return;
+  seedFleetForm();
+  document.getElementById('fleet-form-title').textContent='Edit Fleet Assignment';
+  document.getElementById('fleet-id').value=f.id;
+  document.getElementById('fleet-name').value=f.fleetName;
+  document.getElementById('fleet-user').value=f.userId;
+  document.getElementById('fleet-house').value=f.house;
+  document.getElementById('fleet-banner').value=f.banner;
+  document.getElementById('fleet-ship').value=f.shipModel;
+  document.getElementById('fleet-ship-make').value=f.shipMake;
+  document.getElementById('fleet-ship-img').value=f.shipImageUrl;
+  document.getElementById('fleet-role').value=f.role;
+  document.getElementById('fleet-sort').value=f.sortOrder||0;
+  document.getElementById('fleet-notes').value=f.notes;
+  document.getElementById('fleet-active').value=f.active?'TRUE':'FALSE';
+}
+function fleetClearForm(){ ['fleet-id','fleet-name','fleet-house','fleet-banner','fleet-ship-make','fleet-ship-img','fleet-role','fleet-notes'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); document.getElementById('fleet-user').value=''; document.getElementById('fleet-ship').value=''; document.getElementById('fleet-sort').value=0; document.getElementById('fleet-active').value='TRUE'; }
+async function fleetSave(){
+  if(!window.OFSSheets || !OFSSheets.saveFleetAssignment){ alert('Fleet write helper unavailable.'); return; }
+  var uid=document.getElementById('fleet-user').value;
+  var p=PLAYERS.find(function(x){return x.id===uid;});
+  var item={
+    id: document.getElementById('fleet-id').value || ('fleet-'+Date.now()),
+    fleetName: document.getElementById('fleet-name').value.trim(),
+    userId: uid,
+    username: p ? p.username : '',
+    house: document.getElementById('fleet-house').value.trim(),
+    banner: document.getElementById('fleet-banner').value.trim(),
+    shipModel: document.getElementById('fleet-ship').value.trim(),
+    shipMake: document.getElementById('fleet-ship-make').value.trim(),
+    shipImageUrl: document.getElementById('fleet-ship-img').value.trim(),
+    role: document.getElementById('fleet-role').value.trim(),
+    sortOrder: Number(document.getElementById('fleet-sort').value)||0,
+    notes: document.getElementById('fleet-notes').value.trim(),
+    active: document.getElementById('fleet-active').value !== 'FALSE'
+  };
+  if(!item.fleetName || !item.userId || !item.shipModel){ alert('Fleet Name, Member, and Ship are required.'); return; }
+  try{ await OFSSheets.saveFleetAssignment(item); alert('Fleet assignment saved. Refresh after Worker /data includes Fleets to see it in the table.'); fleetClearForm(); }
+  catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
+}
 
 /* ══════════════════════════════════════════════════════════
    AUDIT LOG
