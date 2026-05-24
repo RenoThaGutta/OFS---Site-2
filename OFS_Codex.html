@@ -1261,10 +1261,8 @@ content.addEventListener('scroll', () => {
 
   function splitArticleSevenContent(text){
     var parsed = splitTitleBodyLines(text, ARTICLE_SEVEN_TIERS);
-    var byTitle = {};
-    parsed.rows.forEach(function(row){ byTitle[row.title.toLowerCase()] = row; });
-    return { intro:parsed.intro, tiers:ARTICLE_SEVEN_TIERS.map(function(title){
-      var found = byTitle[title.toLowerCase()];
+    return { intro:parsed.intro, tiers:ARTICLE_SEVEN_TIERS.map(function(title, i){
+      var found = parsed.rows[i];
       return { title: found ? found.title : title, body: found ? found.body : '' };
     }) };
   }
@@ -1415,7 +1413,7 @@ content.addEventListener('scroll', () => {
   } catch(e) {}
 
   // 2. Async fetch from Worker; mirror to localStorage; re-apply
-  fetch(WORKER_URL + '/content')
+  fetch(WORKER_URL + '/content?v=' + Date.now(), { cache: 'no-store' })
     .then(function(r){ return r.json(); })
     .then(function(data){
       if(!data || !data.ok) return;

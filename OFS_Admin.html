@@ -3749,8 +3749,6 @@ function splitTitleBodyLines(content, expectedTitles){
 
 function splitBannerContent(content){
   const parsed = splitTitleBodyLines(content, CODEX_BANNER_NAMES);
-  const byName = {};
-  parsed.rows.forEach(function(row){ byName[row.title.toLowerCase()] = row; });
   const defaults = {};
   CODEX_BANNER_NAMES.forEach(function(name){ defaults[name.toLowerCase()] = ''; });
   String(_CODEX_DEFAULTS.find(function(e){ return e.id === 'banners'; }).content || '').split(/\r?\n/).forEach(function(line){
@@ -3759,8 +3757,10 @@ function splitBannerContent(content){
   });
   return {
     intro: parsed.intro,
-    banners: CODEX_BANNER_NAMES.map(function(name){
-      const found = byName[name.toLowerCase()];
+    // Preserve structured row identity by position, not by editable visible title.
+    // This prevents renamed banner cards from losing their role text on reopen/save.
+    banners: CODEX_BANNER_NAMES.map(function(name, i){
+      const found = parsed.rows[i];
       return { title: found ? found.title : name, role: found ? found.body : (defaults[name.toLowerCase()] || '') };
     })
   };
@@ -3802,12 +3802,12 @@ function renderRanksOverviewEditor(entry){
 
 function splitArticleSevenContent(content){
   const parsed = splitTitleBodyLines(content, CODEX_ARTICLE_SEVEN_TIERS);
-  const byTitle = {};
-  parsed.rows.forEach(function(row){ byTitle[row.title.toLowerCase()] = row; });
   return {
     intro: parsed.intro,
-    tiers: CODEX_ARTICLE_SEVEN_TIERS.map(function(title){
-      const found = byTitle[title.toLowerCase()];
+    // Preserve structured tier identity by position, not by editable visible title.
+    // This prevents renamed tiers from losing their description/context.
+    tiers: CODEX_ARTICLE_SEVEN_TIERS.map(function(title, i){
+      const found = parsed.rows[i];
       return { title: found ? found.title : title, body: found ? found.body : '' };
     })
   };
