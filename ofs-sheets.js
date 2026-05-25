@@ -15,6 +15,7 @@
   const WORKER_URL        = 'https://ofs-api.orderofthefallenstar.workers.dev';
   const CACHE_KEY          = 'ofs_sheets_cache';
   const BANNER_CACHE_KEY   = 'ofs_banner_defs_cache';
+  const BANNER_ALIAS_KEY   = 'ofs_banner_rename_aliases';
   const TAVERN_CACHE_KEY   = 'ofs_tavern_sheets_cache';
   const CACHE_TTL_MS       = 5 * 60 * 1000; // 5 minutes
 
@@ -200,6 +201,7 @@
 
   /* ── Banner definitions cache (in-memory + localStorage) ── */
   let _bannerDefs = loadBannerDefsCache() || [];
+  let _bannerAliases = loadBannerAliasesCache() || {};
 
   /* ── Timeline block overrides cache (in-memory) ───── */
   let _timelineBlocks = {};
@@ -264,6 +266,17 @@
 
   function getBannerDefs() { return _bannerDefs; }
 
+  function getBannerAliases() { return Object.assign({}, _bannerAliases || {}); }
+
+  function resolveBannerName(name) {
+    const raw = String(name || '').trim();
+    if (!raw) return '';
+    const current = (_bannerDefs || []).find(function (d) { return String(d.name || '').toLowerCase() === raw.toLowerCase(); });
+    if (current) return current.name;
+    const mapped = (_bannerAliases || {})[raw.toLowerCase()];
+    return mapped || raw;
+  }
+
   /* ── Tavern data cache (in-memory, set on each load) ─ */
   let _tavernData = null;
   let _loadPromise = null;
@@ -310,6 +323,22 @@
       if (!obj || !Array.isArray(obj.defs)) return null;
       if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
       return obj.defs;
+    } catch (e) { return null; }
+  }
+
+  function saveBannerAliasesCache(aliases) {
+    try {
+      global.localStorage.setItem(BANNER_ALIAS_KEY, JSON.stringify({ ts: Date.now(), aliases: aliases || {} }));
+    } catch (e) { /* storage full */ }
+  }
+
+  function loadBannerAliasesCache() {
+    try {
+      const raw = global.localStorage.getItem(BANNER_ALIAS_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.aliases || typeof obj.aliases !== 'object') return null;
+      return obj.aliases;
     } catch (e) { return null; }
   }
 
@@ -407,7 +436,7 @@
     saveTavernDataCache(_tavernData);
     _lastLoadInfo = { source: 'live', ts: Date.now(), message: '' };
 
-    // Fetch /content for timeline block overrides (optional — non-fatal)
+    // Fetch /content for timeline block overrides and banner rename aliases (optional — non-fatal)
     try {
       const cRes = await fetch(WORKER_URL + '/content');
       if (cRes.ok) {
@@ -421,6 +450,10 @@
               _timelineBlocks[blockId] = (val && typeof val === 'object') ? val : {};
             }
           });
+          if (cData.data.banner_rename_aliases && typeof cData.data.banner_rename_aliases === 'object') {
+            _bannerAliases = cData.data.banner_rename_aliases;
+            saveBannerAliasesCache(_bannerAliases);
+          }
         }
       }
     } catch (e) { /* content fetch is optional */ }
@@ -777,6 +810,17 @@
     return _apiPost('/write', { op: 'append', sheet: 'Banner Rename Requests', row: row });
   }
 
+  async function saveBannerRenameAlias(oldName, newName) {
+    const oldKey = String(oldName || '').trim().toLowerCase();
+    const next = String(newName || '').trim();
+    if (!oldKey || !next) return { ok: true, skipped: true };
+    const aliases = Object.assign({}, _bannerAliases || {});
+    aliases[oldKey] = next;
+    _bannerAliases = aliases;
+    saveBannerAliasesCache(aliases);
+    return _apiPost('/content', { key: 'banner_rename_aliases', value: aliases });
+  }
+
   /** Delete a banner row from the Banners sheet by name. */
   async function deleteBannerDef(name) {
     return deleteTavernRow('Banners', name);
@@ -826,10 +870,13 @@
     getShipRegistry,
     getFleets,
     getBannerDefs,
+    getBannerAliases,
+    resolveBannerName,
     saveBannerDef,
     deleteBannerDef,
     updateMemberBanner,
     appendBannerRenameRequest,
+    saveBannerRenameAlias,
     saveFleetAssignment,
     saveFleetAssignments,
     deleteFleetAssignment,

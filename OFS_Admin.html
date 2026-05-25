@@ -5442,6 +5442,11 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       } catch(queueErr) {
         console.warn('Banner rename queue append failed:', queueErr);
       }
+      try {
+        if(OFSSheets.saveBannerRenameAlias) await OFSSheets.saveBannerRenameAlias(oldName, newName);
+      } catch(aliasErr) {
+        console.warn('Banner rename alias save failed:', aliasErr);
+      }
       window._lastBannerRenameDiscordQueued = discordQueued;
     } catch(e){
       console.error(e);

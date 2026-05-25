@@ -552,14 +552,29 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  function findBannerIndex(defs, requested) {
+    requested = String(requested || '').trim();
+    var idx = defs.findIndex(function(d) {
+      return d.name.toLowerCase() === requested.toLowerCase();
+    });
+    if (idx >= 0) return idx;
+    var resolved = (window.OFSSheets && OFSSheets.resolveBannerName) ? OFSSheets.resolveBannerName(requested) : requested;
+    if (resolved && resolved.toLowerCase() !== requested.toLowerCase()) {
+      idx = defs.findIndex(function(d) { return d.name.toLowerCase() === resolved.toLowerCase(); });
+      if (idx >= 0) {
+        history.replaceState({}, '', '?banner=' + encodeURIComponent(defs[idx].name));
+        return idx;
+      }
+    }
+    return -1;
+  }
+
   function init(defs, players) {
     _defs = defs;
     window._bannerPlayers = players;
 
     var requested = getParam('banner');
-    var idx = defs.findIndex(function(d) {
-      return d.name.toLowerCase() === requested.toLowerCase();
-    });
+    var idx = findBannerIndex(defs, requested);
     if (idx < 0) idx = 0;
     _currentIdx = idx;
 
@@ -585,9 +600,7 @@
   // Handle browser back/forward
   window.addEventListener('popstate', function() {
     var requested = getParam('banner');
-    var idx = _defs.findIndex(function(d) {
-      return d.name.toLowerCase() === requested.toLowerCase();
-    });
+    var idx = findBannerIndex(_defs, requested);
     if (idx >= 0) {
       _currentIdx = idx;
       renderBanner(_defs[idx], window._bannerPlayers || []);

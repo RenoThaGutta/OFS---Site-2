@@ -1222,6 +1222,19 @@ content.addEventListener('scroll', () => {
   var RANK_DETAIL_IDS = ['r8','r7','r6','r5','r4t','r4p','r3','r2','r1'];
   var ARTICLE_SEVEN_TIERS = ['Minor violations','Intermediate breaches','High crimes (treason, falsification of records, relic theft)'];
   var BANNER_NAMES = ['The Artificer','The Astraeus','The Engineer','The Explorer','The Fang','The Forager','The Guardian','The Healer','The Merchant','The Privateer','The Talon'];
+  var BANNER_ROLE_FALLBACKS = {
+    'the artificer':'Crafting, engineering & item creation',
+    'the astraeus':'Navigation, exploration & deep-space ops',
+    'the engineer':'Ship & base maintenance, technical operations',
+    'the explorer':'Scouting, pathfinding & discovery',
+    'the fang':'Close-quarters combat & strike operations',
+    'the forager':'Resource gathering, salvage & supply',
+    'the guardian':'Defense, protection & escort duties',
+    'the healer':'Medical support & crew recovery',
+    'the merchant':'Trade, logistics & economic operations',
+    'the privateer':'Bounty hunting, interdiction & privateering',
+    'the talon':'Air superiority, dogfighting & fighter ops'
+  };
   var OATH_DEFAULT_LINES = {
     oath1:[
       ['Oathswearer','"Kneel, Commander of the Order. You stand at the threshold of stewardship and rule."'],
@@ -1323,8 +1336,41 @@ content.addEventListener('scroll', () => {
   function bannerCardsHTML(rows){
     return rows.map(function(b){
       var name = b.title || 'Banner';
-      return '<div class="banner-card" onclick="window.location.href=\'OFS_Banner.html?banner=' + esc(name).replace(/'/g, '&#39;') + '\'"><div class="banner-name">' + esc(name) + '</div><div class="banner-role">' + esc(b.body || '') + '</div></div>';
+      var href = 'OFS_Banner.html?banner=' + encodeURIComponent(name);
+      return '<div class="banner-card" role="link" tabindex="0" data-banner-href="' + esc(href) + '" onclick="window.location.href=this.dataset.bannerHref"><div class="banner-name">' + esc(name) + '</div><div class="banner-role">' + esc(b.body || '') + '</div></div>';
     }).join('');
+  }
+
+  function currentBannerRowsFromSheets(existingRows){
+    var defs = (window.OFSSheets && OFSSheets.getBannerDefs) ? (OFSSheets.getBannerDefs() || []) : [];
+    if(!defs.length) return [];
+    var existingByLower = {};
+    (existingRows || []).forEach(function(row){
+      if(row && row.title) existingByLower[row.title.toLowerCase()] = row.body || '';
+    });
+    return defs.map(function(def){
+      var name = def.name || 'Banner';
+      var key = name.toLowerCase();
+      return {
+        title: name,
+        body: existingByLower[key] || BANNER_ROLE_FALLBACKS[key] || def.description || ''
+      };
+    });
+  }
+
+  function refreshBannerCardsFromSheets(){
+    var section = document.getElementById('banners');
+    if(!section) return;
+    var grid = section.querySelector('.banners-grid');
+    if(!grid) return;
+    var existingRows = [];
+    grid.querySelectorAll('.banner-card').forEach(function(card){
+      var nameEl = card.querySelector('.banner-name');
+      var roleEl = card.querySelector('.banner-role');
+      if(nameEl) existingRows.push({ title:nameEl.textContent.trim(), body:roleEl ? roleEl.textContent.trim() : '' });
+    });
+    var rows = currentBannerRowsFromSheets(existingRows);
+    if(rows.length) grid.innerHTML = bannerCardsHTML(rows);
   }
 
   function splitAppendixOneContent(text){
@@ -1393,8 +1439,10 @@ content.addEventListener('scroll', () => {
         var banners = splitBannerContent(entry.content);
         var bBody = section.querySelector('.article-body');
         var grid = section.querySelector('.banners-grid');
+        var liveRows = currentBannerRowsFromSheets(banners.rows);
         if(bBody && banners.intro) bBody.innerHTML = paragraphize(banners.intro);
-        if(grid && banners.rows.length) grid.innerHTML = bannerCardsHTML(banners.rows);
+        if(grid && liveRows.length) grid.innerHTML = bannerCardsHTML(liveRows);
+        else if(grid && banners.rows.length) grid.innerHTML = bannerCardsHTML(banners.rows);
         return;
       }
 
@@ -1469,6 +1517,13 @@ content.addEventListener('scroll', () => {
       }
     })
     .catch(function(){});
+
+  if(window.OFSSheets && OFSSheets.load){
+    OFSSheets.load().then(function(){
+      refreshBannerCardsFromSheets();
+      if(window.OFSHeaderBar) OFSHeaderBar.refreshBanners();
+    }).catch(function(){});
+  }
 })();
 </script>
 </body>
