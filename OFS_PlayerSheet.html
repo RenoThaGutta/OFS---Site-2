@@ -853,7 +853,8 @@
     .banner-progress-showcase {
       display: none;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
+      z-index: 2;
       margin: -22px 0 36px;
       padding: 16px 30px 14px;
       background: radial-gradient(circle at 76% 50%, rgba(201,168,76,.09), transparent 30%),
@@ -871,6 +872,7 @@
       opacity: .65;
     }
     .banner-progress-showcase.open { display: block; }
+    .banner-progress-showcase:hover { z-index: 20; }
     .banner-progress-showcase .banner-progress {
       position: relative;
       width: min(760px, 100%);
