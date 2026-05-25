@@ -366,15 +366,56 @@
     };
   }
 
+  function knownBannerNames(source) {
+    const names = [];
+    function add(name) {
+      name = String(name || '').trim();
+      if (name && names.indexOf(name) === -1) names.push(name);
+    }
+
+    // Live Banners sheet definitions are authoritative after admin renames.
+    if (global.OFSSheets && typeof global.OFSSheets.getBannerDefs === 'function') {
+      (global.OFSSheets.getBannerDefs() || []).forEach(function (def) { add(def && def.name); });
+    }
+
+    if (source && source.banners && typeof source.banners === 'object') {
+      Object.keys(source.banners).forEach(add);
+    }
+    if (source && source.activeBanner) add(source.activeBanner);
+
+    // Fallback/static demo names remain last so pages still render before Sheets load.
+    BANNER_NAMES.forEach(add);
+    return names;
+  }
+
+  function bannerRanksFromDefs(bannerName) {
+    const target = String(bannerName || '').trim().toLowerCase();
+    if (!target || !global.OFSSheets || typeof global.OFSSheets.getBannerDefs !== 'function') return null;
+    const def = (global.OFSSheets.getBannerDefs() || []).find(function (d) {
+      return String(d && d.name || '').trim().toLowerCase() === target;
+    });
+    if (!def) return null;
+    return [def.subRank0, def.subRank1, def.subRank2, def.subRankMaster].map(function (rank, idx) {
+      return String(rank || (idx === 0 ? 'Apprentice' : 'Rank ' + (idx + 1))).trim();
+    });
+  }
+
+  function bannerRanks(bannerName) {
+    return bannerRanksFromDefs(bannerName) || BANNER_RANKS[bannerName] || null;
+  }
+
   function normalizePlayer(player, index) {
     const source = player || {};
     const stats = source.stats || {};
     const wallet = source.wallet || {};
     const normalizedBanners = {};
+    const bannerNames = knownBannerNames(source);
 
-    BANNER_NAMES.forEach(function (bannerName) {
+    bannerNames.forEach(function (bannerName) {
       normalizedBanners[bannerName] = normalizeBannerData(source.banners && source.banners[bannerName]);
     });
+
+    const activeBannerRaw = String(source.activeBanner || '').trim();
 
     return {
       id: String(source.id || index + 1),
@@ -388,7 +429,7 @@
       shipImage: String(source.shipImage || ''),
       reputationXP: Number(source.reputationXP) || 0,
       faction: String(source.faction || 'Unassigned'),
-      activeBanner: BANNER_NAMES.indexOf(source.activeBanner) >= 0 ? source.activeBanner : '',
+      activeBanner: activeBannerRaw,
       stats: {
         PatrolCount: Number(stats.PatrolCount) || 0,
         TotalLength: parsePatrolLengthHours(stats.TotalLength),
@@ -450,7 +491,7 @@
   }
 
   function bannerRankIndex(bannerName, points, medal) {
-    if (!BANNER_RANKS[bannerName]) {
+    if (!bannerRanks(bannerName)) {
       return 0;
     }
     if (points >= 60 && medal) {
@@ -466,7 +507,7 @@
   }
 
   function bannerRankTitle(bannerName, points, medal) {
-    const titles = BANNER_RANKS[bannerName];
+    const titles = bannerRanks(bannerName);
     if (!titles) {
       return '';
     }
@@ -583,6 +624,7 @@
     ORG_RANKS: ORG_RANKS,
     STAT_LABELS: STAT_LABELS,
     BANNER_RANKS: BANNER_RANKS,
+    bannerRanks: bannerRanks,
     MEDAL_IMGS: MEDAL_IMGS,
     XP_PER_QUEST: XP_PER_QUEST,
     XP_PER_CRUSADE: XP_PER_CRUSADE,

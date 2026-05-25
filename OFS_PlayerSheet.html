@@ -230,6 +230,7 @@
       display: none;
       grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr);
       gap: 18px;
+      align-items: start;
       margin: -22px 0 44px;
     }
     .profile-record.open { display: grid; }
@@ -426,6 +427,7 @@
     .profile-ship-api-link:hover { color: var(--gold-lt); opacity: 1; }
     @media (max-width: 700px) {
       .profile-ship-meta-grid { grid-template-columns: 1fr; }
+      .profile-bio-card { height: auto !important; }
     }
 
     /* ── Profile edit modal ─────────────────────────────── */
@@ -2022,19 +2024,33 @@ function calcRep(xp) {
 /* ═══════════════════════════════════════════════════════
    RANK LOGIC
 ═══════════════════════════════════════════════════════ */
+function bannerRanksFor(name) {
+  const target = String(name || '').trim().toLowerCase();
+  if (target && window.OFSSheets && OFSSheets.getBannerDefs) {
+    const def = (OFSSheets.getBannerDefs() || []).find(function (d) {
+      return String(d && d.name || '').trim().toLowerCase() === target;
+    });
+    if (def) {
+      return [def.subRank0, def.subRank1, def.subRank2, def.subRankMaster].map(function (rank, idx) {
+        return String(rank || (idx === 0 ? 'Apprentice' : 'Rank ' + (idx + 1))).trim();
+      });
+    }
+  }
+  return BANNER_RANKS[name] || ['Apprentice','Rank 2','Rank 3','Master'];
+}
+
 function rankInfo(name, pts, medal) {
-  const r = BANNER_RANKS[name];
-  if (!r) return { title: 'Apprentice', idx: 0 };
+  const r = bannerRanksFor(name);
   let idx;
   if      (pts >= 60 && medal) idx = 3;
   else if (pts >= 30)          idx = 2;
   else if (pts >= 15)          idx = 1;
   else                          idx = 0;
-  return { title: r[idx], idx };
+  return { title: r[idx] || 'Apprentice', idx };
 }
 
 function progressInfo(pts, medal, bannerName) {
-  const ranks = BANNER_RANKS[bannerName] || ['Apprentice','Rank 2','Rank 3','Master'];
+  const ranks = bannerRanksFor(bannerName);
   if (pts >= 60 && medal)
     return { pct: 100, cur: `${pts} pts`, nxt: null, locked: false, maxed: true };
   if (pts >= 30) {
@@ -2218,7 +2234,32 @@ function formatMass(value) {
 function shipApiImage(vehicle) {
   const images = Array.isArray(vehicle && vehicle.images) ? vehicle.images : [];
   const img = images[0] || null;
-  return img ? (img.thumbnail_url || img.original_url || '') : '';
+  return img ? (img.original_url || img.thumbnail_url || '') : '';
+}
+
+function syncProfileRecordHeight() {
+  const section = document.getElementById('js-profile-record');
+  const bioCard = document.getElementById('js-profile-bio-card');
+  const shipCard = document.getElementById('js-profile-ship-card');
+  if (!section || !bioCard || !shipCard || !section.classList.contains('open')) return;
+  bioCard.style.height = '';
+  if (window.matchMedia && window.matchMedia('(max-width: 700px)').matches) return;
+  if (bioCard.style.display === 'none' || shipCard.style.display === 'none') return;
+  const shipHeight = Math.ceil(shipCard.getBoundingClientRect().height);
+  if (shipHeight > 0) bioCard.style.height = shipHeight + 'px';
+}
+
+function handleProfileShipImageError(img) {
+  if (!img) return;
+  const fallback = img.getAttribute('data-api-src') || '';
+  if (fallback && img.getAttribute('src') !== fallback) {
+    img.setAttribute('src', fallback);
+    img.style.display = '';
+    return;
+  }
+  img.style.display = 'none';
+  img.removeAttribute('src');
+  syncProfileRecordHeight();
 }
 
 function localizedApiText(value) {
@@ -2275,6 +2316,7 @@ function renderShipEnrichment(data) {
     return '<div class="profile-ship-meta"><span class="profile-ship-meta-label">' + _esc(row[0]) + '</span><span class="profile-ship-meta-value">' + _esc(row[1]) + '</span></div>';
   }).join('') + '</div>' : '') +
     (data.description ? '<div class="profile-ship-desc">' + _esc(data.description).slice(0, 260) + (data.description.length > 260 ? '…' : '') + '</div>' : '');
+  syncProfileRecordHeight();
 }
 
 async function enhanceProfileShip(player, shipEntry, token) {
@@ -2299,9 +2341,12 @@ async function enhanceProfileShip(player, shipEntry, token) {
     renderShipEnrichment(data);
 
     const imgEl = document.getElementById('js-profile-ship-api-img');
-    if (imgEl && data.imageUrl && !imgEl.getAttribute('src')) {
-      imgEl.setAttribute('src', data.imageUrl);
-      imgEl.style.display = '';
+    if (imgEl && data.imageUrl) {
+      imgEl.setAttribute('data-api-src', data.imageUrl);
+      if (!imgEl.getAttribute('src') || imgEl.style.display === 'none') {
+        imgEl.setAttribute('src', data.imageUrl);
+        imgEl.style.display = '';
+      }
     }
     const makeEl = document.getElementById('js-profile-ship-api-make');
     if (makeEl && data.manufacturer && !makeEl.textContent.trim()) makeEl.textContent = data.manufacturer;
@@ -2514,7 +2559,7 @@ function renderProfileRecord(p) {
   let shipHtml = '<div class="profile-record-label">Assigned Ship</div>';
   shipHtml += '<img class="profile-ship-img" id="js-profile-ship-api-img" ' +
     (shipImage ? 'src="' + _esc(shipImage) + '" ' : 'style="display:none" ') +
-    'alt="' + _esc(p.ship || 'Ship') + '" onerror="this.style.display=&quot;none&quot;;this.removeAttribute(&quot;src&quot;)">';
+    'alt="' + _esc(p.ship || 'Ship') + '" onload="syncProfileRecordHeight()" onerror="handleProfileShipImageError(this)">';
   if (hasShip) {
     shipHtml += '<div class="profile-ship-name">' + _esc(p.ship) + '</div>';
     shipHtml += '<div class="profile-ship-make" id="js-profile-ship-api-make">' + _esc(shipEntry && shipEntry.make ? shipEntry.make : '') + '</div>';
@@ -2524,6 +2569,7 @@ function renderProfileRecord(p) {
     shipHtml += '<div class="profile-empty-note">No ship selected yet.</div>';
   }
   shipCard.innerHTML = shipHtml;
+  syncProfileRecordHeight();
   if (hasShip) enhanceProfileShip(p, shipEntry, token);
 }
 
@@ -2721,7 +2767,7 @@ function render(p) {
 
     // Set banner hero as identity background
     const defs = (window.OFSSheets && OFSSheets.getBannerDefs) ? OFSSheets.getBannerDefs() : [];
-    const banDef = defs.find(d => d.name === p.activeBanner);
+    const banDef = defs.find(d => String(d.name || '').toLowerCase() === String(p.activeBanner || '').toLowerCase());
     if (banDef && banDef.bannerImageUrl) {
       const m = banDef.bannerImageUrl.match(/\/file\/d\/([^/?#]+)/);
       const heroUrl = m ? 'https://lh3.googleusercontent.com/d/' + m[1] : banDef.bannerImageUrl;
@@ -2740,10 +2786,10 @@ function render(p) {
   // Banner progress preview (below identity; top-right compact version removed)
   const bpShowcaseEl = document.getElementById('js-banner-progress-showcase');
   const bpLargeEl = document.getElementById('js-banner-progress-large');
-  if (p.activeBanner && BANNER_RANKS[p.activeBanner]) {
+  if (p.activeBanner) {
     const pts = bData.p || 0;
     const hasMedal = bData.m || false;
-    const ranks = BANNER_RANKS[p.activeBanner];
+    const ranks = bannerRanksFor(p.activeBanner);
     const thresholds = [0, 15, 30, 60];
     const { idx } = rankInfo(p.activeBanner, pts, hasMedal);
 
@@ -2766,7 +2812,7 @@ function render(p) {
 
     // Medal image at end
     const defs2 = (window.OFSSheets && OFSSheets.getBannerDefs) ? OFSSheets.getBannerDefs() : [];
-    const banDef2 = defs2.find(d => d.name === p.activeBanner);
+    const banDef2 = defs2.find(d => String(d.name || '').toLowerCase() === String(p.activeBanner || '').toLowerCase());
     let medalUrl = '';
     if (banDef2 && banDef2.medalUrl) {
       const mm = banDef2.medalUrl.match(/\/file\/d\/([^/?#]+)/);
@@ -2901,7 +2947,7 @@ function render(p) {
     medalWrap.className = 'medal-wrap';
     // Try sheet defs first, then local MEDAL_IMGS
     const sheetDefs = (window.OFSSheets && OFSSheets.getBannerDefs) ? OFSSheets.getBannerDefs() : [];
-    const sheetDef = sheetDefs.find(d => d.name === name);
+    const sheetDef = sheetDefs.find(d => String(d.name || '').toLowerCase() === String(name || '').toLowerCase());
     let medalSrc = '';
     if (sheetDef && sheetDef.medalUrl) {
       const mm = sheetDef.medalUrl.match(/\/file\/d\/([^/?#]+)/);
