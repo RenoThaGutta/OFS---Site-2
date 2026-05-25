@@ -623,6 +623,27 @@
       box-shadow: 0 0 0 2px rgba(201,168,76,.08);
     }
     .profile-ship-picker.open .profile-ship-search { display: block; }
+    .profile-ship-brand-filter {
+      display: none;
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: rgba(7,7,15,.94);
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: 'Cinzel', serif;
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      outline: none;
+      cursor: pointer;
+    }
+    .profile-ship-brand-filter:focus {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 0 2px rgba(201,168,76,.08);
+    }
+    .profile-ship-picker.open .profile-ship-brand-filter { display: block; }
     .profile-ship-menu {
       display: none;
       position: static;
@@ -644,9 +665,9 @@
     .profile-ship-option {
       width: 100%;
       display: grid;
-      grid-template-columns: 58px minmax(0, 1fr);
+      grid-template-columns: 72px minmax(0, 1fr);
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       padding: 8px 10px;
       background: transparent;
       border: 1px solid transparent;
@@ -672,16 +693,17 @@
     .profile-ship-option-img,
     .profile-ship-option-logo,
     .profile-ship-option-placeholder {
-      width: 58px;
-      height: 38px;
+      width: 68px;
+      height: 44px;
       object-fit: contain;
       border-radius: 3px;
-      background: rgba(0,0,0,.24);
-      border: 1px solid rgba(201,168,76,.14);
+      background: transparent;
+      border: 0;
     }
     .profile-ship-option-logo {
-      padding: 6px;
-      filter: drop-shadow(0 0 8px rgba(201,168,76,.16));
+      padding: 2px;
+      opacity: .94;
+      filter: brightness(0) saturate(100%) invert(75%) sepia(38%) saturate(556%) hue-rotate(4deg) brightness(88%) contrast(84%) drop-shadow(0 0 8px rgba(201,168,76,.18));
     }
     .profile-ship-option-placeholder {
       display: flex;
@@ -1665,6 +1687,9 @@
           <span class="profile-ship-trigger-caret" aria-hidden="true">▾</span>
         </button>
         <input class="profile-ship-search" id="profile-ship-search" type="search" placeholder="Search by make or model…" autocomplete="off" oninput="handleShipPickerSearch(this.value)">
+        <select class="profile-ship-brand-filter" id="profile-ship-brand-filter" aria-label="Filter ships by brand" onchange="handleShipPickerBrand(this.value)">
+          <option value="">All brands</option>
+        </select>
         <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
         <div class="profile-ship-preview" id="profile-ship-preview" aria-live="polite"></div>
       </div>
@@ -1688,10 +1713,10 @@
   </div>
 </div>
 
-<script src="header_bar.js?v=profile-ship-logos-20260525"></script>
-<script src="ofs-data.js?v=profile-ship-logos-20260525"></script>
-<script src="ofs-sheets.js?v=profile-ship-logos-20260525"></script>
-<script src="ofs-nav.js?v=profile-ship-logos-20260525"></script>
+<script src="header_bar.js?v=profile-ship-brand-filter-20260525"></script>
+<script src="ofs-data.js?v=profile-ship-brand-filter-20260525"></script>
+<script src="ofs-sheets.js?v=profile-ship-brand-filter-20260525"></script>
+<script src="ofs-nav.js?v=profile-ship-brand-filter-20260525"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD
@@ -2221,6 +2246,7 @@ let _shipRegistryLoadPromise = null;
 let _shipPickerRegistry = [];
 let _shipPickerSelected = '';
 let _shipPickerQuery = '';
+let _shipPickerBrand = '';
 const SHIP_PICKER_MAX_OPTIONS = 60;
 
 function getViewerSession() {
@@ -2351,6 +2377,33 @@ function manufacturerLogoForShip(ship) {
     .replace(/\s+/g, ' ')
     .trim();
   return SHIP_MAKE_LOGOS[shortMake] || '';
+}
+
+function shipPickerBrandKey(make) {
+  return String(make || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function shipPickerBrandLabel(make) {
+  return String(make || '').trim() || 'Unknown Make';
+}
+
+function populateShipBrandFilter(registry, selectedBrand) {
+  const select = document.getElementById('profile-ship-brand-filter');
+  if (!select) return;
+  const brands = [];
+  const seen = new Set();
+  (registry || []).forEach(function (ship) {
+    const make = shipPickerBrandLabel(ship && ship.make);
+    const key = shipPickerBrandKey(make);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    brands.push({ key: key, label: make });
+  });
+  brands.sort(function (a, b) { return a.label.localeCompare(b.label); });
+  select.innerHTML = '<option value="">All brands</option>' + brands.map(function (brand) {
+    return '<option value="' + _esc(brand.key) + '">' + _esc(brand.label) + '</option>';
+  }).join('');
+  select.value = selectedBrand && seen.has(selectedBrand) ? selectedBrand : '';
 }
 
 function reversedShipModelCandidates(model) {
@@ -2993,7 +3046,9 @@ function appendShipPickerMessage(menu, title, detail) {
   menu.appendChild(msg);
 }
 
-function shipPickerMatches(ship, query) {
+function shipPickerMatches(ship, query, brand) {
+  const brandKey = String(brand || '').trim();
+  if (brandKey && shipPickerBrandKey(ship && ship.make) !== brandKey) return false;
   const q = String(query || '').trim().toLowerCase();
   if (!q) return true;
   const model = String(ship && ship.model || '').toLowerCase();
@@ -3019,8 +3074,9 @@ function renderShipPickerOptions() {
 
   const selected = String(_shipPickerSelected || '').trim();
   const query = String(_shipPickerQuery || '').trim();
+  const brand = String(_shipPickerBrand || '').trim();
 
-  if (!query) {
+  if (!query && !brand) {
     const noneBtn = document.createElement('button');
     noneBtn.type = 'button';
     noneBtn.className = 'profile-ship-option' + (!selected ? ' active' : '');
@@ -3038,7 +3094,7 @@ function renderShipPickerOptions() {
   }
 
   const matches = _shipPickerRegistry
-    .filter(function (ship) { return ship && ship.model && shipPickerMatches(ship, query); })
+    .filter(function (ship) { return ship && ship.model && shipPickerMatches(ship, query, brand); })
     .sort(function (a, b) { return String(a.model || '').localeCompare(String(b.model || '')); });
 
   const visible = matches.slice(0, SHIP_PICKER_MAX_OPTIONS);
@@ -3056,7 +3112,7 @@ function renderShipPickerOptions() {
   });
 
   if (!matches.length) {
-    appendShipPickerMessage(menu, 'No ships found', 'Try a ship model or manufacturer name.');
+    appendShipPickerMessage(menu, 'No ships found', brand ? 'Try another brand or search term.' : 'Try a ship model or manufacturer name.');
   } else if (matches.length > visible.length) {
     appendShipPickerMessage(menu, 'Showing ' + visible.length + ' of ' + matches.length + ' matches', 'Keep typing to narrow the ship registry.');
   }
@@ -3067,9 +3123,15 @@ function handleShipPickerSearch(value) {
   renderShipPickerOptions();
 }
 
+function handleShipPickerBrand(value) {
+  _shipPickerBrand = String(value || '').trim();
+  renderShipPickerOptions();
+}
+
 function populateShipSelect(selectedShip, registryOverride) {
   const select = document.getElementById('profile-ship-select');
   const search = document.getElementById('profile-ship-search');
+  const brandFilter = document.getElementById('profile-ship-brand-filter');
   if (!select) return;
   const registry = Array.isArray(registryOverride) ? registryOverride : currentShipRegistry();
   const selectedEntry = getShipEntry(selectedShip);
@@ -3079,7 +3141,9 @@ function populateShipSelect(selectedShip, registryOverride) {
   _shipPickerRegistry = registry.slice();
   _shipPickerSelected = selected;
   _shipPickerQuery = '';
+  _shipPickerBrand = '';
   if (search) search.value = '';
+  if (brandFilter) brandFilter.value = '';
 
   _shipPickerRegistry
     .slice()
@@ -3093,6 +3157,7 @@ function populateShipSelect(selectedShip, registryOverride) {
       select.appendChild(opt);
     });
 
+  populateShipBrandFilter(_shipPickerRegistry, _shipPickerBrand);
   renderShipPickerOptions();
   renderShipPickerPreview(selectedEntry, _currentPlayer && _currentPlayer.shipImage);
   setShipPickerOpen(false);
@@ -3144,9 +3209,8 @@ async function saveProfileEdits() {
   const saveBtn = document.getElementById('profile-save-btn');
   const statusEl = document.getElementById('profile-save-status');
   const shipEntry = getShipEntry(select && select.value);
-  const selectedOptionImg = shipEntry ? document.querySelector('.profile-ship-option.active img') : null;
   const previewImg = shipEntry ? document.querySelector('#profile-ship-preview img') : null;
-  const selectedImageUrl = shipEntry ? (shipEntry.imageUrl || (selectedOptionImg && selectedOptionImg.getAttribute('src')) || (previewImg && previewImg.getAttribute('src')) || '') : '';
+  const selectedImageUrl = shipEntry ? (shipEntry.imageUrl || (previewImg && previewImg.getAttribute('src')) || '') : '';
   const payload = {
     backStory: getProfileBioEditorValue(),
     ship: shipEntry ? shipDisplayName(shipEntry) : (select ? select.value : ''),
