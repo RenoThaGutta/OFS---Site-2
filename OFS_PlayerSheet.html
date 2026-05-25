@@ -3104,10 +3104,30 @@ function toggleShipPicker() {
 function shipPickerPreviewHtml(ship, imageUrl, apiData) {
   if (!ship) return '';
   const meta = shipApiMetaLine(apiData);
-  return (imageUrl ? '<img src="' + _esc(imageUrl) + '" alt="' + _esc(shipDisplayName(ship) || 'Selected ship') + '" onerror="this.closest(\'.profile-ship-preview\').classList.add(\'is-empty\');this.remove()">' : '') +
+  const imageSource = apiData ? 'api' : 'registry';
+  return (imageUrl ? '<img src="' + _esc(imageUrl) + '" data-source="' + imageSource + '" alt="' + _esc(shipDisplayName(ship) || 'Selected ship') + '" onerror="handleShipPickerPreviewImageError(this)">' : '') +
     '<div class="profile-ship-preview-name">' + _esc(ship.model || apiData && apiData.name || 'Selected Ship') + '</div>' +
     '<div class="profile-ship-preview-make">' + _esc(ship.make || apiData && apiData.manufacturer || 'Unknown make') + '</div>' +
     (meta ? '<div class="profile-ship-preview-meta">' + _esc(meta) + '</div>' : '');
+}
+
+function handleShipPickerPreviewImageError(img) {
+  if (!img) return;
+  const preview = img.closest('.profile-ship-preview');
+  const source = img.getAttribute('data-source') || '';
+  img.remove();
+  if (!preview) return;
+  preview.classList.add('is-empty');
+  const ship = getShipEntry(_shipPickerSelected);
+  if (source === 'api' || !ship) {
+    if (!preview.querySelector('.profile-ship-preview-meta')) {
+      preview.insertAdjacentHTML('beforeend', '<div class="profile-ship-preview-meta">Image unavailable</div>');
+    }
+    return;
+  }
+  preview.className = 'profile-ship-preview loading';
+  preview.innerHTML = '<div>Resolving ship image…</div><div class="profile-ship-preview-name">' + _esc(ship.model || 'Selected Ship') + '</div><div class="profile-ship-preview-make">' + _esc(ship.make || 'Unknown make') + '</div>';
+  enrichShipPickerPreviewFromApi(ship, ++_shipPickerPreviewToken);
 }
 
 function renderShipPickerPreview(ship, fallbackImageUrl) {
