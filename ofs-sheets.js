@@ -36,7 +36,7 @@
     // O-Q (14-16): empty
     ROLE_PATH:     17,   // R — "Role Path"
     SHIP:          18,   // S — "Ship"
-    // T (19): "Ship Image"     — not imported
+    SHIP_IMAGE:    19,   // T — "Ship Image"
     // U (20): "Verified"       — not imported
     // V (21): "RSI User Name"  — not imported
     ACTIVE_QUEST:       22,   // W — "Active Quest"
@@ -165,6 +165,7 @@
         backStory:     cell(row, ML.BACK_STORY),
         avatarUrl:     (cell(row, ML.PROFILE_PIC).toLowerCase().indexOf('no avatar') === -1) ? cell(row, ML.PROFILE_PIC) : '',
         ship:          cell(row, ML.SHIP),
+        shipImage:     cell(row, ML.SHIP_IMAGE),
         activeBanner:  cell(row, ML.BANNER),
         activeQuest:      cell(row, ML.ACTIVE_QUEST),
         activeQuestDesc:  cell(row, ML.ACTIVE_QUEST_DESC),
@@ -541,6 +542,27 @@
     });
   }
 
+  /**
+   * Update self-editable public profile fields in Member Log.
+   * Bio uses the existing "Back Story" column; Ship Image is derived from Ship Registry.
+   * @param {string} userId
+   * @param {{ backStory?: string, ship?: string, shipImage?: string }} profile
+   */
+  async function updateMemberProfile(userId, profile) {
+    const safeProfile = profile || {};
+    return _apiPost('/write', {
+      op:     'update',
+      sheet:  'Member Log',
+      keyCol: 0,
+      keyVal: String(userId),
+      data:   {
+        'Back Story': String(safeProfile.backStory || ''),
+        'Ship':       String(safeProfile.ship || ''),
+        'Ship Image': String(safeProfile.shipImage || '')
+      }
+    });
+  }
+
   /* ── Patrols (quest) helpers ─────────────────────────
    * Patrols rows are keyed on the composite (Patrol ID + Player ID):
    *   - Participant row: playerId = that player's Discord ID
@@ -681,6 +703,7 @@
     appendBankLog,
     updateBannerPoints,
     updateMedals,
+    updateMemberProfile,
     updatePatrolRow,
     deletePatrolRow,
     appendBannerPointsLog,

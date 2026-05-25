@@ -385,6 +385,7 @@
       timeInService: String(source.timeInService || ''),
       backStory: String(source.backStory || ''),
       ship: String(source.ship || ''),
+      shipImage: String(source.shipImage || ''),
       reputationXP: Number(source.reputationXP) || 0,
       faction: String(source.faction || 'Unassigned'),
       activeBanner: BANNER_NAMES.indexOf(source.activeBanner) >= 0 ? source.activeBanner : '',

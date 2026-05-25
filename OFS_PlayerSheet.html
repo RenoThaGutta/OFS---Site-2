@@ -208,6 +208,195 @@
       color: var(--text-dim);
       margin-top: 3px;
     }
+    .profile-edit-btn {
+      display: none;
+      margin-top: 14px;
+      background: rgba(201,168,76,.06);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      padding: 7px 12px;
+      font-family: 'Cinzel', serif;
+      font-size: .6rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+    }
+    .profile-edit-btn:hover { background: rgba(201,168,76,.13); color: var(--gold-lt); box-shadow: 0 0 14px rgba(201,168,76,.12); }
+
+    /* ── Bio / personal profile record ─────────────────── */
+    .profile-record {
+      display: none;
+      grid-template-columns: minmax(0, 1.2fr) minmax(260px, .8fr);
+      gap: 18px;
+      margin: -22px 0 44px;
+    }
+    .profile-record.open { display: grid; }
+    .profile-bio-card,
+    .profile-ship-card {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(14,14,28,.96), rgba(19,19,42,.88));
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      padding: 22px 24px;
+      box-shadow: inset 0 1px 0 rgba(201,168,76,.07), 0 0 30px rgba(0,0,0,.18);
+    }
+    .profile-bio-card::before,
+    .profile-ship-card::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+      opacity: .75;
+    }
+    .profile-record-label {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+      margin-bottom: 12px;
+    }
+    .profile-bio-text {
+      font-family: 'Crimson Text', serif;
+      font-size: 1.03rem;
+      line-height: 1.62;
+      color: var(--text);
+      white-space: pre-wrap;
+    }
+    .profile-empty-note {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: .98rem;
+      color: var(--text-dim);
+    }
+    .profile-ship-img {
+      width: 100%;
+      max-height: 210px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 14px;
+      border-radius: 4px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(201,168,76,.12);
+    }
+    .profile-ship-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      letter-spacing: .08em;
+      color: var(--gold-lt);
+      text-align: center;
+    }
+    .profile-ship-make {
+      margin-top: 5px;
+      font-size: .68rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      text-align: center;
+    }
+
+    /* ── Profile edit modal ─────────────────────────────── */
+    .profile-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 720;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(0,0,0,.82);
+      backdrop-filter: blur(8px);
+    }
+    .profile-modal-overlay.open { display: flex; }
+    .profile-modal {
+      width: min(640px, 100%);
+      background: rgba(14,14,28,.98);
+      border: 1px solid var(--b-gold);
+      border-radius: 6px;
+      box-shadow: 0 22px 70px rgba(0,0,0,.65), inset 0 1px 0 rgba(201,168,76,.08);
+      padding: 24px;
+    }
+    .profile-modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 14px;
+      margin-bottom: 18px;
+      border-bottom: 1px solid var(--b-dim);
+    }
+    .profile-modal-title {
+      font-family: 'Cinzel', serif;
+      font-size: .9rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+    .profile-modal-close {
+      background: none;
+      border: 0;
+      color: var(--silver-dim);
+      font-size: 1.4rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .profile-modal-close:hover { color: var(--gold); }
+    .profile-field { margin-bottom: 16px; }
+    .profile-field label {
+      display: block;
+      margin-bottom: 7px;
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--silver);
+    }
+    .profile-field textarea,
+    .profile-field select {
+      width: 100%;
+      background: rgba(7,7,15,.9);
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      color: var(--text);
+      padding: 11px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: .86rem;
+      outline: none;
+    }
+    .profile-field textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
+    .profile-field textarea:focus,
+    .profile-field select:focus { border-color: var(--b-gold); box-shadow: 0 0 0 2px rgba(201,168,76,.08); }
+    .profile-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .profile-save-status {
+      margin-right: auto;
+      font-size: .72rem;
+      color: var(--silver-dim);
+    }
+    .profile-modal-btn {
+      border: 1px solid var(--b-dim);
+      background: transparent;
+      color: var(--silver);
+      border-radius: 3px;
+      padding: 8px 14px;
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .profile-modal-btn.primary { border-color: var(--b-gold); color: var(--gold); background: rgba(201,168,76,.06); }
+    .profile-modal-btn:hover { color: var(--gold-lt); border-color: var(--b-gold); }
+    .profile-modal-btn:disabled { opacity: .45; cursor: default; }
 
     /* ── Reputation level ────────────────────────────────── */
     .rep-block {
@@ -612,6 +801,7 @@
 
     @media (max-width: 700px) {
       .quests-row { grid-template-columns: 1fr; }
+      .profile-record { grid-template-columns: 1fr; margin-top: -24px; }
       .quest-card,
       .quest-card.has-img { grid-template-columns: 1fr; }
       .quest-card-img,
@@ -771,6 +961,7 @@
       .identity { flex-direction: column; text-align: center; }
       .ident-divider { display: none; }
       .banner-progress { margin-left: 0; min-width: unset; max-width: unset; width: 100%; }
+      .profile-edit-btn { margin-left: auto; margin-right: auto; }
       .banners-grid { grid-template-columns: repeat(2, 1fr); }
       .stats-grid   { grid-template-columns: repeat(2, 1fr); }
     }
@@ -820,9 +1011,16 @@
       <div class="ident-rank"     id="js-rank">Primarch of Conquest</div>
       <div class="ident-banner"   id="js-banner"></div>
       <div class="ident-ship"     id="js-ship"></div>
+      <button class="profile-edit-btn" id="js-profile-edit" type="button" onclick="openProfileEditModal()">Edit Profile</button>
       <div class="rep-block"      id="js-rep"></div>
     </div>
     <div class="banner-progress" id="js-banner-progress" style="display:none"></div>
+  </section>
+
+  <!-- Bio / Personal Record -->
+  <section class="profile-record" id="js-profile-record">
+    <article class="profile-bio-card" id="js-profile-bio-card"></article>
+    <article class="profile-ship-card" id="js-profile-ship-card"></article>
   </section>
 
   <!-- Quests -->
@@ -876,6 +1074,28 @@
 <div id="banner-preview-overlay" onclick="if(event.target===this)closeBannerPreview()">
   <button class="banner-preview-close" onclick="closeBannerPreview()">&times;</button>
   <iframe id="banner-preview-iframe" src="about:blank"></iframe>
+</div>
+
+<div class="profile-modal-overlay" id="profile-edit-overlay" onclick="if(event.target===this)closeProfileEditModal()">
+  <div class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profile-edit-title">
+    <div class="profile-modal-head">
+      <div class="profile-modal-title" id="profile-edit-title">Edit Profile</div>
+      <button class="profile-modal-close" type="button" onclick="closeProfileEditModal()" aria-label="Close profile editor">&times;</button>
+    </div>
+    <div class="profile-field">
+      <label for="profile-bio-input">Bio</label>
+      <textarea id="profile-bio-input" maxlength="1200" placeholder="Write your place in the Order..."></textarea>
+    </div>
+    <div class="profile-field">
+      <label for="profile-ship-select">Ship</label>
+      <select id="profile-ship-select"></select>
+    </div>
+    <div class="profile-modal-actions">
+      <div class="profile-save-status" id="profile-save-status"></div>
+      <button class="profile-modal-btn" type="button" onclick="closeProfileEditModal()">Cancel</button>
+      <button class="profile-modal-btn primary" id="profile-save-btn" type="button" onclick="saveProfileEdits()">Save</button>
+    </div>
+  </div>
 </div>
 
 <script src="header_bar.js"></script>
@@ -1389,7 +1609,174 @@ function buildLocked() {
   return wrap;
 }
 
+let _currentPlayer = null;
+
+function getViewerSession() {
+  try { return JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null'); }
+  catch (e) { return null; }
+}
+
+function isSelfProfile(player) {
+  const s = getViewerSession();
+  return !!(s && s.id && player && String(s.id) === String(player.id));
+}
+
+function normalizeImageUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  const m = raw.match(/\/file\/d\/([^/?#]+)/);
+  return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : raw;
+}
+
+function shipDisplayName(ship) {
+  if (!ship) return '';
+  const model = String(ship.model || '').trim();
+  const make = String(ship.make || '').trim();
+  return make && model ? (make + ' ' + model) : model;
+}
+
+function getShipEntry(shipName) {
+  const registry = (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : [];
+  const target = String(shipName || '').trim().toLowerCase();
+  if (!target) return null;
+  return registry.find(function (ship) {
+    const model = String(ship.model || '').trim().toLowerCase();
+    const make = String(ship.make || '').trim().toLowerCase();
+    const makeModel = (make && model) ? (make + ' ' + model) : model;
+    const modelMake = (make && model) ? (model + ' ' + make) : model;
+    return target === model || target === makeModel || target === modelMake;
+  }) || null;
+}
+
+function renderProfileRecord(p) {
+  const section = document.getElementById('js-profile-record');
+  const bioCard = document.getElementById('js-profile-bio-card');
+  const shipCard = document.getElementById('js-profile-ship-card');
+  if (!section || !bioCard || !shipCard) return;
+
+  const self = isSelfProfile(p);
+  const bio = String(p.backStory || '').trim();
+  const shipEntry = getShipEntry(p.ship);
+  const shipImage = normalizeImageUrl(p.shipImage || (shipEntry && shipEntry.imageUrl));
+  const hasShip = !!String(p.ship || '').trim();
+  const shouldShowBio = !!bio || self;
+  const shouldShowShip = hasShip || self;
+
+  if (!shouldShowBio && !shouldShowShip) {
+    section.classList.remove('open');
+    bioCard.innerHTML = '';
+    shipCard.innerHTML = '';
+    return;
+  }
+
+  section.classList.add('open');
+  bioCard.style.display = shouldShowBio ? '' : 'none';
+  shipCard.style.display = shouldShowShip ? '' : 'none';
+
+  bioCard.innerHTML = '<div class="profile-record-label">Personal Record</div>' +
+    (bio
+      ? '<div class="profile-bio-text">' + _esc(bio) + '</div>'
+      : '<div class="profile-empty-note">No bio recorded yet. Use Edit Profile to add your personal record.</div>');
+
+  let shipHtml = '<div class="profile-record-label">Assigned Ship</div>';
+  if (shipImage) {
+    shipHtml += '<img class="profile-ship-img" src="' + _esc(shipImage) + '" alt="' + _esc(p.ship || 'Ship') + '" onerror="this.remove()">';
+  }
+  if (hasShip) {
+    shipHtml += '<div class="profile-ship-name">' + _esc(p.ship) + '</div>';
+    if (shipEntry && shipEntry.make) shipHtml += '<div class="profile-ship-make">' + _esc(shipEntry.make) + '</div>';
+  } else {
+    shipHtml += '<div class="profile-empty-note">No ship selected yet.</div>';
+  }
+  shipCard.innerHTML = shipHtml;
+}
+
+function populateShipSelect(selectedShip) {
+  const select = document.getElementById('profile-ship-select');
+  if (!select) return;
+  const registry = (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : [];
+  const selectedEntry = getShipEntry(selectedShip);
+  const selected = String((selectedEntry && selectedEntry.model) || selectedShip || '').trim();
+  select.innerHTML = '<option value="">No ship selected</option>';
+  registry
+    .slice()
+    .sort(function (a, b) { return String(a.model || '').localeCompare(String(b.model || '')); })
+    .forEach(function (ship) {
+      if (!ship || !ship.model) return;
+      const opt = document.createElement('option');
+      opt.value = ship.model;
+      opt.textContent = ship.make ? (ship.model + ' — ' + ship.make) : ship.model;
+      if (String(ship.model).trim() === selected) opt.selected = true;
+      select.appendChild(opt);
+    });
+}
+
+function openProfileEditModal() {
+  if (!_currentPlayer || !isSelfProfile(_currentPlayer)) return;
+  const overlay = document.getElementById('profile-edit-overlay');
+  const bioInput = document.getElementById('profile-bio-input');
+  const statusEl = document.getElementById('profile-save-status');
+  if (!overlay || !bioInput) return;
+  bioInput.value = _currentPlayer.backStory || '';
+  populateShipSelect(_currentPlayer.ship || '');
+  if (statusEl) statusEl.textContent = '';
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(function () { bioInput.focus(); }, 0);
+}
+
+function closeProfileEditModal() {
+  const overlay = document.getElementById('profile-edit-overlay');
+  if (overlay) overlay.classList.remove('open');
+  const bannerOverlay = document.getElementById('banner-preview-overlay');
+  if (!bannerOverlay || !bannerOverlay.classList.contains('open')) document.body.style.overflow = '';
+}
+
+async function saveProfileEdits() {
+  if (!_currentPlayer || !isSelfProfile(_currentPlayer)) return;
+  const bioInput = document.getElementById('profile-bio-input');
+  const select = document.getElementById('profile-ship-select');
+  const saveBtn = document.getElementById('profile-save-btn');
+  const statusEl = document.getElementById('profile-save-status');
+  const shipEntry = getShipEntry(select && select.value);
+  const payload = {
+    backStory: bioInput ? bioInput.value.trim() : '',
+    ship: shipEntry ? shipDisplayName(shipEntry) : (select ? select.value : ''),
+    shipImage: shipEntry ? shipEntry.imageUrl : ''
+  };
+  if (!window.OFSSheets || !OFSSheets.updateMemberProfile) {
+    if (statusEl) statusEl.textContent = 'Profile save is unavailable.';
+    return;
+  }
+  try {
+    if (saveBtn) saveBtn.disabled = true;
+    if (statusEl) statusEl.textContent = 'Saving profile…';
+    await OFSSheets.updateMemberProfile(_currentPlayer.id, payload);
+    _currentPlayer.backStory = payload.backStory;
+    _currentPlayer.ship = payload.ship;
+    _currentPlayer.shipImage = payload.shipImage;
+
+    if (window.OFSData && OFSData.getPlayers && OFSData.savePlayers) {
+      const players = OFSData.getPlayers().map(function (player) {
+        if (String(player.id) !== String(_currentPlayer.id)) return player;
+        return Object.assign({}, player, payload);
+      });
+      OFSData.savePlayers(players);
+    }
+
+    render(_currentPlayer);
+    if (window.OFSNav) OFSNav.refresh();
+    if (statusEl) statusEl.textContent = 'Profile saved.';
+    closeProfileEditModal();
+  } catch (err) {
+    if (statusEl) statusEl.textContent = 'Save failed: ' + (err && err.message ? err.message : 'Unknown error');
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
+}
+
 function render(p) {
+  _currentPlayer = p;
   // Breadcrumb + title
   document.title = `${p.username} — Player Sheet`;
   const breadcrumbEl = document.getElementById('breadcrumb-name');
@@ -1509,9 +1896,12 @@ function render(p) {
     bpEl.style.display = 'none';
   }
 
-  // Ship on its own line
+  // Ship on its own line + profile record/self-edit surface
   const shipEl = document.getElementById('js-ship');
   shipEl.textContent = p.ship || '';
+  const editBtn = document.getElementById('js-profile-edit');
+  if (editBtn) editBtn.style.display = isSelfProfile(p) ? 'inline-flex' : 'none';
+  renderProfileRecord(p);
 
   const avatarEl = document.getElementById('js-avatar');
   if (p.avatarUrl) {
@@ -1640,7 +2030,10 @@ function closeBannerPreview() {
   document.body.style.overflow = '';
 }
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeBannerPreview();
+  if (e.key === 'Escape') {
+    closeBannerPreview();
+    closeProfileEditModal();
+  }
 });
 
 /* ═══════════════════════════════════════════════════════
