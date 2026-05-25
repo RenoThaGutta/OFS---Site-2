@@ -488,7 +488,7 @@
     }
     .profile-modal-overlay.open { display: flex; }
     .profile-modal {
-      width: min(820px, 100%);
+      width: min(980px, 100%);
       max-height: calc(100vh - 56px);
       overflow-y: auto;
       background: rgba(14,14,28,.98);
@@ -631,7 +631,7 @@
     }
     .profile-ship-split {
       display: grid;
-      grid-template-columns: minmax(128px, 168px) minmax(0, 1fr);
+      grid-template-columns: minmax(128px, 168px) minmax(260px, 1fr) minmax(220px, 300px);
       gap: 10px;
       margin-top: 8px;
       align-items: stretch;
@@ -792,8 +792,11 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    @media (max-width: 860px) {
+      .profile-ship-split { grid-template-columns: minmax(128px, 168px) minmax(0, 1fr); }
+      .profile-ship-preview { grid-column: 1 / -1; }
+    }
     @media (max-width: 640px) {
-      .profile-ship-brand-pills { max-height: 138px; }
       .profile-ship-brand-pill { max-width: 100%; }
       .profile-ship-split { grid-template-columns: 1fr; }
       .profile-ship-brand-panel { min-height: 118px; }
@@ -802,11 +805,12 @@
     }
     .profile-ship-preview {
       display: none;
-      margin-top: 12px;
+      margin-top: 0;
       padding: 12px;
       border: 1px solid rgba(201,168,76,.16);
       border-radius: 4px;
       background: radial-gradient(circle at 50% 0%, rgba(201,168,76,.08), rgba(7,7,15,.72) 62%);
+      align-self: stretch;
     }
     .profile-ship-preview.has-image { display: block; }
     .profile-ship-preview img {
@@ -1740,16 +1744,16 @@
       </div>
       <div id="profile-bio-editor" class="profile-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Write your place in the Order..." onkeyup="saveProfileBioSelection()" onmouseup="saveProfileBioSelection()" onblur="saveProfileBioSelection()" onpaste="handleProfileBioPaste(event)"></div>
     </div>
-    <div class="profile-field">
+    <div class="profile-field profile-field-ship" id="profile-ship-field">
       <label for="profile-ship-search">Ship Selector</label>
-      <div class="profile-ship-picker open" id="profile-ship-picker">
+      <div class="profile-ship-picker open" id="profile-ship-picker" onfocusin="focusShipPickerInModal()" onclick="focusShipPickerInModal()">
         <input class="profile-ship-search" id="profile-ship-search" type="search" placeholder="Search by make or model…" autocomplete="off" oninput="handleShipPickerSearch(this.value)">
         <div class="profile-ship-brand-pills" id="profile-ship-brand-pills" role="listbox" aria-label="Filter ships by brand"></div>
         <div class="profile-ship-split" id="profile-ship-split">
           <div class="profile-ship-brand-panel" id="profile-ship-brand-panel" aria-live="polite"></div>
           <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
+          <div class="profile-ship-preview" id="profile-ship-preview" aria-live="polite"></div>
         </div>
-        <div class="profile-ship-preview" id="profile-ship-preview" aria-live="polite"></div>
       </div>
       <select id="profile-ship-select" class="profile-ship-native" tabindex="-1" aria-hidden="true"></select>
     </div>
@@ -2306,6 +2310,8 @@ let _shipPickerSelected = '';
 let _shipPickerQuery = '';
 let _shipPickerBrand = '';
 const SHIP_PICKER_MAX_OPTIONS = 60;
+const SHIP_LOGO_PRELOAD_TIMEOUT = 1200;
+const _shipLogoPreloadCache = new Map();
 
 function getViewerSession() {
   var key = 'ofs_discord_session';
@@ -2448,6 +2454,32 @@ function shipLogoUrlForMake(make) {
   return manufacturerLogoForShip({ make: make });
 }
 
+function preloadShipMakeLogos(registry) {
+  const urls = [];
+  const seen = new Set();
+  (registry || []).forEach(function (ship) {
+    const url = shipLogoUrlForMake(ship && ship.make);
+    if (!url || seen.has(url)) return;
+    seen.add(url);
+    urls.push(url);
+  });
+  if (!urls.length) return Promise.resolve();
+  const loads = urls.map(function (url) {
+    if (_shipLogoPreloadCache.has(url)) return _shipLogoPreloadCache.get(url);
+    const promise = new Promise(function (resolve) {
+      const img = new Image();
+      img.onload = function () { resolve(); };
+      img.onerror = function () { resolve(); };
+      img.decoding = 'async';
+      img.src = url;
+    });
+    _shipLogoPreloadCache.set(url, promise);
+    return promise;
+  });
+  const timeout = new Promise(function (resolve) { setTimeout(resolve, SHIP_LOGO_PRELOAD_TIMEOUT); });
+  return Promise.race([Promise.allSettled(loads), timeout]);
+}
+
 function shipPickerBrandKey(make) {
   return String(make || '').trim().toLowerCase().replace(/\s+/g, ' ');
 }
@@ -2461,7 +2493,7 @@ function shipBrandPillIconHtml(make) {
   const logoUrl = label === 'All Brands' ? '' : shipLogoUrlForMake(label);
   const code = label === 'All Brands' ? 'ALL' : shipMakeCode(label);
   return '<span class="profile-ship-brand-pill-icon">' + (logoUrl
-    ? '<img class="profile-ship-brand-pill-img' + shipMakeLogoClass(label) + '" src="' + _esc(logoUrl) + '" alt="" loading="lazy" decoding="async" onerror="this.outerHTML=\'<span class=&quot;profile-ship-brand-pill-code&quot;>' + _esc(code) + '</span>\'">'
+    ? '<img class="profile-ship-brand-pill-img' + shipMakeLogoClass(label) + '" src="' + _esc(logoUrl) + '" alt="" loading="eager" decoding="async" fetchpriority="low" onerror="this.outerHTML=\'<span class=&quot;profile-ship-brand-pill-code&quot;>' + _esc(code) + '</span>\'">'
     : '<span class="profile-ship-brand-pill-code">' + _esc(code) + '</span>') + '</span>';
 }
 
@@ -3007,6 +3039,27 @@ function setShipPickerOpen(open) {
   }
 }
 
+let _shipPickerFocusTimer = null;
+function focusShipPickerInModal() {
+  clearTimeout(_shipPickerFocusTimer);
+  _shipPickerFocusTimer = setTimeout(function () {
+    const modal = document.querySelector('#profile-edit-overlay.open .profile-modal');
+    const field = document.getElementById('profile-ship-field');
+    if (!modal || !field) return;
+    const modalRect = modal.getBoundingClientRect();
+    const fieldRect = field.getBoundingClientRect();
+    const topPadding = 18;
+    const bottomPadding = 18;
+    const fieldAbove = fieldRect.top < modalRect.top + topPadding;
+    const fieldBelow = fieldRect.bottom > modalRect.bottom - bottomPadding;
+    if (!fieldAbove && !fieldBelow) return;
+    modal.scrollTo({
+      top: modal.scrollTop + fieldRect.top - modalRect.top - topPadding,
+      behavior: 'smooth'
+    });
+  }, 40);
+}
+
 function toggleShipPicker() {
   setShipPickerOpen(true);
 }
@@ -3270,7 +3323,9 @@ async function openProfileEditModal() {
   const menu = document.getElementById('profile-ship-menu');
   if (!overlay || !bioEditor) return;
   setProfileBioEditor(_currentPlayer.backStory || '');
-  populateShipSelect(_currentPlayer.ship || '', currentShipRegistry());
+  const initialRegistry = currentShipRegistry();
+  if (initialRegistry.length) await preloadShipMakeLogos(initialRegistry);
+  populateShipSelect(_currentPlayer.ship || '', initialRegistry);
   if (statusEl) statusEl.textContent = '';
   if (!currentShipRegistry().length) {
     if (triggerMake) triggerMake.textContent = 'Loading Ship Registry…';
@@ -3283,11 +3338,12 @@ async function openProfileEditModal() {
   document.body.style.overflow = 'hidden';
   try {
     const registry = await ensureShipRegistryLoaded();
+    await preloadShipMakeLogos(registry);
     if (overlay.classList.contains('open')) populateShipSelect(_currentPlayer.ship || '', registry);
   } catch (err) {
     if (statusEl) statusEl.textContent = 'Ship Registry could not load. Try refreshing the page.';
   }
-  setTimeout(function () { bioEditor.focus(); saveProfileBioSelection(); }, 0);
+  setTimeout(function () { saveProfileBioSelection(); }, 0);
 }
 
 function closeProfileEditModal() {
