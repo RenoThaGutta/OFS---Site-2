@@ -849,6 +849,62 @@
     }
     .bp-tip-row.active .bp-tip-pts { color: var(--gold); }
 
+    /* ── Large banner progress preview (below identity) ───── */
+    .banner-progress-showcase {
+      display: none;
+      position: relative;
+      overflow: hidden;
+      margin: -22px 0 44px;
+      padding: 28px 34px 24px;
+      background: radial-gradient(circle at 70% 0%, rgba(201,168,76,.10), transparent 34%),
+                  linear-gradient(135deg, rgba(14,14,28,.96), rgba(7,7,15,.9));
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      box-shadow: inset 0 1px 0 rgba(201,168,76,.08), 0 0 36px rgba(0,0,0,.22);
+    }
+    .banner-progress-showcase::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold-dim), transparent);
+      opacity: .75;
+    }
+    .banner-progress-showcase.open { display: block; }
+    .banner-progress-showcase .banner-progress {
+      width: min(760px, 100%);
+      max-width: none;
+      min-width: 0;
+      margin: 0 auto;
+    }
+    .banner-progress-showcase .bp-label {
+      text-align: left;
+      margin-bottom: 18px;
+      font-size: .78rem;
+      letter-spacing: .22em;
+      color: var(--gold-dim);
+    }
+    .banner-progress-showcase .bp-track { gap: 6px; }
+    .banner-progress-showcase .bp-step { height: 7px; border-radius: 4px; }
+    .banner-progress-showcase .bp-medal-end {
+      width: 42px;
+      height: 42px;
+      margin-left: 10px;
+      filter: drop-shadow(0 0 10px rgba(201,168,76,.22));
+    }
+    .banner-progress-showcase .bp-medal-end.locked { filter: grayscale(1) brightness(.45); }
+    .banner-progress-showcase .bp-markers {
+      grid-template-columns: 1fr 1fr 1fr 56px;
+      margin-top: 10px;
+      gap: 6px;
+    }
+    .banner-progress-showcase .bp-marker { font-size: .68rem; }
+    .banner-progress-showcase .bp-pts-label {
+      margin-top: 8px;
+      font-size: .72rem;
+    }
+    .banner-progress-showcase .bp-tooltip { right: 50%; transform: translateX(50%); }
+
     /* ── Section header ──────────────────────────────────── */
     /* ── Quests section ─────────────────────────────────── */
     .quests-row {
@@ -1284,6 +1340,11 @@
       <div class="rep-block"      id="js-rep"></div>
     </div>
     <div class="banner-progress" id="js-banner-progress" style="display:none"></div>
+  </section>
+
+  <!-- Large banner progress preview — separate from reputation and identity progress -->
+  <section class="banner-progress-showcase" id="js-banner-progress-showcase" aria-label="Banner progress preview">
+    <div class="banner-progress" id="js-banner-progress-large"></div>
   </section>
 
   <!-- Bio / Personal Record -->
@@ -1802,7 +1863,7 @@ const STAT_LABELS = {
   PatrolCount           : "Patrols",
   TotalLength           : "Total Quest Length",
   FPS_Kills_Total       : "Ground Kills",
-  Ship_Kills_Total      : "Ship Kills",
+  Ship_Kills_Total      : "Pilot Kills",
   Crusades_Total        : "Crusades",
   Turret_Kills_Total    : "Turret Kills",
   Quest_Total           : "Quests",
@@ -2373,6 +2434,8 @@ function render(p) {
 
   // Banner progress bar (top-right of identity)
   const bpEl = document.getElementById('js-banner-progress');
+  const bpShowcaseEl = document.getElementById('js-banner-progress-showcase');
+  const bpLargeEl = document.getElementById('js-banner-progress-large');
   if (p.activeBanner && BANNER_RANKS[p.activeBanner]) {
     const pts = bData.p || 0;
     const hasMedal = bData.m || false;
@@ -2438,9 +2501,7 @@ function render(p) {
       return `<div class="bp-tip-row ${cls}"><span class="bp-tip-dot"></span>${r}<span class="bp-tip-pts">${label}</span></div>`;
     }).join('');
 
-    bpEl.style.display = '';
-    bpEl.removeAttribute('title');
-    bpEl.innerHTML =
+    const progressHTML =
       `<div class="bp-tooltip">` +
         `<div class="bp-tip-title">${p.activeBanner}</div>` +
         `${tipRows}` +
@@ -2449,8 +2510,20 @@ function render(p) {
       `<div class="bp-track">${stepsHTML}${medalImg}</div>` +
       `<div class="bp-markers">${markersHTML}</div>` +
       `<div class="bp-pts-label">${ptsLine}</div>`;
+
+    bpEl.style.display = '';
+    bpEl.removeAttribute('title');
+    bpEl.innerHTML = progressHTML;
+    if (bpShowcaseEl && bpLargeEl) {
+      bpShowcaseEl.classList.add('open');
+      bpLargeEl.innerHTML = progressHTML;
+    }
   } else {
     bpEl.style.display = 'none';
+    if (bpShowcaseEl && bpLargeEl) {
+      bpShowcaseEl.classList.remove('open');
+      bpLargeEl.innerHTML = '';
+    }
   }
 
   // Ship on its own line + profile record/self-edit surface
