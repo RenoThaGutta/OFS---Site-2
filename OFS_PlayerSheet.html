@@ -422,6 +422,160 @@
       outline: none;
     }
     .profile-field select:focus { border-color: var(--b-gold); box-shadow: 0 0 0 2px rgba(201,168,76,.08); }
+    .profile-ship-native { display: none; }
+    .profile-ship-picker { position: relative; }
+    .profile-ship-trigger {
+      width: 100%;
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 11px 14px;
+      background: linear-gradient(135deg, rgba(7,7,15,.95), rgba(19,19,42,.92));
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      box-shadow: inset 0 1px 0 rgba(201,168,76,.07);
+      transition: border-color .15s, box-shadow .15s, background .15s;
+    }
+    .profile-ship-trigger:hover,
+    .profile-ship-picker.open .profile-ship-trigger {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 0 2px rgba(201,168,76,.08), inset 0 1px 0 rgba(201,168,76,.12);
+      background: linear-gradient(135deg, rgba(10,10,22,.98), rgba(24,24,50,.94));
+    }
+    .profile-ship-trigger-main { min-width: 0; }
+    .profile-ship-trigger-name {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: .82rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-ship-trigger-make {
+      display: block;
+      margin-top: 3px;
+      font-size: .64rem;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-ship-trigger-caret {
+      flex: 0 0 auto;
+      color: var(--gold);
+      font-size: .9rem;
+      opacity: .85;
+      transition: transform .15s;
+    }
+    .profile-ship-picker.open .profile-ship-trigger-caret { transform: rotate(180deg); }
+    .profile-ship-menu {
+      display: none;
+      position: absolute;
+      z-index: 735;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      max-height: 280px;
+      overflow-y: auto;
+      background: rgba(14,14,28,.99);
+      border: 1px solid var(--b-gold);
+      border-radius: 5px;
+      box-shadow: 0 18px 48px rgba(0,0,0,.72), inset 0 1px 0 rgba(201,168,76,.08);
+      padding: 6px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
+    }
+    .profile-ship-picker.open .profile-ship-menu { display: block; }
+    .profile-ship-menu::-webkit-scrollbar { width: 8px; }
+    .profile-ship-menu::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
+    .profile-ship-menu::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
+    .profile-ship-option {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 8px 10px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+      transition: background .12s, border-color .12s;
+    }
+    .profile-ship-option:hover,
+    .profile-ship-option.active {
+      background: rgba(201,168,76,.09);
+      border-color: rgba(201,168,76,.24);
+    }
+    .profile-ship-option-img,
+    .profile-ship-option-placeholder {
+      width: 58px;
+      height: 38px;
+      object-fit: cover;
+      border-radius: 3px;
+      background: rgba(0,0,0,.24);
+      border: 1px solid rgba(201,168,76,.14);
+    }
+    .profile-ship-option-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-dim);
+      font-family: 'Cinzel', serif;
+      font-size: .55rem;
+      letter-spacing: .08em;
+    }
+    .profile-ship-option-name {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: .74rem;
+      letter-spacing: .07em;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-ship-option.active .profile-ship-option-name { color: var(--gold-lt); }
+    .profile-ship-option-make {
+      display: block;
+      margin-top: 3px;
+      font-size: .62rem;
+      color: var(--silver-dim);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .profile-ship-preview {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      border: 1px solid rgba(201,168,76,.16);
+      border-radius: 4px;
+      background: radial-gradient(circle at 50% 0%, rgba(201,168,76,.08), rgba(7,7,15,.72) 62%);
+    }
+    .profile-ship-preview.has-image { display: block; }
+    .profile-ship-preview img {
+      width: 100%;
+      max-height: 185px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto;
+      filter: drop-shadow(0 10px 22px rgba(0,0,0,.38));
+    }
     .profile-editor-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -1209,8 +1363,19 @@
       <div id="profile-bio-editor" class="profile-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Write your place in the Order..." onkeyup="saveProfileBioSelection()" onmouseup="saveProfileBioSelection()" onblur="saveProfileBioSelection()" onpaste="handleProfileBioPaste(event)"></div>
     </div>
     <div class="profile-field">
-      <label for="profile-ship-select">Ship</label>
-      <select id="profile-ship-select"></select>
+      <label for="profile-ship-trigger">Ship</label>
+      <div class="profile-ship-picker" id="profile-ship-picker">
+        <button class="profile-ship-trigger" id="profile-ship-trigger" type="button" onclick="toggleShipPicker()" aria-haspopup="listbox" aria-expanded="false">
+          <span class="profile-ship-trigger-main">
+            <span class="profile-ship-trigger-name" id="profile-ship-trigger-name">No ship selected</span>
+            <span class="profile-ship-trigger-make" id="profile-ship-trigger-make">Choose from Ship Registry</span>
+          </span>
+          <span class="profile-ship-trigger-caret" aria-hidden="true">▾</span>
+        </button>
+        <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
+        <div class="profile-ship-preview" id="profile-ship-preview" aria-live="polite"></div>
+      </div>
+      <select id="profile-ship-select" class="profile-ship-native" tabindex="-1" aria-hidden="true"></select>
     </div>
     <div class="profile-modal-actions">
       <div class="profile-save-status" id="profile-save-status"></div>
@@ -1992,13 +2157,73 @@ function renderProfileRecord(p) {
   shipCard.innerHTML = shipHtml;
 }
 
+function setShipPickerOpen(open) {
+  const picker = document.getElementById('profile-ship-picker');
+  const trigger = document.getElementById('profile-ship-trigger');
+  if (!picker || !trigger) return;
+  picker.classList.toggle('open', !!open);
+  trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function toggleShipPicker() {
+  const picker = document.getElementById('profile-ship-picker');
+  setShipPickerOpen(!(picker && picker.classList.contains('open')));
+}
+
+function renderShipPickerPreview(ship, fallbackImageUrl) {
+  const nameEl = document.getElementById('profile-ship-trigger-name');
+  const makeEl = document.getElementById('profile-ship-trigger-make');
+  const preview = document.getElementById('profile-ship-preview');
+  const imageUrl = normalizeImageUrl(fallbackImageUrl || (ship && ship.imageUrl));
+  if (nameEl) nameEl.textContent = ship && ship.model ? ship.model : 'No ship selected';
+  if (makeEl) makeEl.textContent = ship && ship.make ? ship.make : (ship && ship.model ? 'Ship Registry' : 'Choose from Ship Registry');
+  if (!preview) return;
+  if (imageUrl) {
+    preview.classList.add('has-image');
+    preview.innerHTML = '<img src="' + _esc(imageUrl) + '" alt="' + _esc(shipDisplayName(ship) || 'Selected ship') + '" onerror="this.closest(\'.profile-ship-preview\').classList.remove(\'has-image\');this.remove()">';
+  } else {
+    preview.classList.remove('has-image');
+    preview.innerHTML = '';
+  }
+}
+
+function selectProfileShip(model) {
+  const select = document.getElementById('profile-ship-select');
+  if (select) select.value = String(model || '');
+  const shipEntry = getShipEntry(model);
+  const currentEntry = getShipEntry(_currentPlayer && _currentPlayer.ship);
+  const fallbackImage = shipEntry && currentEntry && String(shipEntry.model || '') === String(currentEntry.model || '') ? _currentPlayer.shipImage : '';
+  renderShipPickerPreview(shipEntry, fallbackImage);
+  const menu = document.getElementById('profile-ship-menu');
+  if (menu) {
+    Array.from(menu.querySelectorAll('.profile-ship-option')).forEach(function (btn) {
+      btn.classList.toggle('active', String(btn.getAttribute('data-model') || '') === String(model || ''));
+      btn.setAttribute('aria-selected', String(btn.getAttribute('data-model') || '') === String(model || '') ? 'true' : 'false');
+    });
+  }
+  setShipPickerOpen(false);
+}
+
 function populateShipSelect(selectedShip) {
   const select = document.getElementById('profile-ship-select');
+  const menu = document.getElementById('profile-ship-menu');
   if (!select) return;
   const registry = (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : [];
   const selectedEntry = getShipEntry(selectedShip);
   const selected = String((selectedEntry && selectedEntry.model) || selectedShip || '').trim();
   select.innerHTML = '<option value="">No ship selected</option>';
+  if (menu) menu.innerHTML = '';
+
+  const noneBtn = document.createElement('button');
+  noneBtn.type = 'button';
+  noneBtn.className = 'profile-ship-option' + (!selected ? ' active' : '');
+  noneBtn.setAttribute('role', 'option');
+  noneBtn.setAttribute('aria-selected', !selected ? 'true' : 'false');
+  noneBtn.setAttribute('data-model', '');
+  noneBtn.onclick = function () { selectProfileShip(''); };
+  noneBtn.innerHTML = '<span class="profile-ship-option-placeholder">NONE</span><span><span class="profile-ship-option-name">No ship selected</span><span class="profile-ship-option-make">Clear assigned ship</span></span>';
+  if (menu) menu.appendChild(noneBtn);
+
   registry
     .slice()
     .sort(function (a, b) { return String(a.model || '').localeCompare(String(b.model || '')); })
@@ -2009,7 +2234,27 @@ function populateShipSelect(selectedShip) {
       opt.textContent = ship.make ? (ship.model + ' — ' + ship.make) : ship.model;
       if (String(ship.model).trim() === selected) opt.selected = true;
       select.appendChild(opt);
+
+      if (menu) {
+        const btn = document.createElement('button');
+        const imageUrl = normalizeImageUrl(ship.imageUrl);
+        const active = String(ship.model).trim() === selected;
+        btn.type = 'button';
+        btn.className = 'profile-ship-option' + (active ? ' active' : '');
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
+        btn.setAttribute('data-model', ship.model);
+        btn.onclick = function () { selectProfileShip(ship.model); };
+        btn.innerHTML = (imageUrl
+          ? '<img class="profile-ship-option-img" loading="lazy" src="' + _esc(imageUrl) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;profile-ship-option-placeholder&quot;>SHIP</span>\'">'
+          : '<span class="profile-ship-option-placeholder">SHIP</span>') +
+          '<span><span class="profile-ship-option-name">' + _esc(ship.model) + '</span>' +
+          '<span class="profile-ship-option-make">' + _esc(ship.make || 'Unknown make') + '</span></span>';
+        menu.appendChild(btn);
+      }
     });
+  renderShipPickerPreview(selectedEntry, _currentPlayer && _currentPlayer.shipImage);
+  setShipPickerOpen(false);
 }
 
 function openProfileEditModal() {
@@ -2027,6 +2272,7 @@ function openProfileEditModal() {
 }
 
 function closeProfileEditModal() {
+  setShipPickerOpen(false);
   const overlay = document.getElementById('profile-edit-overlay');
   if (overlay) overlay.classList.remove('open');
   const bannerOverlay = document.getElementById('banner-preview-overlay');
@@ -2338,10 +2584,16 @@ function closeBannerPreview() {
 }
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    setShipPickerOpen(false);
     closeBannerPreview();
     closeProfileEditModal();
     closeProfileBioModal();
   }
+});
+
+document.addEventListener('click', function(e) {
+  const picker = document.getElementById('profile-ship-picker');
+  if (picker && !picker.contains(e.target)) setShipPickerOpen(false);
 });
 
 /* ═══════════════════════════════════════════════════════
