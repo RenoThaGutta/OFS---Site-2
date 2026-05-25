@@ -266,39 +266,58 @@
       font-size: 1.03rem;
       line-height: 1.62;
       color: var(--text);
-      overflow: hidden;
-      transition: max-height .25s ease;
+      max-height: 12rem;
+      overflow-y: auto;
+      padding-right: 10px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
     }
-    .profile-bio-text.collapsed { max-height: 8.25rem; }
-    .profile-bio-text.expanded { max-height: none; }
+    .profile-bio-text::-webkit-scrollbar { width: 7px; }
+    .profile-bio-text::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
+    .profile-bio-text::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
     .profile-bio-text div,
-    .profile-bio-text p { margin: 0 0 .8em; }
+    .profile-bio-text p,
+    .profile-bio-modal-body div,
+    .profile-bio-modal-body p { margin: 0 0 .8em; }
     .profile-bio-text b,
-    .profile-bio-text strong { color: var(--gold-lt); }
-    .profile-bio-text a { color: var(--gold); }
-    .profile-bio-fade {
-      display: none;
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 3rem;
-      background: linear-gradient(to bottom, rgba(14,14,28,0), rgba(14,14,28,.98));
-      pointer-events: none;
-    }
-    .profile-bio-wrap.has-more:not(.expanded) .profile-bio-fade { display: block; }
-    .profile-bio-toggle {
+    .profile-bio-text strong,
+    .profile-bio-modal-body b,
+    .profile-bio-modal-body strong { color: var(--gold-lt); }
+    .profile-bio-text a,
+    .profile-bio-modal-body a { color: var(--gold); }
+    .profile-bio-actions {
+      display: flex;
+      justify-content: flex-end;
       margin-top: 12px;
-      background: none;
-      border: 0;
-      padding: 0;
+    }
+    .profile-bio-expand {
+      background: rgba(201,168,76,.06);
+      border: 1px solid var(--b-gold);
+      border-radius: 3px;
+      padding: 7px 12px;
       font-family: 'Cinzel', serif;
       font-size: .62rem;
       letter-spacing: .14em;
       text-transform: uppercase;
       color: var(--gold);
       cursor: pointer;
-      opacity: .88;
+      opacity: .9;
     }
-    .profile-bio-toggle:hover { color: var(--gold-lt); opacity: 1; }
+    .profile-bio-expand:hover { color: var(--gold-lt); background: rgba(201,168,76,.13); opacity: 1; }
+    .profile-bio-modal { width: min(860px, 100%); max-height: min(82vh, 760px); display: flex; flex-direction: column; }
+    .profile-bio-modal-body {
+      overflow-y: auto;
+      padding: 4px 10px 4px 0;
+      font-family: 'Crimson Text', serif;
+      font-size: 1.08rem;
+      line-height: 1.68;
+      color: var(--text);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
+    }
+    .profile-bio-modal-body::-webkit-scrollbar { width: 8px; }
+    .profile-bio-modal-body::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
+    .profile-bio-modal-body::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
     .profile-empty-note {
       font-family: 'Crimson Text', serif;
       font-style: italic;
@@ -1130,6 +1149,16 @@
   </div>
 </div>
 
+<div class="profile-modal-overlay" id="profile-bio-overlay" onclick="if(event.target===this)closeProfileBioModal()">
+  <div class="profile-modal profile-bio-modal" role="dialog" aria-modal="true" aria-labelledby="profile-bio-title">
+    <div class="profile-modal-head">
+      <div class="profile-modal-title" id="profile-bio-title">Personal Record</div>
+      <button class="profile-modal-close" type="button" onclick="closeProfileBioModal()" aria-label="Close expanded bio">&times;</button>
+    </div>
+    <div class="profile-bio-modal-body" id="profile-bio-modal-body"></div>
+  </div>
+</div>
+
 <script src="header_bar.js"></script>
 <script src="ofs-data.js"></script>
 <script src="ofs-sheets.js"></script>
@@ -1733,21 +1762,24 @@ function sanitizeBioHtml(rawBio) {
   return wrapper.innerHTML;
 }
 
-function isLongBio(rawBio) {
-  const text = String(rawBio || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  return text.length > 420 || String(rawBio || '').length > 900;
+function openProfileBioModal() {
+  if (!_currentPlayer || !String(_currentPlayer.backStory || '').trim()) return;
+  const overlay = document.getElementById('profile-bio-overlay');
+  const body = document.getElementById('profile-bio-modal-body');
+  if (!overlay || !body) return;
+  body.innerHTML = sanitizeBioHtml(_currentPlayer.backStory || '');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
-function toggleProfileBio() {
-  const wrap = document.getElementById('js-profile-bio-wrap');
-  const text = document.getElementById('js-profile-bio-text');
-  const btn = document.getElementById('js-profile-bio-toggle');
-  if (!wrap || !text || !btn) return;
-  const open = !wrap.classList.contains('expanded');
-  wrap.classList.toggle('expanded', open);
-  text.classList.toggle('collapsed', !open);
-  text.classList.toggle('expanded', open);
-  btn.textContent = open ? 'Show Less ↑' : 'Show More ↓';
+function closeProfileBioModal() {
+  const overlay = document.getElementById('profile-bio-overlay');
+  if (overlay) overlay.classList.remove('open');
+  const bannerOverlay = document.getElementById('banner-preview-overlay');
+  const editOverlay = document.getElementById('profile-edit-overlay');
+  if ((!bannerOverlay || !bannerOverlay.classList.contains('open')) && (!editOverlay || !editOverlay.classList.contains('open'))) {
+    document.body.style.overflow = '';
+  }
 }
 
 function renderProfileRecord(p) {
@@ -1776,13 +1808,11 @@ function renderProfileRecord(p) {
   shipCard.style.display = shouldShowShip ? '' : 'none';
 
   if (bio) {
-    const longBio = isLongBio(bio);
     bioCard.innerHTML = '<div class="profile-record-label">Personal Record</div>' +
-      '<div class="profile-bio-wrap' + (longBio ? ' has-more' : '') + '" id="js-profile-bio-wrap">' +
-        '<div class="profile-bio-text' + (longBio ? ' collapsed' : ' expanded') + '" id="js-profile-bio-text">' + sanitizeBioHtml(bio) + '</div>' +
-        (longBio ? '<div class="profile-bio-fade"></div>' : '') +
+      '<div class="profile-bio-wrap" id="js-profile-bio-wrap">' +
+        '<div class="profile-bio-text" id="js-profile-bio-text">' + sanitizeBioHtml(bio) + '</div>' +
       '</div>' +
-      (longBio ? '<button class="profile-bio-toggle" id="js-profile-bio-toggle" type="button" onclick="toggleProfileBio()">Show More ↓</button>' : '');
+      '<div class="profile-bio-actions"><button class="profile-bio-expand" id="js-profile-bio-expand" type="button" onclick="openProfileBioModal()">Expand</button></div>';
   } else {
     bioCard.innerHTML = '<div class="profile-record-label">Personal Record</div>' +
       '<div class="profile-empty-note">No bio recorded yet. Use Edit Profile to add your personal record.</div>';
@@ -1839,7 +1869,10 @@ function closeProfileEditModal() {
   const overlay = document.getElementById('profile-edit-overlay');
   if (overlay) overlay.classList.remove('open');
   const bannerOverlay = document.getElementById('banner-preview-overlay');
-  if (!bannerOverlay || !bannerOverlay.classList.contains('open')) document.body.style.overflow = '';
+  const bioOverlay = document.getElementById('profile-bio-overlay');
+  if ((!bannerOverlay || !bannerOverlay.classList.contains('open')) && (!bioOverlay || !bioOverlay.classList.contains('open'))) {
+    document.body.style.overflow = '';
+  }
 }
 
 async function saveProfileEdits() {
@@ -2137,12 +2170,17 @@ function openBannerPreview(bannerName) {
 function closeBannerPreview() {
   document.getElementById('banner-preview-overlay').classList.remove('open');
   document.getElementById('banner-preview-iframe').src = 'about:blank';
-  document.body.style.overflow = '';
+  const editOverlay = document.getElementById('profile-edit-overlay');
+  const bioOverlay = document.getElementById('profile-bio-overlay');
+  if ((!editOverlay || !editOverlay.classList.contains('open')) && (!bioOverlay || !bioOverlay.classList.contains('open'))) {
+    document.body.style.overflow = '';
+  }
 }
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeBannerPreview();
     closeProfileEditModal();
+    closeProfileBioModal();
   }
 });
 
