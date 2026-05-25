@@ -10,13 +10,12 @@
   'use strict';
 
   var LINKS = [
-    { href: 'OFS_Home.html',        label: 'Home'         },
+    { href: 'OFS_TavernHall.html',  label: 'Tavern'       },
     { href: 'OFS_Codex.html',       label: 'Codex'        },
     { href: 'OFS_Timeline.html',    label: 'Chronicles'   },
-    { href: 'OFS_Roster.html',      label: 'Roster'       },
     { label: 'Banners',             dropdown: 'banners'    },
     { label: 'Fleet',               dropdown: 'fleet'      },
-    { href: 'OFS_TavernHall.html',  label: 'Tavern Hall'  },
+    { href: 'OFS_Roster.html',      label: 'Roster'       },
     { href: 'OFS_Admin.html',       label: 'Admin'        },
   ];
 
