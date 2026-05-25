@@ -288,6 +288,98 @@
     }
     .banner-pts-tag strong { color: var(--gold); }
 
+
+    /* compact roster profile cards */
+    .card-grid {
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 14px;
+    }
+    .player-card {
+      display: grid;
+      grid-template-columns: 4px minmax(0, 1fr);
+      min-height: 116px;
+      background:
+        radial-gradient(circle at 10% 20%, rgba(201,168,76,.08), transparent 36%),
+        linear-gradient(135deg, rgba(19,19,42,.94), rgba(10,10,22,.98));
+    }
+    .player-card:hover { transform: translateY(-2px); }
+    .card-top {
+      grid-row: 1 / span 3;
+      height: auto;
+      width: 4px;
+      opacity: .85;
+      background: linear-gradient(to bottom, var(--gold), var(--gold-dim), transparent);
+    }
+    .card-identity {
+      padding: 16px 16px 4px;
+      gap: 14px;
+    }
+    .card-avatar {
+      width: 62px;
+      height: 62px;
+      border-color: var(--gold);
+      box-shadow: 0 0 18px rgba(201,168,76,.24);
+    }
+    .card-username {
+      font-size: 1.02rem;
+      margin-bottom: 7px;
+    }
+    .card-rep {
+      padding: 0 16px 8px 92px;
+      gap: 8px;
+      margin-top: 0;
+    }
+    .rep-label {
+      color: var(--gold-dim);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+    .rep-level {
+      color: var(--gold-lt);
+      font-size: .72rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .rep-bar-bg {
+      max-width: 120px;
+      background: rgba(255,255,255,.05);
+    }
+    .card-divider { display: none; }
+    .card-banner {
+      padding: 0 16px 15px 92px;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+    .card-rank,
+    .banner-pill,
+    .banner-rank-title {
+      font-family: 'Cinzel', serif;
+      font-style: normal;
+      font-size: .58rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border-radius: 999px;
+      padding: 4px 9px;
+      line-height: 1;
+    }
+    .card-rank {
+      color: var(--gold-lt);
+      border-color: var(--b-gold);
+      background: rgba(201,168,76,.08);
+    }
+    .banner-pill {
+      color: var(--silver);
+      border-color: rgba(176,184,200,.18);
+      background: rgba(176,184,200,.07);
+    }
+    .banner-rank-title {
+      color: var(--text-dim);
+      border: 1px solid var(--b-dim);
+      background: rgba(255,255,255,.03);
+    }
+    .card-stats,
+    .card-footer { display: none; }
+
     /* ── Table view ───────────────────────────────────────── */
     .roster-table-wrap {
       overflow-x: auto;
@@ -556,9 +648,9 @@
 </footer>
 
 <script src="header_bar.js"></script>
-<script src="ofs-data.js"></script>
-<script src="ofs-sheets.js"></script>
-<script src="ofs-nav.js"></script>
+<script src="ofs-data.js?v=roster-loading-compact-20260525"></script>
+<script src="ofs-sheets.js?v=roster-loading-compact-20260525"></script>
+<script src="ofs-nav.js?v=roster-loading-compact-20260525"></script>
 <script>
 /* ── Star field ─────────────────────────────────────────────── */
 (function(){
@@ -644,44 +736,41 @@ function bannerRankTitle(bannerName, pts, medal){
   return r[idx];
 }
 
-// ── Sample roster — replace with live data when wiring backend ──
-let PLAYERS = [
-  { id:'1', username:'Vanderan',           rank:'Primarch of Conquest', faction:'Iron Reavers',  activeBanner:'The Fang',
-    stats:{PatrolCount:47,TotalLength:312,FPS_Kills_Total:1840,Ship_Kills_Total:623,Crusades_Total:18,Turret_Kills_Total:294,Quest_Total:112,Led_Completed_Quests:56,Led_Completed_Crusades:12},
-    banners:{'The Artificer':{p:8,m:false},'The Astraeus':{p:22,m:true},'The Engineer':{p:15,m:false},'The Explorer':{p:38,m:true},'The Fang':{p:67,m:true},'The Forager':{p:12,m:false},'The Guardian':{p:30,m:false},'The Healer':{p:19,m:true},'The Merchant':{p:60,m:true},'The Privateer':{p:5,m:false},'The Talon':{p:44,m:false}},
-    wallet:{gold:12,silver:34,copper:88}, avatarUrl:'' },
-  { id:'2', username:'Kraz',               rank:'Primarch of Harmony',  faction:'Iron Reavers',  activeBanner:'The Merchant',
-    stats:{PatrolCount:38,TotalLength:244,FPS_Kills_Total:920,Ship_Kills_Total:411,Crusades_Total:15,Turret_Kills_Total:180,Quest_Total:94,Led_Completed_Quests:44,Led_Completed_Crusades:10},
-    banners:{'The Artificer':{p:5,m:false},'The Astraeus':{p:14,m:false},'The Engineer':{p:20,m:false},'The Explorer':{p:28,m:true},'The Fang':{p:31,m:true},'The Forager':{p:9,m:false},'The Guardian':{p:22,m:false},'The Healer':{p:11,m:false},'The Merchant':{p:55,m:true},'The Privateer':{p:3,m:false},'The Talon':{p:19,m:false}},
-    wallet:{gold:8,silver:60,copper:22}, avatarUrl:'' },
-  { id:'3', username:'U-Gen-X',            rank:'Primarch of Justice',  faction:'Iron Reavers',  activeBanner:'The Guardian',
-    stats:{PatrolCount:52,TotalLength:390,FPS_Kills_Total:2100,Ship_Kills_Total:780,Crusades_Total:22,Turret_Kills_Total:410,Quest_Total:130,Led_Completed_Quests:68,Led_Completed_Crusades:15},
-    banners:{'The Artificer':{p:3,m:false},'The Astraeus':{p:18,m:true},'The Engineer':{p:12,m:false},'The Explorer':{p:45,m:true},'The Fang':{p:72,m:true},'The Forager':{p:6,m:false},'The Guardian':{p:62,m:true},'The Healer':{p:14,m:false},'The Merchant':{p:40,m:false},'The Privateer':{p:22,m:true},'The Talon':{p:55,m:true}},
-    wallet:{gold:20,silver:10,copper:55}, avatarUrl:'' },
-  { id:'4', username:'Cerulean Nightshade', rank:'Chapter Master',       faction:'Iron Reavers',  activeBanner:'The Talon',
-    stats:{PatrolCount:31,TotalLength:210,FPS_Kills_Total:1100,Ship_Kills_Total:890,Crusades_Total:14,Turret_Kills_Total:220,Quest_Total:78,Led_Completed_Quests:32,Led_Completed_Crusades:8},
-    banners:{'The Artificer':{p:7,m:false},'The Astraeus':{p:30,m:true},'The Engineer':{p:8,m:false},'The Explorer':{p:22,m:false},'The Fang':{p:48,m:true},'The Forager':{p:4,m:false},'The Guardian':{p:16,m:false},'The Healer':{p:9,m:false},'The Merchant':{p:24,m:false},'The Privateer':{p:18,m:false},'The Talon':{p:61,m:true}},
-    wallet:{gold:5,silver:22,copper:40}, avatarUrl:'' },
-  { id:'5', username:'CiberKing',           rank:'Knight',               faction:'Second Cohort', activeBanner:'The Fang',
-    stats:{PatrolCount:14,TotalLength:88,FPS_Kills_Total:540,Ship_Kills_Total:120,Crusades_Total:6,Turret_Kills_Total:60,Quest_Total:34,Led_Completed_Quests:8,Led_Completed_Crusades:2},
-    banners:{'The Artificer':{p:2,m:false},'The Astraeus':{p:4,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:8,m:false},'The Fang':{p:28,m:false},'The Forager':{p:1,m:false},'The Guardian':{p:6,m:false},'The Healer':{p:0,m:false},'The Merchant':{p:3,m:false},'The Privateer':{p:5,m:false},'The Talon':{p:10,m:false}},
-    wallet:{gold:0,silver:8,copper:15}, avatarUrl:'' },
-  { id:'6', username:'Nukeman',             rank:'Knight',               faction:'Second Cohort', activeBanner:'The Guardian',
-    stats:{PatrolCount:12,TotalLength:0,FPS_Kills_Total:19,Ship_Kills_Total:5,Crusades_Total:5,Turret_Kills_Total:0,Quest_Total:7,Led_Completed_Quests:2,Led_Completed_Crusades:1},
-    banners:{'The Artificer':{p:0,m:false},'The Astraeus':{p:0,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:0,m:false},'The Fang':{p:0,m:false},'The Forager':{p:3,m:false},'The Guardian':{p:11,m:false},'The Healer':{p:0,m:false},'The Merchant':{p:0,m:false},'The Privateer':{p:0,m:false},'The Talon':{p:0,m:false}},
-    wallet:{gold:0,silver:0,copper:0}, avatarUrl:'' },
-  { id:'7', username:'Lyria Voss',          rank:'Templar',              faction:'Arditi Cohort', activeBanner:'The Healer',
-    stats:{PatrolCount:22,TotalLength:160,FPS_Kills_Total:310,Ship_Kills_Total:88,Crusades_Total:9,Turret_Kills_Total:44,Quest_Total:55,Led_Completed_Quests:18,Led_Completed_Crusades:4},
-    banners:{'The Artificer':{p:1,m:false},'The Astraeus':{p:10,m:false},'The Engineer':{p:5,m:false},'The Explorer':{p:14,m:false},'The Fang':{p:8,m:false},'The Forager':{p:6,m:false},'The Guardian':{p:20,m:false},'The Healer':{p:42,m:true},'The Merchant':{p:15,m:false},'The Privateer':{p:2,m:false},'The Talon':{p:7,m:false}},
-    wallet:{gold:2,silver:14,copper:30}, avatarUrl:'' },
-  { id:'8', username:'Rook Ashveil',        rank:'Squire',               faction:'Arditi Cohort', activeBanner:'The Explorer',
-    stats:{PatrolCount:6,TotalLength:42,FPS_Kills_Total:88,Ship_Kills_Total:22,Crusades_Total:3,Turret_Kills_Total:10,Quest_Total:14,Led_Completed_Quests:0,Led_Completed_Crusades:0},
-    banners:{'The Artificer':{p:0,m:false},'The Astraeus':{p:2,m:false},'The Engineer':{p:0,m:false},'The Explorer':{p:15,m:false},'The Fang':{p:4,m:false},'The Forager':{p:0,m:false},'The Guardian':{p:3,m:false},'The Healer':{p:1,m:false},'The Merchant':{p:0,m:false},'The Privateer':{p:0,m:false},'The Talon':{p:5,m:false}},
-    wallet:{gold:0,silver:2,copper:8}, avatarUrl:'' }
-];
-
+// Roster starts empty and renders only live/cache data.
+// Do not first-paint the old demo roster; it makes production look broken when /data is slow.
+let PLAYERS = [];
 const OFS_SHARED = window.OFSData;
-PLAYERS = OFS_SHARED.getPlayers();
+let rosterLoaded = false;
+let rosterLoadFailed = false;
+let rosterLoadMessage = '';
+
+function setRosterLoading(message){
+  rosterLoaded = false;
+  rosterLoadFailed = false;
+  rosterLoadMessage = message || 'Resolving Order roster…';
+}
+
+function setRosterFailed(message){
+  rosterLoaded = true;
+  rosterLoadFailed = true;
+  rosterLoadMessage = message || 'Roster data could not be loaded. Please refresh in a moment.';
+}
+
+function isDemoRoster(players){
+  return Array.isArray(players)
+    && players.length === 8
+    && players[0]
+    && String(players[0].id || '') === '1';
+}
+
+function setRosterReady(players){
+  PLAYERS = Array.isArray(players) ? players : [];
+  rosterLoaded = true;
+  rosterLoadFailed = false;
+  rosterLoadMessage = '';
+}
+
+setRosterLoading();
 
 function syncControls(){
   const ranks = OFS_SHARED.sortRanks([...new Set(PLAYERS.map(player => player.rank))]);
@@ -738,8 +827,6 @@ function displayName(p) {
 }
 
 function getFiltered(){
-  PLAYERS = OFS_SHARED.getPlayers();
-
   const q    = document.getElementById('ctrl-search').value.trim().toLowerCase();
   const rank = document.getElementById('ctrl-rank').value;
   const ban  = document.getElementById('ctrl-banner').value;
@@ -790,17 +877,17 @@ function renderCards(list){
       <div class="card-identity">
         <div class="card-avatar">${p.avatarUrl ? `<img src="${p.avatarUrl}" alt="${p.username}">` : init}</div>
         <div class="card-name-block">
-          <div class="card-username">${displayName(p)}</div>
-          <span class="card-rank">${p.rank}</span>
+          <div class="card-username">${p.username}</div>
         </div>
       </div>
       <div class="card-rep">
-        <div class="rep-label">Rep</div>
+        <div class="rep-label">Reputation</div>
         <div class="rep-bar-bg"><div class="rep-bar-fill" style="width:${lvlPct}%"></div></div>
         <div class="rep-level">Lvl ${rep.lvl}</div>
       </div>
       <div class="card-divider"></div>
       <div class="card-banner">
+        <span class="card-rank">${p.rank}</span>
         <span class="banner-pill">${p.activeBanner}</span>
         <span class="banner-rank-title">${bRank}</span>
       </div>
@@ -845,7 +932,6 @@ function renderTable(list){
 
 /* ── Leaderboard render ───────────────────────────────────── */
 function renderLB(){
-  PLAYERS = OFS_SHARED.getPlayers();
   const metric = document.querySelector('#lb-tabs .lb-tab.active').dataset.lb;
   const sorted = [...PLAYERS].sort((a,b) => {
     switch(metric){
@@ -914,19 +1000,37 @@ function renderLB(){
 
 /* ── Main render ──────────────────────────────────────────── */
 function render(){
-  if(viewMode === 'leaderboard'){ renderLB(); return; }
-  PLAYERS = OFS_SHARED.getPlayers();
-  const list = getFiltered();
+  if(viewMode === 'leaderboard'){
+    if(!rosterLoaded || rosterLoadFailed){
+      document.getElementById('leaderboard-view').style.display = 'none';
+      const empty = document.getElementById('empty-state');
+      empty.textContent = rosterLoadMessage || 'Resolving Order roster…';
+      empty.style.display = 'block';
+      return;
+    }
+    renderLB();
+    return;
+  }
+  const list = rosterLoaded && !rosterLoadFailed ? getFiltered() : [];
   document.getElementById('shown-count').textContent = list.length;
-  document.getElementById('total-count').textContent = PLAYERS.length;
+  document.getElementById('total-count').textContent = rosterLoaded && !rosterLoadFailed ? PLAYERS.length : '—';
 
   const empty = document.getElementById('empty-state');
   const cards = document.getElementById('cards-view');
   const table = document.getElementById('table-view');
 
+  if(!rosterLoaded || rosterLoadFailed){
+    cards.style.display = 'none';
+    table.style.display = 'none';
+    empty.textContent = rosterLoadMessage || 'Resolving Order roster…';
+    empty.style.display = 'block';
+    return;
+  }
+
   if(!list.length){
     cards.style.display = 'none';
     table.style.display = 'none';
+    empty.textContent = 'No members match those filters.';
     empty.style.display = 'block';
     return;
   }
@@ -980,8 +1084,8 @@ function setViewMode(mode) {
     cards.style.display = 'none';
     table.style.display = 'none';
     empty.style.display = 'none';
-    lbView.style.display = 'block';
-    renderLB();
+    lbView.style.display = rosterLoaded && !rosterLoadFailed ? 'block' : 'none';
+    render();
   } else {
     lbView.style.display = 'none';
     render();
@@ -1008,16 +1112,34 @@ document.getElementById('lb-tabs').addEventListener('click', e => {
 render();
 
 window.addEventListener('storage', () => {
-  PLAYERS = OFS_SHARED.getPlayers();
-  syncControls();
-  render();
+  const storedPlayers = OFS_SHARED.getPlayers();
+  if (storedPlayers && storedPlayers.length && !isDemoRoster(storedPlayers)) {
+    setRosterReady(storedPlayers);
+    syncControls();
+    render();
+  }
 });
 
-OFSSheets.load().then(function() {
-  PLAYERS = OFS_SHARED.getPlayers();
+OFSSheets.load().then(function(players) {
+  const livePlayers = Array.isArray(players) && players.length ? players : OFS_SHARED.getPlayers();
+  if (livePlayers && livePlayers.length && !isDemoRoster(livePlayers)) {
+    setRosterReady(livePlayers);
+  } else {
+    setRosterFailed('Roster data could not be loaded. Please refresh in a moment.');
+  }
   syncControls();
   render();
   if (window.OFSNav) OFSNav.refresh();
+}).catch(function(err) {
+  const cachedPlayers = OFS_SHARED.getPlayers();
+  if (cachedPlayers && cachedPlayers.length && !isDemoRoster(cachedPlayers)) {
+    setRosterReady(cachedPlayers);
+  } else {
+    setRosterFailed('Roster data could not be loaded. Please refresh in a moment.');
+  }
+  console.warn('Roster live load failed:', err && err.message ? err.message : err);
+  syncControls();
+  render();
 });
 </script>
 <div id="roster-name-tooltip"></div>
