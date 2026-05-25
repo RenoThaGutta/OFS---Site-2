@@ -551,64 +551,9 @@
     .profile-field select:focus { border-color: var(--b-gold); box-shadow: 0 0 0 2px rgba(201,168,76,.08); }
     .profile-ship-native { display: none; }
     .profile-ship-picker { position: relative; }
-    .profile-ship-trigger {
-      width: 100%;
-      min-height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 14px;
-      padding: 11px 14px;
-      background: linear-gradient(135deg, rgba(7,7,15,.95), rgba(19,19,42,.92));
-      border: 1px solid var(--b-dim);
-      border-radius: 4px;
-      color: var(--text);
-      cursor: pointer;
-      text-align: left;
-      box-shadow: inset 0 1px 0 rgba(201,168,76,.07);
-      transition: border-color .15s, box-shadow .15s, background .15s;
-    }
-    .profile-ship-trigger:hover,
-    .profile-ship-picker.open .profile-ship-trigger {
-      border-color: var(--b-gold);
-      box-shadow: 0 0 0 2px rgba(201,168,76,.08), inset 0 1px 0 rgba(201,168,76,.12);
-      background: linear-gradient(135deg, rgba(10,10,22,.98), rgba(24,24,50,.94));
-    }
-    .profile-ship-trigger-main { min-width: 0; }
-    .profile-ship-trigger-name {
-      display: block;
-      font-family: 'Cinzel', serif;
-      font-size: .82rem;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--gold-lt);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .profile-ship-trigger-make {
-      display: block;
-      margin-top: 3px;
-      font-size: .64rem;
-      letter-spacing: .11em;
-      text-transform: uppercase;
-      color: var(--silver-dim);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .profile-ship-trigger-caret {
-      flex: 0 0 auto;
-      color: var(--gold);
-      font-size: .9rem;
-      opacity: .85;
-      transition: transform .15s;
-    }
-    .profile-ship-picker.open .profile-ship-trigger-caret { transform: rotate(180deg); }
     .profile-ship-search {
-      display: none;
+      display: block;
       width: 100%;
-      margin-top: 8px;
       padding: 10px 12px;
       background: rgba(7,7,15,.94);
       border: 1px solid var(--b-dim);
@@ -622,36 +567,81 @@
       border-color: var(--b-gold);
       box-shadow: 0 0 0 2px rgba(201,168,76,.08);
     }
-    .profile-ship-picker.open .profile-ship-search { display: block; }
-    .profile-ship-brand-filter {
-      display: none;
-      width: 100%;
+    .profile-ship-brand-pills {
       margin-top: 8px;
-      padding: 10px 12px;
-      background: rgba(7,7,15,.94);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      max-height: 110px;
+      overflow-y: auto;
+      padding: 7px;
+      background: rgba(7,7,15,.66);
       border: 1px solid var(--b-dim);
-      border-radius: 4px;
-      color: var(--text);
-      font-family: 'Cinzel', serif;
-      font-size: .68rem;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      outline: none;
+      border-radius: 5px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
+    }
+    .profile-ship-brand-pills::-webkit-scrollbar { width: 7px; }
+    .profile-ship-brand-pills::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
+    .profile-ship-brand-pills::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
+    .profile-ship-brand-pill {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 230px;
+      padding: 5px 10px 5px 7px;
+      background: rgba(10,10,22,.9);
+      border: 1px solid rgba(201,168,76,.14);
+      border-radius: 999px;
+      color: var(--silver);
       cursor: pointer;
+      font-family: 'Cinzel', serif;
+      font-size: .58rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      transition: background .12s, border-color .12s, color .12s;
     }
-    .profile-ship-brand-filter:focus {
-      border-color: var(--b-gold);
-      box-shadow: 0 0 0 2px rgba(201,168,76,.08);
+    .profile-ship-brand-pill:hover,
+    .profile-ship-brand-pill.active {
+      color: var(--gold-lt);
+      border-color: rgba(201,168,76,.38);
+      background: rgba(201,168,76,.09);
     }
-    .profile-ship-picker.open .profile-ship-brand-filter { display: block; }
+    .profile-ship-brand-pill-icon {
+      width: 30px;
+      height: 22px;
+      flex: 0 0 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .profile-ship-brand-pill-img {
+      width: 30px;
+      height: 22px;
+      object-fit: contain;
+      filter: brightness(0) saturate(100%) invert(75%) sepia(38%) saturate(556%) hue-rotate(4deg) brightness(88%) contrast(84%) drop-shadow(0 0 6px rgba(201,168,76,.18));
+    }
+    .profile-ship-brand-pill-img.is-rsi { transform: scale(1.85); }
+    .profile-ship-brand-pill-img.is-misc { transform: scale(1.25); }
+    .profile-ship-brand-pill-code {
+      color: var(--gold-dim);
+      font-size: .54rem;
+      letter-spacing: .08em;
+    }
+    .profile-ship-brand-pill-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
     .profile-ship-split {
-      display: none;
+      display: grid;
       grid-template-columns: minmax(128px, 168px) minmax(0, 1fr);
       gap: 10px;
       margin-top: 8px;
       align-items: stretch;
     }
-    .profile-ship-picker.open .profile-ship-split { display: grid; }
     .profile-ship-brand-panel {
       min-height: 170px;
       padding: 12px 10px;
@@ -809,6 +799,8 @@
       text-overflow: ellipsis;
     }
     @media (max-width: 640px) {
+      .profile-ship-brand-pills { max-height: 138px; }
+      .profile-ship-brand-pill { max-width: 100%; }
       .profile-ship-split { grid-template-columns: 1fr; }
       .profile-ship-brand-panel { min-height: 118px; }
       .profile-ship-brand-logo-frame { height: 68px; }
@@ -1755,19 +1747,10 @@
       <div id="profile-bio-editor" class="profile-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Write your place in the Order..." onkeyup="saveProfileBioSelection()" onmouseup="saveProfileBioSelection()" onblur="saveProfileBioSelection()" onpaste="handleProfileBioPaste(event)"></div>
     </div>
     <div class="profile-field">
-      <label for="profile-ship-trigger">Ship</label>
-      <div class="profile-ship-picker" id="profile-ship-picker">
-        <button class="profile-ship-trigger" id="profile-ship-trigger" type="button" onclick="toggleShipPicker()" aria-haspopup="listbox" aria-expanded="false">
-          <span class="profile-ship-trigger-main">
-            <span class="profile-ship-trigger-name" id="profile-ship-trigger-name">No ship selected</span>
-            <span class="profile-ship-trigger-make" id="profile-ship-trigger-make">Choose from Ship Registry</span>
-          </span>
-          <span class="profile-ship-trigger-caret" aria-hidden="true">▾</span>
-        </button>
+      <label for="profile-ship-search">Ship Selector</label>
+      <div class="profile-ship-picker open" id="profile-ship-picker">
         <input class="profile-ship-search" id="profile-ship-search" type="search" placeholder="Search by make or model…" autocomplete="off" oninput="handleShipPickerSearch(this.value)">
-        <select class="profile-ship-brand-filter" id="profile-ship-brand-filter" aria-label="Filter ships by brand" onchange="handleShipPickerBrand(this.value)">
-          <option value="">All brands</option>
-        </select>
+        <div class="profile-ship-brand-pills" id="profile-ship-brand-pills" role="listbox" aria-label="Filter ships by brand"></div>
         <div class="profile-ship-split" id="profile-ship-split">
           <div class="profile-ship-brand-panel" id="profile-ship-brand-panel" aria-live="polite"></div>
           <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
@@ -1794,10 +1777,10 @@
   </div>
 </div>
 
-<script src="header_bar.js?v=profile-ship-split-make-20260525"></script>
-<script src="ofs-data.js?v=profile-ship-split-make-20260525"></script>
-<script src="ofs-sheets.js?v=profile-ship-split-make-20260525"></script>
-<script src="ofs-nav.js?v=profile-ship-split-make-20260525"></script>
+<script src="header_bar.js?v=profile-ship-brand-pills-20260525"></script>
+<script src="ofs-data.js?v=profile-ship-brand-pills-20260525"></script>
+<script src="ofs-sheets.js?v=profile-ship-brand-pills-20260525"></script>
+<script src="ofs-nav.js?v=profile-ship-brand-pills-20260525"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD
@@ -2479,9 +2462,18 @@ function shipPickerBrandLabel(make) {
   return String(make || '').trim() || 'Unknown Make';
 }
 
-function populateShipBrandFilter(registry, selectedBrand) {
-  const select = document.getElementById('profile-ship-brand-filter');
-  if (!select) return;
+function shipBrandPillIconHtml(make) {
+  const label = shipPickerBrandLabel(make);
+  const logoUrl = label === 'All Brands' ? '' : shipLogoUrlForMake(label);
+  const code = label === 'All Brands' ? 'ALL' : shipMakeCode(label);
+  return '<span class="profile-ship-brand-pill-icon">' + (logoUrl
+    ? '<img class="profile-ship-brand-pill-img' + shipMakeLogoClass(label) + '" src="' + _esc(logoUrl) + '" alt="" loading="lazy" decoding="async" onerror="this.outerHTML=\'<span class=&quot;profile-ship-brand-pill-code&quot;>' + _esc(code) + '</span>\'">'
+    : '<span class="profile-ship-brand-pill-code">' + _esc(code) + '</span>') + '</span>';
+}
+
+function populateShipBrandPills(registry, selectedBrand) {
+  const wrap = document.getElementById('profile-ship-brand-pills');
+  if (!wrap) return;
   const brands = [];
   const seen = new Set();
   (registry || []).forEach(function (ship) {
@@ -2492,10 +2484,15 @@ function populateShipBrandFilter(registry, selectedBrand) {
     brands.push({ key: key, label: make });
   });
   brands.sort(function (a, b) { return a.label.localeCompare(b.label); });
-  select.innerHTML = '<option value="">All brands</option>' + brands.map(function (brand) {
-    return '<option value="' + _esc(brand.key) + '">' + _esc(brand.label) + '</option>';
+  const selectedKey = selectedBrand && seen.has(selectedBrand) ? selectedBrand : '';
+  const allBrands = [{ key: '', label: 'All Brands' }].concat(brands);
+  wrap.innerHTML = allBrands.map(function (brand) {
+    const active = brand.key === selectedKey;
+    return '<button class="profile-ship-brand-pill' + (active ? ' active' : '') + '" type="button" role="option" aria-selected="' + (active ? 'true' : 'false') + '" data-brand="' + _esc(brand.key) + '" onclick="handleShipPickerBrand(this.dataset.brand || \'\')">' +
+      shipBrandPillIconHtml(brand.label) +
+      '<span class="profile-ship-brand-pill-label">' + _esc(brand.label) + '</span>' +
+    '</button>';
   }).join('');
-  select.value = selectedBrand && seen.has(selectedBrand) ? selectedBrand : '';
 }
 
 function reversedShipModelCandidates(model) {
@@ -3008,23 +3005,16 @@ function renderProfileRecord(p) {
 
 function setShipPickerOpen(open) {
   const picker = document.getElementById('profile-ship-picker');
-  const trigger = document.getElementById('profile-ship-trigger');
-  const menu = document.getElementById('profile-ship-menu');
-  if (!picker || !trigger) return;
-  picker.classList.toggle('open', !!open);
-  trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open && menu) {
-    setTimeout(function () {
-      menu.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      const search = document.getElementById('profile-ship-search');
-      if (search) search.focus({ preventScroll: true });
-    }, 0);
+  const search = document.getElementById('profile-ship-search');
+  if (!picker) return;
+  picker.classList.add('open');
+  if (open && search) {
+    setTimeout(function () { search.focus({ preventScroll: true }); }, 0);
   }
 }
 
 function toggleShipPicker() {
-  const picker = document.getElementById('profile-ship-picker');
-  setShipPickerOpen(!(picker && picker.classList.contains('open')));
+  setShipPickerOpen(true);
 }
 
 function shipPickerPreviewHtml(ship, imageUrl, apiData) {
@@ -3240,13 +3230,13 @@ function handleShipPickerSearch(value) {
 
 function handleShipPickerBrand(value) {
   _shipPickerBrand = String(value || '').trim();
+  populateShipBrandPills(_shipPickerRegistry, _shipPickerBrand);
   renderShipPickerOptions();
 }
 
 function populateShipSelect(selectedShip, registryOverride) {
   const select = document.getElementById('profile-ship-select');
   const search = document.getElementById('profile-ship-search');
-  const brandFilter = document.getElementById('profile-ship-brand-filter');
   if (!select) return;
   const registry = Array.isArray(registryOverride) ? registryOverride : currentShipRegistry();
   const selectedEntry = getShipEntry(selectedShip);
@@ -3258,7 +3248,6 @@ function populateShipSelect(selectedShip, registryOverride) {
   _shipPickerQuery = '';
   _shipPickerBrand = '';
   if (search) search.value = '';
-  if (brandFilter) brandFilter.value = '';
 
   _shipPickerRegistry
     .slice()
@@ -3272,7 +3261,7 @@ function populateShipSelect(selectedShip, registryOverride) {
       select.appendChild(opt);
     });
 
-  populateShipBrandFilter(_shipPickerRegistry, _shipPickerBrand);
+  populateShipBrandPills(_shipPickerRegistry, _shipPickerBrand);
   renderShipPickerOptions();
   renderShipPickerPreview(selectedEntry, _currentPlayer && _currentPlayer.shipImage);
   setShipPickerOpen(false);
