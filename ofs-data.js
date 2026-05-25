@@ -390,7 +390,7 @@
       activeBanner: BANNER_NAMES.indexOf(source.activeBanner) >= 0 ? source.activeBanner : '',
       stats: {
         PatrolCount: Number(stats.PatrolCount) || 0,
-        TotalLength: Number(stats.TotalLength) || 0,
+        TotalLength: parsePatrolLengthHours(stats.TotalLength),
         FPS_Kills_Total: Number(stats.FPS_Kills_Total) || 0,
         Ship_Kills_Total: Number(stats.Ship_Kills_Total) || 0,
         Crusades_Total: Number(stats.Crusades_Total) || 0,
@@ -536,9 +536,27 @@
     };
   }
 
+  function parsePatrolLengthHours(value) {
+    if (value == null || value === '') return 0;
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+
+    const text = String(value).trim();
+    const hoursMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/i);
+    const minutesMatch = text.match(/(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/i);
+    const hours = hoursMatch ? Number(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? Number(minutesMatch[1]) : 0;
+    if (hoursMatch || minutesMatch) return hours + (minutes / 60);
+
+    return 0;
+  }
+
   function formatPatrolLength(value) {
-    const hours = Number(value) || 0;
-    return hours + 'h';
+    const totalHours = parsePatrolLengthHours(value);
+    const wholeHours = Math.floor(totalHours);
+    const minutes = Math.round((totalHours - wholeHours) * 60);
+    if (minutes >= 60) return (wholeHours + 1) + 'h';
+    return minutes > 0 ? (wholeHours + 'h ' + minutes + 'm') : (wholeHours + 'h');
   }
 
   function sortRanks(ranks) {

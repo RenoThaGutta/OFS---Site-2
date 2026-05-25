@@ -72,6 +72,22 @@
     return Number(cell(row, idx)) || 0;
   }
 
+  function patrolLengthHours(row, idx) {
+    const value = cell(row, idx).trim();
+    if (!value) return 0;
+
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+
+    const hoursMatch = value.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hrs|hour|hours)\b/i);
+    const minutesMatch = value.match(/(\d+(?:\.\d+)?)\s*(?:m|min|mins|minute|minutes)\b/i);
+    const hours = hoursMatch ? Number(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? Number(minutesMatch[1]) : 0;
+    if (hoursMatch || minutesMatch) return hours + (minutes / 60);
+
+    return 0;
+  }
+
   /* ── Build merged player objects ─────────────────── */
   function buildPlayers(data) {
     if (!data.memberLog || data.memberLog.length < 2) return null;
@@ -159,7 +175,7 @@
         reputationXP:  num(row, ML.REPUTATION_XP),
         stats: {
           PatrolCount:            num(patrolRow, PT.PATROL_COUNT),
-          TotalLength:            num(patrolRow, PT.TOTAL_LENGTH),
+          TotalLength:            patrolLengthHours(patrolRow, PT.TOTAL_LENGTH),
           FPS_Kills_Total:        num(patrolRow, PT.FPS_KILLS),
           Ship_Kills_Total:       num(patrolRow, PT.SHIP_KILLS),
           Crusades_Total:         num(patrolRow, PT.CRUSADES),

@@ -1280,11 +1280,11 @@ function renderLedQuests(viewerId, playerId) {
 const STAT_LABELS = {
   PatrolCount           : "Patrols",
   TotalLength           : "Total Patrol Length",
-  FPS_Kills_Total       : "FPS Kills",
+  FPS_Kills_Total       : "Ground Kills",
   Ship_Kills_Total      : "Ship Kills",
   Crusades_Total        : "Crusades",
   Turret_Kills_Total    : "Turret Kills",
-  Quest_Total           : "Quests Completed",
+  Quest_Total           : "Quests",
   Led_Completed_Quests  : "Quests Led",
   Led_Completed_Crusades: "Crusades Led"
 };
@@ -1551,15 +1551,14 @@ function render(p) {
   const statsGrid = document.getElementById('js-stats');
   statsGrid.innerHTML = '';
   const statsToShow = {
-    PatrolCount:            p.stats.PatrolCount,
-    TotalLength:            window.OFSData.formatPatrolLength(p.stats.TotalLength),
-    FPS_Kills_Total:        p.stats.FPS_Kills_Total,
-    Ship_Kills_Total:       p.stats.Ship_Kills_Total,
-    Crusades_Total:         p.stats.Crusades_Total,
-    Turret_Kills_Total:     p.stats.Turret_Kills_Total,
     Quest_Total:            p.stats.Quest_Total,
+    Crusades_Total:         p.stats.Crusades_Total,
     Led_Completed_Quests:   p.stats.Led_Completed_Quests,
-    Led_Completed_Crusades: p.stats.Led_Completed_Crusades
+    Led_Completed_Crusades: p.stats.Led_Completed_Crusades,
+    Ship_Kills_Total:       p.stats.Ship_Kills_Total,
+    Turret_Kills_Total:     p.stats.Turret_Kills_Total,
+    FPS_Kills_Total:        p.stats.FPS_Kills_Total,
+    TotalLength:            window.OFSData.formatPatrolLength(p.stats.TotalLength)
   };
   for (const [key, val] of Object.entries(statsToShow)) {
     const div = document.createElement('div');
