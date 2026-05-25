@@ -644,8 +644,78 @@
       box-shadow: 0 0 0 2px rgba(201,168,76,.08);
     }
     .profile-ship-picker.open .profile-ship-brand-filter { display: block; }
-    .profile-ship-menu {
+    .profile-ship-split {
       display: none;
+      grid-template-columns: minmax(128px, 168px) minmax(0, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+      align-items: stretch;
+    }
+    .profile-ship-picker.open .profile-ship-split { display: grid; }
+    .profile-ship-brand-panel {
+      min-height: 170px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: radial-gradient(circle at 50% 18%, rgba(201,168,76,.11), rgba(7,7,15,.9) 64%);
+      border: 1px solid var(--b-gold);
+      border-radius: 5px;
+      box-shadow: inset 0 1px 0 rgba(201,168,76,.08);
+      overflow: hidden;
+    }
+    .profile-ship-brand-logo-frame {
+      width: 100%;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .profile-ship-brand-logo-img {
+      width: 148px;
+      height: 94px;
+      object-fit: contain;
+      opacity: .96;
+      filter: brightness(0) saturate(100%) invert(75%) sepia(38%) saturate(556%) hue-rotate(4deg) brightness(88%) contrast(84%) drop-shadow(0 0 12px rgba(201,168,76,.24));
+      transform: scale(1.08);
+    }
+    .profile-ship-brand-logo-img.is-rsi { transform: scale(2.35); }
+    .profile-ship-brand-logo-img.is-misc { transform: scale(1.35); }
+    .profile-ship-brand-logo-placeholder {
+      min-width: 82px;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold-lt);
+      border: 1px solid rgba(201,168,76,.22);
+      border-radius: 50%;
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      letter-spacing: .12em;
+      background: rgba(201,168,76,.06);
+    }
+    .profile-ship-brand-name {
+      font-family: 'Cinzel', serif;
+      font-size: .68rem;
+      line-height: 1.35;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--gold-lt);
+      text-align: center;
+    }
+    .profile-ship-brand-count {
+      font-size: .58rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--silver-dim);
+      text-align: center;
+    }
+    .profile-ship-menu {
+      display: block;
       position: static;
       max-height: 230px;
       overflow-y: auto;
@@ -654,21 +724,16 @@
       border-radius: 5px;
       box-shadow: 0 14px 34px rgba(0,0,0,.54), inset 0 1px 0 rgba(201,168,76,.08);
       padding: 6px;
-      margin-top: 8px;
       scrollbar-width: thin;
       scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
     }
-    .profile-ship-picker.open .profile-ship-menu { display: block; }
     .profile-ship-menu::-webkit-scrollbar { width: 8px; }
     .profile-ship-menu::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
     .profile-ship-menu::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
     .profile-ship-option {
       width: 100%;
-      display: grid;
-      grid-template-columns: 72px minmax(0, 1fr);
-      align-items: center;
-      gap: 14px;
-      padding: 8px 10px;
+      display: block;
+      padding: 10px 12px;
       background: transparent;
       border: 1px solid transparent;
       border-radius: 4px;
@@ -681,6 +746,13 @@
     .profile-ship-option.active {
       background: rgba(201,168,76,.09);
       border-color: rgba(201,168,76,.24);
+    }
+    .profile-ship-option-message,
+    .profile-ship-option-clear {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
     }
     .profile-ship-option-message {
       cursor: default;
@@ -735,6 +807,12 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    @media (max-width: 640px) {
+      .profile-ship-split { grid-template-columns: 1fr; }
+      .profile-ship-brand-panel { min-height: 118px; }
+      .profile-ship-brand-logo-frame { height: 68px; }
+      .profile-ship-brand-logo-img { width: 132px; height: 62px; }
     }
     .profile-ship-preview {
       display: none;
@@ -1690,7 +1768,10 @@
         <select class="profile-ship-brand-filter" id="profile-ship-brand-filter" aria-label="Filter ships by brand" onchange="handleShipPickerBrand(this.value)">
           <option value="">All brands</option>
         </select>
-        <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
+        <div class="profile-ship-split" id="profile-ship-split">
+          <div class="profile-ship-brand-panel" id="profile-ship-brand-panel" aria-live="polite"></div>
+          <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
+        </div>
         <div class="profile-ship-preview" id="profile-ship-preview" aria-live="polite"></div>
       </div>
       <select id="profile-ship-select" class="profile-ship-native" tabindex="-1" aria-hidden="true"></select>
@@ -1713,10 +1794,10 @@
   </div>
 </div>
 
-<script src="header_bar.js?v=profile-ship-brand-filter-20260525"></script>
-<script src="ofs-data.js?v=profile-ship-brand-filter-20260525"></script>
-<script src="ofs-sheets.js?v=profile-ship-brand-filter-20260525"></script>
-<script src="ofs-nav.js?v=profile-ship-brand-filter-20260525"></script>
+<script src="header_bar.js?v=profile-ship-split-make-20260525"></script>
+<script src="ofs-data.js?v=profile-ship-split-make-20260525"></script>
+<script src="ofs-sheets.js?v=profile-ship-split-make-20260525"></script>
+<script src="ofs-nav.js?v=profile-ship-split-make-20260525"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD
@@ -2373,10 +2454,21 @@ function manufacturerLogoForShip(ship) {
   if (!make) return '';
   if (SHIP_MAKE_LOGOS[make]) return SHIP_MAKE_LOGOS[make];
   const shortMake = make
-    .replace(/(dynamics|aerospace|intergalactic|consolidated|incorporated|industries|manufacturing|corporation|systems|industrial|concern|jumpworks|interplanetary)/gi, '')
+    .replace(/\b(dynamics|aerospace|intergalactic|consolidated|incorporated|industries|manufacturing|corporation|systems|industrial|concern|jumpworks|interplanetary)\b/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
   return SHIP_MAKE_LOGOS[shortMake] || '';
+}
+
+function shipMakeLogoClass(make) {
+  const key = shipPickerBrandKey(make);
+  if (key === 'roberts space industries' || key === 'rsi') return ' is-rsi';
+  if (key === 'musashi industrial and starflight concern' || key === 'misc') return ' is-misc';
+  return '';
+}
+
+function shipLogoUrlForMake(make) {
+  return manufacturerLogoForShip({ make: make });
 }
 
 function shipPickerBrandKey(make) {
@@ -3058,13 +3150,33 @@ function shipPickerMatches(ship, query, brand) {
 }
 
 function shipPickerOptionHtml(ship) {
-  const logoUrl = manufacturerLogoForShip(ship);
-  const code = shipMakeCode(ship && ship.make);
-  return (logoUrl
-    ? '<img class="profile-ship-option-logo" loading="lazy" decoding="async" src="' + _esc(logoUrl) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;profile-ship-option-placeholder&quot;>' + _esc(code) + '</span>\'">'
-    : '<span class="profile-ship-option-placeholder">' + _esc(code) + '</span>') +
-    '<span><span class="profile-ship-option-name">' + _esc(ship.model) + '</span>' +
+  return '<span><span class="profile-ship-option-name">' + _esc(ship.model) + '</span>' +
     '<span class="profile-ship-option-make">' + _esc(ship.make || 'Unknown make') + '</span></span>';
+}
+
+function renderShipBrandPanel(matches, brand) {
+  const panel = document.getElementById('profile-ship-brand-panel');
+  if (!panel) return;
+  const brandKey = String(brand || '').trim();
+  let make = '';
+  if (brandKey) {
+    const brandShip = (_shipPickerRegistry || []).find(function (ship) { return shipPickerBrandKey(ship && ship.make) === brandKey; });
+    make = shipPickerBrandLabel(brandShip && brandShip.make);
+  } else if (_shipPickerSelected) {
+    const selectedShip = getShipEntry(_shipPickerSelected);
+    make = selectedShip && selectedShip.make ? shipPickerBrandLabel(selectedShip.make) : 'All Brands';
+  } else {
+    make = 'All Brands';
+  }
+  const logoUrl = make === 'All Brands' ? '' : shipLogoUrlForMake(make);
+  const code = make === 'All Brands' ? 'OFS' : shipMakeCode(make);
+  const shipCount = Array.isArray(matches) ? matches.length : 0;
+  const logoHtml = logoUrl
+    ? '<img class="profile-ship-brand-logo-img' + shipMakeLogoClass(make) + '" src="' + _esc(logoUrl) + '" alt="" loading="lazy" decoding="async" onerror="this.outerHTML=\'<span class=&quot;profile-ship-brand-logo-placeholder&quot;>' + _esc(code) + '</span>\'">'
+    : '<span class="profile-ship-brand-logo-placeholder">' + _esc(code) + '</span>';
+  panel.innerHTML = '<div class="profile-ship-brand-logo-frame">' + logoHtml + '</div>' +
+    '<div class="profile-ship-brand-name">' + _esc(make) + '</div>' +
+    '<div class="profile-ship-brand-count">' + _esc(shipCount + ' ship' + (shipCount === 1 ? '' : 's')) + '</div>';
 }
 
 function renderShipPickerOptions() {
@@ -3079,7 +3191,7 @@ function renderShipPickerOptions() {
   if (!query && !brand) {
     const noneBtn = document.createElement('button');
     noneBtn.type = 'button';
-    noneBtn.className = 'profile-ship-option' + (!selected ? ' active' : '');
+    noneBtn.className = 'profile-ship-option profile-ship-option-clear' + (!selected ? ' active' : '');
     noneBtn.setAttribute('role', 'option');
     noneBtn.setAttribute('aria-selected', !selected ? 'true' : 'false');
     noneBtn.setAttribute('data-model', '');
@@ -3089,6 +3201,7 @@ function renderShipPickerOptions() {
   }
 
   if (!_shipPickerRegistry.length) {
+    renderShipBrandPanel([], brand);
     appendShipPickerMessage(menu, 'Ship Registry loading unavailable', 'Refresh the page if this does not populate.');
     return;
   }
@@ -3096,6 +3209,8 @@ function renderShipPickerOptions() {
   const matches = _shipPickerRegistry
     .filter(function (ship) { return ship && ship.model && shipPickerMatches(ship, query, brand); })
     .sort(function (a, b) { return String(a.model || '').localeCompare(String(b.model || '')); });
+
+  renderShipBrandPanel(matches, brand);
 
   const visible = matches.slice(0, SHIP_PICKER_MAX_OPTIONS);
   visible.forEach(function (ship) {
