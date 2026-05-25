@@ -340,16 +340,60 @@
       font-size: .98rem;
       color: var(--text-dim);
     }
+    .profile-ship-image-frame {
+      position: relative;
+      width: 100%;
+      min-height: 168px;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 4px;
+      background: radial-gradient(circle at 50% 0%, rgba(201,168,76,.09), rgba(0,0,0,.22) 64%);
+      border: 1px solid rgba(201,168,76,.12);
+    }
     .profile-ship-img {
       width: 100%;
       max-height: 210px;
       object-fit: contain;
       display: block;
-      margin: 0 auto 14px;
-      border-radius: 4px;
-      background: rgba(0,0,0,.18);
-      border: 1px solid rgba(201,168,76,.12);
+      opacity: 1;
+      transition: opacity .18s ease;
+      filter: drop-shadow(0 12px 22px rgba(0,0,0,.38));
     }
+    .profile-ship-image-frame.is-loading .profile-ship-img,
+    .profile-ship-image-frame.is-empty .profile-ship-img { opacity: 0; }
+    .profile-ship-loader,
+    .profile-ship-placeholder {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--gold-dim);
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .profile-ship-image-frame.is-loading .profile-ship-loader,
+    .profile-ship-image-frame.is-empty .profile-ship-placeholder { display: flex; }
+    .profile-ship-loader::before,
+    .profile-ship-preview.loading::before {
+      content: '';
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(201,168,76,.18);
+      border-top-color: var(--gold);
+      animation: ofsShipSpin .85s linear infinite;
+      box-shadow: 0 0 14px rgba(201,168,76,.12);
+    }
+    @keyframes ofsShipSpin { to { transform: rotate(360deg); } }
     .profile-ship-name {
       font-family: 'Cinzel', serif;
       font-size: 1rem;
@@ -626,13 +670,18 @@
       border-color: transparent;
     }
     .profile-ship-option-img,
+    .profile-ship-option-logo,
     .profile-ship-option-placeholder {
       width: 58px;
       height: 38px;
-      object-fit: cover;
+      object-fit: contain;
       border-radius: 3px;
       background: rgba(0,0,0,.24);
       border: 1px solid rgba(201,168,76,.14);
+    }
+    .profile-ship-option-logo {
+      padding: 6px;
+      filter: drop-shadow(0 0 8px rgba(201,168,76,.16));
     }
     .profile-ship-option-placeholder {
       display: flex;
@@ -701,6 +750,26 @@
       text-align: center;
     }
     .profile-ship-preview-meta { color: var(--gold-dim); }
+    .profile-ship-preview.loading {
+      display: flex;
+      min-height: 132px;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+      color: var(--gold-dim);
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .profile-ship-preview.is-empty {
+      display: block;
+      min-height: 96px;
+      color: var(--gold-dim);
+      text-align: center;
+    }
     .profile-editor-toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -1619,10 +1688,10 @@
   </div>
 </div>
 
-<script src="header_bar.js?v=profile-ship-search-20260525"></script>
-<script src="ofs-data.js?v=profile-ship-search-20260525"></script>
-<script src="ofs-sheets.js?v=profile-ship-search-20260525"></script>
-<script src="ofs-nav.js?v=profile-ship-search-20260525"></script>
+<script src="header_bar.js?v=profile-ship-logos-20260525"></script>
+<script src="ofs-data.js?v=profile-ship-logos-20260525"></script>
+<script src="ofs-sheets.js?v=profile-ship-logos-20260525"></script>
+<script src="ofs-nav.js?v=profile-ship-logos-20260525"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD
@@ -2226,6 +2295,77 @@ const SCWIKI_SEARCH_TTL = 10 * 60 * 1000;
 const SCWIKI_VEHICLE_TTL = 12 * 60 * 60 * 1000;
 let _shipEnrichmentToken = 0;
 
+const SHIP_MAKE_LOGOS = {
+  'aegis': 'https://media.starcitizen.tools/a/af/Sc-logo-aegis.svg',
+  'aegis dynamics': 'https://media.starcitizen.tools/a/af/Sc-logo-aegis.svg',
+  'anvil': 'https://media.starcitizen.tools/8/8e/Sc-logo-anvil-aerospace.svg',
+  'anvil aerospace': 'https://media.starcitizen.tools/8/8e/Sc-logo-anvil-aerospace.svg',
+  'crusader': 'https://media.starcitizen.tools/d/d2/Sc-logo-crusader.svg',
+  'crusader industries': 'https://media.starcitizen.tools/d/d2/Sc-logo-crusader.svg',
+  'drake': 'https://media.starcitizen.tools/2/27/Sc-logo-drake.svg',
+  'drake interplanetary': 'https://media.starcitizen.tools/2/27/Sc-logo-drake.svg',
+  'origin': 'https://media.starcitizen.tools/c/ce/Sc-logo-origin.svg',
+  'origin jumpworks': 'https://media.starcitizen.tools/c/ce/Sc-logo-origin.svg',
+  'roberts space industries': 'https://media.starcitizen.tools/b/b8/Sc-logo-rsi.svg',
+  'rsi': 'https://media.starcitizen.tools/b/b8/Sc-logo-rsi.svg',
+  'misc': 'https://media.starcitizen.tools/e/ee/Sc-logo-misc.svg',
+  'musashi industrial and starflight concern': 'https://media.starcitizen.tools/e/ee/Sc-logo-misc.svg',
+  'argo': 'https://media.starcitizen.tools/2/2d/Sc-logo-argo-astronautics.svg',
+  'argo astronautics': 'https://media.starcitizen.tools/2/2d/Sc-logo-argo-astronautics.svg',
+  'consolidated outland': 'https://media.starcitizen.tools/a/af/Sc-logo-consolidated-outland.svg',
+  'esperia': 'https://media.starcitizen.tools/8/89/Sc-logo-esperia.svg',
+  'gatac': 'https://media.starcitizen.tools/7/7a/Sc-logo-gatac.svg',
+  'greycat': 'https://media.starcitizen.tools/c/c3/Sc-logo-greycat.svg',
+  'greycat industrial': 'https://media.starcitizen.tools/c/c3/Sc-logo-greycat.svg',
+  'kruger': 'https://media.starcitizen.tools/9/93/Sc-logo-kruger-intergalactic.svg',
+  'kruger intergalactic': 'https://media.starcitizen.tools/9/93/Sc-logo-kruger-intergalactic.svg',
+  'mirai': 'https://media.starcitizen.tools/4/4b/Sc-logo-mirai.svg',
+  'tumbril': 'https://media.starcitizen.tools/c/c0/Sc-logo-tumbril.svg'
+};
+
+function shipMakeCode(make) {
+  const clean = String(make || '').trim();
+  const map = {
+    'aegis dynamics': 'AEG',
+    'anvil aerospace': 'ANVL',
+    'crusader industries': 'CRUS',
+    'drake interplanetary': 'DRAK',
+    'origin jumpworks': 'ORIG',
+    'roberts space industries': 'RSI',
+    'musashi industrial and starflight concern': 'MISC',
+    'argo astronautics': 'ARGO',
+    'consolidated outland': 'CNOU',
+    'kruger intergalactic': 'KRIG',
+    'greycat industrial': 'GRIN'
+  };
+  const key = clean.toLowerCase();
+  return map[key] || clean.split(/\s+/).map(function (part) { return part.charAt(0); }).join('').slice(0, 4).toUpperCase() || 'SHIP';
+}
+
+function manufacturerLogoForShip(ship) {
+  const make = String(ship && ship.make || '').trim().toLowerCase();
+  if (!make) return '';
+  if (SHIP_MAKE_LOGOS[make]) return SHIP_MAKE_LOGOS[make];
+  const shortMake = make
+    .replace(/(dynamics|aerospace|intergalactic|consolidated|incorporated|industries|manufacturing|corporation|systems|industrial|concern|jumpworks|interplanetary)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return SHIP_MAKE_LOGOS[shortMake] || '';
+}
+
+function reversedShipModelCandidates(model) {
+  const raw = String(model || '').trim();
+  if (!raw || raw.indexOf(' ') === -1) return [];
+  const parts = raw.split(/\s+/);
+  const last = parts[parts.length - 1];
+  if (!/[0-9]/.test(last) && !/^mk$/i.test(parts[parts.length - 2] || '')) return [];
+  if (/^mk$/i.test(parts[parts.length - 2] || '') && parts.length > 2) {
+    const suffix = parts.slice(-2).join(' ');
+    return [suffix + ' ' + parts.slice(0, -2).join(' ')];
+  }
+  return [last + ' ' + parts.slice(0, -1).join(' ')];
+}
+
 function shipApiQueries(playerShip, shipEntry) {
   const ship = String(playerShip || '').trim();
   const model = String(shipEntry && shipEntry.model || '').trim();
@@ -2242,6 +2382,11 @@ function shipApiQueries(playerShip, shipEntry) {
   if (model && shortMake) candidates.push(shortMake + ' ' + model);
   if (model && make) candidates.push(make + ' ' + model);
   if (model) candidates.push(model);
+  reversedShipModelCandidates(model).forEach(function (candidate) {
+    if (shortMake) candidates.push(shortMake + ' ' + candidate);
+    if (make) candidates.push(make + ' ' + candidate);
+    candidates.push(candidate);
+  });
   if (ship) candidates.push(shortShip, ship.replace(make, '').replace(/\s+/g, ' ').trim(), ship);
   return candidates.filter(function (query, idx, all) {
     query = String(query || '').trim();
@@ -2338,16 +2483,32 @@ function syncProfileRecordHeight() {
   if (shipHeight > 0) bioCard.style.height = shipHeight + 'px';
 }
 
+function setProfileShipImageState(state) {
+  const frame = document.getElementById('js-profile-ship-image-frame');
+  if (!frame) return;
+  frame.classList.toggle('is-loading', state === 'loading');
+  frame.classList.toggle('is-empty', state === 'empty');
+  frame.classList.toggle('has-image', state === 'loaded');
+}
+
+function handleProfileShipImageLoad(img) {
+  if (!img) return;
+  setProfileShipImageState('loaded');
+  syncProfileRecordHeight();
+}
+
 function handleProfileShipImageError(img) {
   if (!img) return;
   const fallback = img.getAttribute('data-api-src') || '';
   if (fallback && img.getAttribute('src') !== fallback) {
+    setProfileShipImageState('loading');
     img.setAttribute('src', fallback);
     img.style.display = '';
     return;
   }
   img.style.display = 'none';
   img.removeAttribute('src');
+  setProfileShipImageState('empty');
   syncProfileRecordHeight();
 }
 
@@ -2456,9 +2617,12 @@ async function enhanceProfileShip(player, shipEntry, token) {
     if (imgEl && data.imageUrl) {
       imgEl.setAttribute('data-api-src', data.imageUrl);
       if (!imgEl.getAttribute('src') || imgEl.style.display === 'none') {
+        setProfileShipImageState('loading');
         imgEl.setAttribute('src', data.imageUrl);
         imgEl.style.display = '';
       }
+    } else if (imgEl && (!imgEl.getAttribute('src') || imgEl.style.display === 'none')) {
+      setProfileShipImageState('empty');
     }
     const makeEl = document.getElementById('js-profile-ship-api-make');
     if (makeEl && data.manufacturer && !makeEl.textContent.trim()) makeEl.textContent = data.manufacturer;
@@ -2677,9 +2841,13 @@ function renderProfileRecord(p) {
 
   const token = ++_shipEnrichmentToken;
   let shipHtml = '<div class="profile-record-label">Assigned Ship</div>';
-  shipHtml += '<img class="profile-ship-img" id="js-profile-ship-api-img" ' +
+  shipHtml += '<div class="profile-ship-image-frame ' + (shipImage ? 'is-loading' : (hasShip ? 'is-loading' : 'is-empty')) + '" id="js-profile-ship-image-frame">' +
+    '<img class="profile-ship-img" id="js-profile-ship-api-img" ' +
     (shipImage ? 'src="' + _esc(shipImage) + '" ' : 'style="display:none" ') +
-    'alt="' + _esc(p.ship || 'Ship') + '" onload="syncProfileRecordHeight()" onerror="handleProfileShipImageError(this)">';
+    'alt="' + _esc(p.ship || 'Ship') + '" onload="handleProfileShipImageLoad(this)" onerror="handleProfileShipImageError(this)">' +
+    '<div class="profile-ship-loader">Resolving ship image…</div>' +
+    '<div class="profile-ship-placeholder">Image unavailable</div>' +
+    '</div>';
   if (hasShip) {
     shipHtml += '<div class="profile-ship-name">' + _esc(p.ship) + '</div>';
     shipHtml += '<div class="profile-ship-make" id="js-profile-ship-api-make">' + _esc(shipEntry && shipEntry.make ? shipEntry.make : '') + '</div>';
@@ -2717,7 +2885,7 @@ function toggleShipPicker() {
 function shipPickerPreviewHtml(ship, imageUrl, apiData) {
   if (!ship) return '';
   const meta = shipApiMetaLine(apiData);
-  return (imageUrl ? '<img src="' + _esc(imageUrl) + '" alt="' + _esc(shipDisplayName(ship) || 'Selected ship') + '" onerror="this.closest(\'.profile-ship-preview\').classList.remove(\'has-image\');this.remove()">' : '') +
+  return (imageUrl ? '<img src="' + _esc(imageUrl) + '" alt="' + _esc(shipDisplayName(ship) || 'Selected ship') + '" onerror="this.closest(\'.profile-ship-preview\').classList.add(\'is-empty\');this.remove()">' : '') +
     '<div class="profile-ship-preview-name">' + _esc(ship.model || apiData && apiData.name || 'Selected Ship') + '</div>' +
     '<div class="profile-ship-preview-make">' + _esc(ship.make || apiData && apiData.manufacturer || 'Unknown make') + '</div>' +
     (meta ? '<div class="profile-ship-preview-meta">' + _esc(meta) + '</div>' : '');
@@ -2733,11 +2901,13 @@ function renderShipPickerPreview(ship, fallbackImageUrl) {
   if (makeEl) makeEl.textContent = ship && ship.make ? ship.make : (ship && ship.model ? 'Ship Registry' : 'Choose from Ship Registry');
   if (!preview) return;
   if (ship) {
-    preview.classList.add('has-image');
-    preview.innerHTML = shipPickerPreviewHtml(ship, imageUrl, null) || '<div class="profile-ship-preview-name">No ship selected</div>';
+    preview.className = 'profile-ship-preview has-image' + (imageUrl ? '' : ' loading');
+    preview.innerHTML = imageUrl
+      ? (shipPickerPreviewHtml(ship, imageUrl, null) || '<div class="profile-ship-preview-name">No ship selected</div>')
+      : '<div>Resolving ship image…</div><div class="profile-ship-preview-name">' + _esc(ship.model || 'Selected Ship') + '</div><div class="profile-ship-preview-make">' + _esc(ship.make || 'Unknown make') + '</div>';
     if (!imageUrl) enrichShipPickerPreviewFromApi(ship, token);
   } else {
-    preview.classList.remove('has-image');
+    preview.className = 'profile-ship-preview';
     preview.innerHTML = '';
   }
 }
@@ -2748,9 +2918,10 @@ async function enrichShipPickerPreviewFromApi(ship, token) {
     const data = await getShipApiDataForPicker(ship);
     if (token !== _shipPickerPreviewToken || !preview || !data) return;
     const imageUrl = normalizeImageUrl(data.imageUrl || ship.imageUrl);
-    if (imageUrl) preview.classList.add('has-image');
-    preview.innerHTML = shipPickerPreviewHtml(ship, imageUrl, data);
-    updateShipPickerOptionImage(ship.model, imageUrl, data);
+    preview.className = 'profile-ship-preview has-image' + (imageUrl ? '' : ' is-empty');
+    preview.innerHTML = imageUrl
+      ? shipPickerPreviewHtml(ship, imageUrl, data)
+      : (shipPickerPreviewHtml(ship, '', data) + '<div class="profile-ship-preview-meta">Image unavailable</div>');
   } catch (e) { /* API enrichment is best-effort */ }
 }
 
@@ -2832,10 +3003,11 @@ function shipPickerMatches(ship, query) {
 }
 
 function shipPickerOptionHtml(ship) {
-  const imageUrl = normalizeImageUrl(ship && ship.imageUrl);
-  return (imageUrl
-    ? '<img class="profile-ship-option-img" loading="lazy" decoding="async" src="' + _esc(imageUrl) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;profile-ship-option-placeholder&quot;>SHIP</span>\'">'
-    : '<span class="profile-ship-option-placeholder">SHIP</span>') +
+  const logoUrl = manufacturerLogoForShip(ship);
+  const code = shipMakeCode(ship && ship.make);
+  return (logoUrl
+    ? '<img class="profile-ship-option-logo" loading="lazy" decoding="async" src="' + _esc(logoUrl) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;profile-ship-option-placeholder&quot;>' + _esc(code) + '</span>\'">'
+    : '<span class="profile-ship-option-placeholder">' + _esc(code) + '</span>') +
     '<span><span class="profile-ship-option-name">' + _esc(ship.model) + '</span>' +
     '<span class="profile-ship-option-make">' + _esc(ship.make || 'Unknown make') + '</span></span>';
 }
