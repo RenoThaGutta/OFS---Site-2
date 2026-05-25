@@ -243,7 +243,12 @@
       padding: 22px 24px;
       box-shadow: inset 0 1px 0 rgba(201,168,76,.07), 0 0 30px rgba(0,0,0,.18);
     }
-    .profile-bio-card { padding-bottom: 48px; }
+    .profile-bio-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      padding-bottom: 48px;
+    }
     .profile-bio-card::before,
     .profile-ship-card::before {
       content: '';
@@ -261,13 +266,19 @@
       color: var(--gold-dim);
       margin-bottom: 12px;
     }
-    .profile-bio-wrap { position: relative; }
+    .profile-bio-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
     .profile-bio-text {
+      height: 100%;
+      min-height: 14.5rem;
+      max-height: none;
       font-family: 'Crimson Text', serif;
       font-size: 1.03rem;
       line-height: 1.62;
       color: var(--text);
-      max-height: 14.5rem;
       overflow-y: auto;
       padding-right: 10px;
       scrollbar-width: thin;
