@@ -260,13 +260,45 @@
       color: var(--gold-dim);
       margin-bottom: 12px;
     }
+    .profile-bio-wrap { position: relative; }
     .profile-bio-text {
       font-family: 'Crimson Text', serif;
       font-size: 1.03rem;
       line-height: 1.62;
       color: var(--text);
-      white-space: pre-wrap;
+      overflow: hidden;
+      transition: max-height .25s ease;
     }
+    .profile-bio-text.collapsed { max-height: 8.25rem; }
+    .profile-bio-text.expanded { max-height: none; }
+    .profile-bio-text div,
+    .profile-bio-text p { margin: 0 0 .8em; }
+    .profile-bio-text b,
+    .profile-bio-text strong { color: var(--gold-lt); }
+    .profile-bio-text a { color: var(--gold); }
+    .profile-bio-fade {
+      display: none;
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 3rem;
+      background: linear-gradient(to bottom, rgba(14,14,28,0), rgba(14,14,28,.98));
+      pointer-events: none;
+    }
+    .profile-bio-wrap.has-more:not(.expanded) .profile-bio-fade { display: block; }
+    .profile-bio-toggle {
+      margin-top: 12px;
+      background: none;
+      border: 0;
+      padding: 0;
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      cursor: pointer;
+      opacity: .88;
+    }
+    .profile-bio-toggle:hover { color: var(--gold-lt); opacity: 1; }
     .profile-empty-note {
       font-family: 'Crimson Text', serif;
       font-style: italic;
@@ -1648,6 +1680,76 @@ function getShipEntry(shipName) {
   }) || null;
 }
 
+function sanitizeBioHtml(rawBio) {
+  const raw = String(rawBio || '').trim();
+  if (!raw) return '';
+  const hasMarkup = /<\/?[a-z][\s\S]*>/i.test(raw);
+  if (!hasMarkup) return _esc(raw).replace(/\n{2,}/g, '<br><br>').replace(/\n/g, '<br>');
+
+  const allowedTags = new Set(['DIV','P','BR','SPAN','B','STRONG','I','EM','U','FONT','UL','OL','LI']);
+  const allowedStyles = new Set(['color','font-size','line-height','font-weight','font-style','text-decoration','text-align']);
+  const doc = new DOMParser().parseFromString('<div>' + raw + '</div>', 'text/html');
+
+  function sanitizeStyle(styleText) {
+    return String(styleText || '').split(';').map(function (rule) {
+      const parts = rule.split(':');
+      if (parts.length < 2) return '';
+      const prop = parts.shift().trim().toLowerCase();
+      let value = parts.join(':').trim();
+      if (!allowedStyles.has(prop)) return '';
+      if (/url\s*\(|expression\s*\(|javascript:/i.test(value)) return '';
+      if (prop === 'font-size' && !/^[\d.]+(px|rem|em|%)$/i.test(value)) return '';
+      if (prop === 'line-height' && !/^[\d.]+(px|rem|em|%)?$/i.test(value)) return '';
+      return prop + ': ' + value;
+    }).filter(Boolean).join('; ');
+  }
+
+  function cleanNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) return document.createTextNode(node.textContent || '');
+    if (node.nodeType !== Node.ELEMENT_NODE) return document.createTextNode('');
+
+    const tag = node.tagName.toUpperCase();
+    if (!allowedTags.has(tag)) {
+      const frag = document.createDocumentFragment();
+      Array.from(node.childNodes).forEach(function (child) { frag.appendChild(cleanNode(child)); });
+      return frag;
+    }
+
+    const el = document.createElement(tag.toLowerCase());
+    if (node.hasAttribute('style')) {
+      const cleanStyle = sanitizeStyle(node.getAttribute('style'));
+      if (cleanStyle) el.setAttribute('style', cleanStyle);
+    }
+    if (tag === 'FONT' && node.hasAttribute('color')) {
+      const color = node.getAttribute('color');
+      if (color && !/url\s*\(|expression\s*\(|javascript:/i.test(color)) el.setAttribute('color', color);
+    }
+    Array.from(node.childNodes).forEach(function (child) { el.appendChild(cleanNode(child)); });
+    return el;
+  }
+
+  const wrapper = document.createElement('div');
+  Array.from(doc.body.firstChild.childNodes).forEach(function (child) { wrapper.appendChild(cleanNode(child)); });
+  return wrapper.innerHTML;
+}
+
+function isLongBio(rawBio) {
+  const text = String(rawBio || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  return text.length > 420 || String(rawBio || '').length > 900;
+}
+
+function toggleProfileBio() {
+  const wrap = document.getElementById('js-profile-bio-wrap');
+  const text = document.getElementById('js-profile-bio-text');
+  const btn = document.getElementById('js-profile-bio-toggle');
+  if (!wrap || !text || !btn) return;
+  const open = !wrap.classList.contains('expanded');
+  wrap.classList.toggle('expanded', open);
+  text.classList.toggle('collapsed', !open);
+  text.classList.toggle('expanded', open);
+  btn.textContent = open ? 'Show Less ↑' : 'Show More ↓';
+}
+
 function renderProfileRecord(p) {
   const section = document.getElementById('js-profile-record');
   const bioCard = document.getElementById('js-profile-bio-card');
@@ -1673,10 +1775,18 @@ function renderProfileRecord(p) {
   bioCard.style.display = shouldShowBio ? '' : 'none';
   shipCard.style.display = shouldShowShip ? '' : 'none';
 
-  bioCard.innerHTML = '<div class="profile-record-label">Personal Record</div>' +
-    (bio
-      ? '<div class="profile-bio-text">' + _esc(bio) + '</div>'
-      : '<div class="profile-empty-note">No bio recorded yet. Use Edit Profile to add your personal record.</div>');
+  if (bio) {
+    const longBio = isLongBio(bio);
+    bioCard.innerHTML = '<div class="profile-record-label">Personal Record</div>' +
+      '<div class="profile-bio-wrap' + (longBio ? ' has-more' : '') + '" id="js-profile-bio-wrap">' +
+        '<div class="profile-bio-text' + (longBio ? ' collapsed' : ' expanded') + '" id="js-profile-bio-text">' + sanitizeBioHtml(bio) + '</div>' +
+        (longBio ? '<div class="profile-bio-fade"></div>' : '') +
+      '</div>' +
+      (longBio ? '<button class="profile-bio-toggle" id="js-profile-bio-toggle" type="button" onclick="toggleProfileBio()">Show More ↓</button>' : '');
+  } else {
+    bioCard.innerHTML = '<div class="profile-record-label">Personal Record</div>' +
+      '<div class="profile-empty-note">No bio recorded yet. Use Edit Profile to add your personal record.</div>';
+  }
 
   let shipHtml = '<div class="profile-record-label">Assigned Ship</div>';
   if (shipImage) {
