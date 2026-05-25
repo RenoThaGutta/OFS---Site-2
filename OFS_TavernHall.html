@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tavern Hall — Order of the Fallen Star</title>
+  <title>Tavern — Order of the Fallen Star</title>
   <link rel="icon" type="image/png" href="ofs favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -842,50 +842,92 @@
   ═══════════════════════════════════════════ */
   function buildQuestMap(rows) {
     if (!rows || rows.length < 2) return { active: [], completed: [] };
+
+    var header = rows[0] || [];
+    function colIndex(name, fallback) {
+      var target = String(name || '').trim().toLowerCase();
+      for (var i = 0; i < header.length; i++) {
+        if (String(header[i] || '').trim().toLowerCase() === target) return i;
+      }
+      return fallback;
+    }
+    var COL = {
+      ID:          colIndex('Patrol ID', 0),
+      LEADER:      colIndex('Patrol Leader', 1),
+      LEADER_ID:   colIndex('Patrol Leader ID', 2),
+      LEADER_RANK: colIndex('Leader Rank', 3),
+      NAME:        colIndex('Patrol Name', 4),
+      DESC:        colIndex('Patrol Description', 5),
+      IMAGE:       colIndex('Patrol Image', 6),
+      START:       colIndex('Patrol Start Time', 7),
+      PLAYER_ID:   colIndex('Player ID', 10),
+      PLAYER_NAME: colIndex('Player Name', 11),
+      SENT_REVIEW: colIndex('Sent for review', 24),
+      APPROVED:    colIndex('Admin Approved', 25),
+      CANCELLED:   colIndex('Quest Cancelled ', 29),
+      COMPLETED:   colIndex('Quest Completed', 30),
+      TYPE:        colIndex('Type', 32)
+    };
+    function val(row, idx) { return String((row && row[idx] != null) ? row[idx] : '').trim(); }
+    function hasStatus(value) {
+      var s = String(value || '').trim().toLowerCase();
+      return !!s && s !== '0' && s !== 'false' && s !== 'no' && s !== 'n' && s !== '❓' && s !== 'none' && s !== 'null';
+    }
+
     var map = {};
     rows.slice(1).forEach(function (row) {
-      var pid = String(row[0] || '').trim();
+      var pid = val(row, COL.ID);
       // Skip blank rows and guide/header rows (real patrol IDs start with P + digits)
       if (!pid || !/^P\d/.test(pid)) return;
 
       var isLeaderRow = !map[pid];
       if (isLeaderRow) {
-        // col H of the LEADER (first) row determines active vs completed:
-        //   "Quest Completed" text → done
-        //   a real timestamp       → active
-        var colH = String(row[7] || '').trim();
-        var isDone = /quest completed/i.test(colH);
+        var startCell = val(row, COL.START);
+        var legacyDone = /quest completed/i.test(startCell);
         map[pid] = {
           id:               pid,
-          leaderName:       String(row[1] || ''),
-          leaderId:         String(row[2] || '').trim(),
-          leaderRank:       String(row[3] || ''),
-          name:             String(row[4] || '').trim(),   // col E
-          description:      String(row[5] || ''),          // col F
-          image:            String(row[6] || ''),          // col G
-          // Active quests: leader row col H is the real start time.
-          // Done quests: col H says "Quest Completed" — pick up timestamp from participant rows.
-          startTime:        (!isDone && parseDate(colH)) ? colH : '',
-          completed:        isDone ? 'Quest Completed' : '',
-          type:             String(row[32] || 'Quest').trim(), // col AG: Quest or Crusade
+          leaderName:       val(row, COL.LEADER),
+          leaderId:         val(row, COL.LEADER_ID),
+          leaderRank:       val(row, COL.LEADER_RANK),
+          name:             val(row, COL.NAME),
+          description:      val(row, COL.DESC),
+          image:            val(row, COL.IMAGE),
+          // Active quests: leader row start column is a real start timestamp.
+          // Legacy done quests may still store "Quest Completed" in that start column.
+          startTime:        (!legacyDone && parseDate(startCell)) ? startCell : '',
+          completed:        legacyDone ? 'Quest Completed' : '',
+          cancelled:        false,
+          sentForReview:    false,
+          adminApproved:    false,
+          type:             val(row, COL.TYPE) || 'Quest',
           participants:     [],
           participantNames: []
         };
       } else {
-        // Participant rows: fill startTime if still empty (needed for done quests)
+        // Participant rows: fill startTime if still empty (needed for done/review quests)
         if (!map[pid].startTime) {
-          var ts = String(row[7] || '');
+          var ts = val(row, COL.START);
           if (parseDate(ts)) map[pid].startTime = ts;
         }
         // Backfill metadata in case leader row was missing it
-        if (!map[pid].name        && row[4]) map[pid].name        = String(row[4]).trim();
-        if (!map[pid].description && row[5]) map[pid].description = String(row[5]);
-        if (!map[pid].image       && row[6]) map[pid].image       = String(row[6]);
+        if (!map[pid].name        && val(row, COL.NAME))  map[pid].name        = val(row, COL.NAME);
+        if (!map[pid].description && val(row, COL.DESC))  map[pid].description = val(row, COL.DESC);
+        if (!map[pid].image       && val(row, COL.IMAGE)) map[pid].image       = val(row, COL.IMAGE);
+        if ((!map[pid].type || map[pid].type === 'Quest') && val(row, COL.TYPE)) map[pid].type = val(row, COL.TYPE);
       }
 
-      // col K (row[10]): participant Discord ID, col L (row[11]): participant name
-      var playerId   = String(row[10] || '').trim();
-      var playerName = String(row[11] || '').trim();
+      // Status can be present on leader or participant rows. Treat review/completed/approved
+      // as belonging in the Completed tab; cancelled quests stay out of public Tavern lists.
+      if (hasStatus(val(row, COL.SENT_REVIEW))) map[pid].sentForReview = true;
+      if (hasStatus(val(row, COL.APPROVED)))    map[pid].adminApproved = true;
+      if (hasStatus(val(row, COL.CANCELLED)))   map[pid].cancelled = true;
+      if (hasStatus(val(row, COL.COMPLETED)) || /quest completed/i.test(val(row, COL.START))) {
+        map[pid].completed = 'Quest Completed';
+      }
+
+      // col K / "Player ID": participant Discord ID, col L / "Player Name": participant name
+      var playerId   = val(row, COL.PLAYER_ID);
+      var playerName = val(row, COL.PLAYER_NAME);
       if (playerId && playerId !== '❓' && map[pid].participants.indexOf(playerId) === -1) {
         map[pid].participants.push(playerId);
         if (playerName && playerName !== '❓') map[pid].participantNames.push(playerName);
@@ -893,16 +935,17 @@
     });
 
     var now = Date.now();
-    var MAX_ACTIVE_MS = 24 * 60 * 60 * 1000; // quests should never run longer than 24 hours
+    var MAX_ACTIVE_MS = 24 * 60 * 60 * 1000; // still hide stale open quests when status labels are missing
     var active = [], completed = [];
     Object.keys(map).forEach(function (pid) {
-      var q = map[pid]; if (!q.name) return;
-      if (q.completed) {
+      var q = map[pid]; if (!q.name || q.cancelled) return;
+      if (q.sentForReview || q.adminApproved || q.completed) {
+        if (!q.completed) q.completed = q.sentForReview ? 'In Review' : 'Completed';
         completed.push(q);
       } else {
         var startD = parseDate(q.startTime);
         if (startD && (now - startD.getTime()) > MAX_ACTIVE_MS) {
-          // Bot didn't close this quest — treat as expired, move to completed
+          // Bot/status labels are missing — keep stale old data off Active by aging it into Completed.
           q.completed = 'Expired';
           completed.push(q);
         } else {
@@ -937,7 +980,10 @@
     if (!isDone) html += '<span class="quest-live-label"><span class="quest-live-dot"></span>Live</span>';
     html += '<span class="quest-type-badge ' + typeClass + '">' + typeLabel + '</span>';
     html += '<span class="quest-xp-badge">' + xpReward + '</span>';
-    if (isDone) html += '<span class="quest-completed-badge">Done</span>';
+    if (isDone) {
+      var doneLabel = /review/i.test(String(q.completed || '')) ? 'In Review' : /expired/i.test(String(q.completed || '')) ? 'Expired' : 'Done';
+      html += '<span class="quest-completed-badge">' + esc(doneLabel) + '</span>';
+    }
     html += '</div>';
 
     // Description
