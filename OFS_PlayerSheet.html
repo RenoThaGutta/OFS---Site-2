@@ -599,6 +599,14 @@
       background: rgba(201,168,76,.09);
       border-color: rgba(201,168,76,.24);
     }
+    .profile-ship-option-message {
+      cursor: default;
+      opacity: .78;
+    }
+    .profile-ship-option-message:hover {
+      background: transparent;
+      border-color: transparent;
+    }
     .profile-ship-option-img,
     .profile-ship-option-placeholder {
       width: 58px;
@@ -1592,10 +1600,10 @@
   </div>
 </div>
 
-<script src="header_bar.js"></script>
-<script src="ofs-data.js"></script>
-<script src="ofs-sheets.js"></script>
-<script src="ofs-nav.js"></script>
+<script src="header_bar.js?v=profile-ship-picker-20260525"></script>
+<script src="ofs-data.js?v=profile-ship-picker-20260525"></script>
+<script src="ofs-sheets.js?v=profile-ship-picker-20260525"></script>
+<script src="ofs-nav.js?v=profile-ship-picker-20260525"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD
@@ -2121,6 +2129,7 @@ let _currentPlayer = null;
 let _profileBioSavedRange = null;
 let _shipPickerPreviewToken = 0;
 let _shipPickerHydrateStarted = false;
+let _shipRegistryLoadPromise = null;
 
 function getViewerSession() {
   var key = 'ofs_discord_session';
@@ -2155,8 +2164,28 @@ function shipDisplayName(ship) {
   return make && model ? (make + ' ' + model) : model;
 }
 
+function currentShipRegistry() {
+  return (window.OFSSheets && OFSSheets.getShipRegistry) ? (OFSSheets.getShipRegistry() || []) : [];
+}
+
+async function ensureShipRegistryLoaded() {
+  let registry = currentShipRegistry();
+  if (registry.length) return registry;
+  if (!window.OFSSheets || !OFSSheets.load) return registry;
+  if (!_shipRegistryLoadPromise) {
+    _shipRegistryLoadPromise = OFSSheets.load()
+      .catch(function (err) {
+        console.warn('Profile ship registry load failed:', err && err.message ? err.message : err);
+      })
+      .then(function () { return currentShipRegistry(); })
+      .finally(function () { _shipRegistryLoadPromise = null; });
+  }
+  registry = await _shipRegistryLoadPromise;
+  return registry || [];
+}
+
 function getShipEntry(shipName) {
-  const registry = (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : [];
+  const registry = currentShipRegistry();
   const target = String(shipName || '').trim().toLowerCase();
   if (!target) return null;
   return registry.find(function (ship) {
@@ -2757,11 +2786,20 @@ function selectProfileShip(model) {
   setShipPickerOpen(false);
 }
 
-function populateShipSelect(selectedShip) {
+function appendShipPickerMessage(menu, title, detail) {
+  if (!menu) return;
+  const msg = document.createElement('div');
+  msg.className = 'profile-ship-option profile-ship-option-message';
+  msg.setAttribute('role', 'note');
+  msg.innerHTML = '<span class="profile-ship-option-placeholder">INFO</span><span><span class="profile-ship-option-name">' + _esc(title || '') + '</span><span class="profile-ship-option-make">' + _esc(detail || '') + '</span></span>';
+  menu.appendChild(msg);
+}
+
+function populateShipSelect(selectedShip, registryOverride) {
   const select = document.getElementById('profile-ship-select');
   const menu = document.getElementById('profile-ship-menu');
   if (!select) return;
-  const registry = (window.OFSSheets && OFSSheets.getShipRegistry) ? OFSSheets.getShipRegistry() : [];
+  const registry = Array.isArray(registryOverride) ? registryOverride : currentShipRegistry();
   const selectedEntry = getShipEntry(selectedShip);
   const selected = String((selectedEntry && selectedEntry.model) || selectedShip || '').trim();
   select.innerHTML = '<option value="">No ship selected</option>';
@@ -2777,6 +2815,10 @@ function populateShipSelect(selectedShip) {
   noneBtn.onclick = function () { selectProfileShip(''); };
   noneBtn.innerHTML = '<span class="profile-ship-option-placeholder">NONE</span><span><span class="profile-ship-option-name">No ship selected</span><span class="profile-ship-option-make">Clear assigned ship</span></span>';
   if (menu) menu.appendChild(noneBtn);
+
+  if (!registry.length) {
+    appendShipPickerMessage(menu, 'Ship Registry loading unavailable', 'Refresh the page if this does not populate.');
+  }
 
   registry
     .slice()
@@ -2811,17 +2853,32 @@ function populateShipSelect(selectedShip) {
   setShipPickerOpen(false);
 }
 
-function openProfileEditModal() {
+async function openProfileEditModal() {
   if (!_currentPlayer || !isSelfProfile(_currentPlayer)) return;
   const overlay = document.getElementById('profile-edit-overlay');
   const bioEditor = document.getElementById('profile-bio-editor');
   const statusEl = document.getElementById('profile-save-status');
+  const triggerMake = document.getElementById('profile-ship-trigger-make');
+  const menu = document.getElementById('profile-ship-menu');
   if (!overlay || !bioEditor) return;
   setProfileBioEditor(_currentPlayer.backStory || '');
-  populateShipSelect(_currentPlayer.ship || '');
+  populateShipSelect(_currentPlayer.ship || '', currentShipRegistry());
   if (statusEl) statusEl.textContent = '';
+  if (!currentShipRegistry().length) {
+    if (triggerMake) triggerMake.textContent = 'Loading Ship Registry…';
+    if (menu) {
+      menu.innerHTML = '';
+      appendShipPickerMessage(menu, 'Loading Ship Registry…', 'Fetching make, model, and images from OFS data.');
+    }
+  }
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
+  try {
+    const registry = await ensureShipRegistryLoaded();
+    if (overlay.classList.contains('open')) populateShipSelect(_currentPlayer.ship || '', registry);
+  } catch (err) {
+    if (statusEl) statusEl.textContent = 'Ship Registry could not load. Try refreshing the page.';
+  }
   setTimeout(function () { bioEditor.focus(); saveProfileBioSelection(); }, 0);
 }
 
