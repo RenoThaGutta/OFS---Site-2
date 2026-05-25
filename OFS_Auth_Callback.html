@@ -167,11 +167,27 @@
       show('state-error');
     }
 
+    function safeRedirectTarget(state) {
+      if (!state) return 'OFS_Admin.html';
+      try { state = decodeURIComponent(state); } catch (e) {}
+      if (/^https?:\/\//i.test(state) || state.indexOf('//') === 0) return 'OFS_Admin.html';
+      state = state.replace(/^\/+/, '');
+      if (!state || state.indexOf('auth/callback') === 0) return 'OFS_Admin.html';
+      return state;
+    }
+
+    function storeSession(session) {
+      var raw = JSON.stringify(session);
+      localStorage.setItem(SESSION_KEY, raw);
+      sessionStorage.setItem(SESSION_KEY, raw);
+    }
+
     // ── Main ──────────────────────────────────────────────
     (function run() {
       // 1. Read ?code= from URL
       var params = new URLSearchParams(window.location.search);
       var code   = params.get('code');
+      var state  = params.get('state');
       var error  = params.get('error');
 
       if (error) {
@@ -205,18 +221,19 @@
         }
 
         // 4. Store session
-        sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        storeSession({
           id:        data.id,
           username:  data.username,
           avatarUrl: data.avatarUrl || '',
-          token:     data.token
-        }));
+          token:     data.token,
+          isAdmin:   data.isAdmin || false
+        });
 
         show('state-success');
 
         // 5. Redirect to admin after brief confirmation flash
         setTimeout(function() {
-          location.replace('OFS_Admin.html');
+          location.replace(safeRedirectTarget(state));
         }, 900);
       })
       .catch(function(err) {

@@ -1880,6 +1880,24 @@
 const SESSION_KEY = 'ofs_discord_session';
 let currentAdmin = '';
 
+function getStoredSession() {
+  let raw = null;
+  try { raw = localStorage.getItem(SESSION_KEY); } catch (e) { raw = null; }
+  if (!raw) {
+    try {
+      raw = sessionStorage.getItem(SESSION_KEY);
+      if (raw) localStorage.setItem(SESSION_KEY, raw);
+    } catch (e) { raw = null; }
+  }
+  try { return raw ? JSON.parse(raw) : null; }
+  catch (e) { return null; }
+}
+
+function clearStoredSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
+}
+
 function grantAccess(name) {
   currentAdmin = name || 'Admin';
   document.getElementById('login-overlay').style.display = 'none';
@@ -1894,7 +1912,7 @@ function grantAccess(name) {
 // On load: check for a Discord session — must be an admin to enter
 (function checkSession() {
   try {
-    const s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    const s = getStoredSession();
     if (s && s.id && s.token && s.isAdmin) {
       grantAccess(s.username || 'Admin');
     } else if (s && s.id) {
@@ -1906,7 +1924,7 @@ function grantAccess(name) {
 }());
 
 function logout() {
-  sessionStorage.removeItem(SESSION_KEY);
+  clearStoredSession();
   currentAdmin = '';
   location.replace('OFS_Home.html');
 }
@@ -4314,7 +4332,7 @@ function rteGet(fieldId) {
     }
     try{
       if(status) status.textContent = 'Uploading image…';
-      const session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+      const session = getStoredSession();
       if(!session || !session.token || !session.isAdmin) throw new Error('Admin session expired. Please log in again.');
       const form = new FormData();
       form.append('file', file);

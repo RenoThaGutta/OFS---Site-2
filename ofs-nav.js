@@ -12,6 +12,16 @@
   var DISCORD_OAUTH_URL = 'https://discord.com/oauth2/authorize?client_id=1429228667564851383&response_type=code&redirect_uri=https%3A%2F%2Forderofthefallenstar.com%2Fauth%2Fcallback&scope=identify';
   var SESSION_KEY = 'ofs_discord_session';
 
+  function currentReturnPath() {
+    return window.location.pathname.replace(/^\//, '') + window.location.search + window.location.hash;
+  }
+
+  function buildOAuthUrl() {
+    var url = new URL(DISCORD_OAUTH_URL);
+    url.searchParams.set('state', currentReturnPath());
+    return url.toString();
+  }
+
   /* ── CSS ─────────────────────────────────────────────── */
   var CSS = [
     '.nav-user-zone{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;}',
@@ -88,12 +98,21 @@
 
   /* ── Session helpers ─────────────────────────────────── */
   function getSession() {
-    try { return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); }
+    var raw = null;
+    try { raw = localStorage.getItem(SESSION_KEY); } catch (e) { raw = null; }
+    if (!raw) {
+      try {
+        raw = sessionStorage.getItem(SESSION_KEY);
+        if (raw) localStorage.setItem(SESSION_KEY, raw); // migrate old tab-only sessions
+      } catch (e) { raw = null; }
+    }
+    try { return raw ? JSON.parse(raw) : null; }
     catch (e) { return null; }
   }
 
   function clearSession() {
-    sessionStorage.removeItem(SESSION_KEY);
+    try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+    try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
   }
 
   /* ── Rep level helper ────────────────────────────────── */
@@ -118,7 +137,7 @@
   function buildLoginBtn() {
     var a = document.createElement('a');
     a.className = 'nav-login-btn';
-    a.href = DISCORD_OAUTH_URL;
+    a.href = buildOAuthUrl();
     a.innerHTML = DISCORD_ICON + 'Login';
     return a;
   }

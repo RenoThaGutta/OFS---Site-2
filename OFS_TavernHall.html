@@ -1255,7 +1255,13 @@
   ═══════════════════════════════════════════ */
   (function () {
     var session = null;
-    try { session = JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null'); } catch (e) {}
+    try {
+      var sessionRaw = localStorage.getItem('ofs_discord_session') || sessionStorage.getItem('ofs_discord_session');
+      if (sessionRaw) {
+        session = JSON.parse(sessionRaw);
+        localStorage.setItem('ofs_discord_session', sessionRaw);
+      }
+    } catch (e) {}
 
     var localTav = loadTavernLS();
     var players  = (window.OFSData && typeof OFSData.getPlayers === 'function') ? OFSData.getPlayers() : [];

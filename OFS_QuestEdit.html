@@ -604,7 +604,16 @@ function esc(s) {
 }
 
 function getSession() {
-  try { return JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null'); }
+  var key = 'ofs_discord_session';
+  var raw = null;
+  try { raw = localStorage.getItem(key); } catch (e) { raw = null; }
+  if (!raw) {
+    try {
+      raw = sessionStorage.getItem(key);
+      if (raw) localStorage.setItem(key, raw);
+    } catch (e) { raw = null; }
+  }
+  try { return raw ? JSON.parse(raw) : null; }
   catch (e) { return null; }
 }
 

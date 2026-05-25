@@ -87,10 +87,26 @@
       setTimeout(function () { location.replace(dest); }, 1200);
     }
 
+    function safeRedirectTarget(state) {
+      if (!state) return PAGE_HOME;
+      try { state = decodeURIComponent(state); } catch (e) {}
+      if (/^https?:\/\//i.test(state) || state.indexOf('//') === 0) return PAGE_HOME;
+      state = state.replace(/^\/+/, '');
+      if (!state || state.indexOf('auth/callback') === 0) return PAGE_HOME;
+      return '../' + state;
+    }
+
+    function storeSession(session) {
+      var raw = JSON.stringify(session);
+      localStorage.setItem(SESSION_KEY, raw);
+      sessionStorage.setItem(SESSION_KEY, raw); // compatibility for older page code during rollout
+    }
+
     /* ── Main flow ───────────────────────────────────── */
     (function () {
       var params = new URLSearchParams(location.search);
       var code   = params.get('code');
+      var state  = params.get('state');
 
       if (!code) {
         showError('Invalid Callback', 'No authorisation code was received from Discord.');
@@ -106,14 +122,14 @@
       .then(function (r) { return r.json(); })
       .then(function (data) {
         if (data.ok) {
-          sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+          storeSession({
             id:        data.id,
             username:  data.username,
             avatarUrl: data.avatarUrl,
             token:     data.token,
             isAdmin:   data.isAdmin || false
-          }));
-          showSuccess(data.username, PAGE_HOME);
+          });
+          showSuccess(data.username, safeRedirectTarget(state));
         } else {
           showError('Authentication Failed', data.reason || 'Discord authentication failed.');
         }

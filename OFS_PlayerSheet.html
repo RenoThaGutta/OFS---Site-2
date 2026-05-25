@@ -1996,7 +1996,16 @@ let _currentPlayer = null;
 let _profileBioSavedRange = null;
 
 function getViewerSession() {
-  try { return JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null'); }
+  var key = 'ofs_discord_session';
+  var raw = null;
+  try { raw = localStorage.getItem(key); } catch (e) { raw = null; }
+  if (!raw) {
+    try {
+      raw = sessionStorage.getItem(key);
+      if (raw) localStorage.setItem(key, raw);
+    } catch (e) { raw = null; }
+  }
+  try { return raw ? JSON.parse(raw) : null; }
   catch (e) { return null; }
 }
 
@@ -2579,7 +2588,7 @@ function render(p) {
 
   // "Quests You're Leading" — self-view only
   try {
-    const viewerSession = JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null');
+    const viewerSession = getViewerSession();
     renderLedQuests(viewerSession && viewerSession.id, p.id);
   } catch (e) { /* no session — section stays hidden */ }
 
