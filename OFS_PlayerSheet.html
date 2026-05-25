@@ -410,7 +410,6 @@
       text-transform: uppercase;
       color: var(--silver);
     }
-    .profile-field textarea,
     .profile-field select {
       width: 100%;
       background: rgba(7,7,15,.9);
@@ -422,9 +421,66 @@
       font-size: .86rem;
       outline: none;
     }
-    .profile-field textarea { min-height: 140px; resize: vertical; line-height: 1.5; }
-    .profile-field textarea:focus,
     .profile-field select:focus { border-color: var(--b-gold); box-shadow: 0 0 0 2px rgba(201,168,76,.08); }
+    .profile-editor-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      background: rgba(7,7,15,.78);
+      border: 1px solid var(--b-dim);
+      border-bottom: 0;
+      border-radius: 4px 4px 0 0;
+    }
+    .profile-editor-toolbar select,
+    .profile-editor-toolbar button,
+    .profile-editor-toolbar input[type="color"] {
+      height: 30px;
+      background: rgba(10,10,22,.96);
+      border: 1px solid var(--b-dim);
+      border-radius: 3px;
+      color: var(--silver);
+      font-family: 'Cinzel', serif;
+      font-size: .62rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .profile-editor-toolbar select { padding: 0 8px; }
+    .profile-editor-toolbar button {
+      min-width: 34px;
+      padding: 0 9px;
+      cursor: pointer;
+    }
+    .profile-editor-toolbar button:hover { border-color: var(--b-gold); color: var(--gold-lt); }
+    .profile-editor-toolbar input[type="color"] { width: 38px; padding: 2px; cursor: pointer; }
+    .profile-rich-editor {
+      min-height: 170px;
+      max-height: 270px;
+      overflow-y: auto;
+      background: rgba(7,7,15,.9);
+      border: 1px solid var(--b-dim);
+      border-radius: 0 0 4px 4px;
+      color: var(--text);
+      padding: 12px 13px;
+      font-family: 'Crimson Text', serif;
+      font-size: 1.03rem;
+      line-height: 1.55;
+      outline: none;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
+    }
+    .profile-rich-editor:focus { border-color: var(--b-gold); box-shadow: 0 0 0 2px rgba(201,168,76,.08); }
+    .profile-rich-editor:empty::before {
+      content: attr(data-placeholder);
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    .profile-rich-editor div,
+    .profile-rich-editor p { margin: 0 0 .75em; }
+    .profile-rich-editor::-webkit-scrollbar { width: 7px; }
+    .profile-rich-editor::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
+    .profile-rich-editor::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
     .profile-modal-actions {
       display: flex;
       justify-content: flex-end;
@@ -1138,8 +1194,19 @@
       <button class="profile-modal-close" type="button" onclick="closeProfileEditModal()" aria-label="Close profile editor">&times;</button>
     </div>
     <div class="profile-field">
-      <label for="profile-bio-input">Bio</label>
-      <textarea id="profile-bio-input" maxlength="1200" placeholder="Write your place in the Order..."></textarea>
+      <label for="profile-bio-editor">Bio</label>
+      <div class="profile-editor-toolbar" aria-label="Bio formatting tools">
+        <select id="profile-bio-size" onchange="applyProfileBioSize(this.value); this.value='';" aria-label="Font size">
+          <option value="">Size</option>
+          <option value="small">Small</option>
+          <option value="default">Default</option>
+          <option value="large">Large</option>
+        </select>
+        <button type="button" onclick="formatProfileBio('bold')" aria-label="Bold"><b>B</b></button>
+        <button type="button" onclick="formatProfileBio('italic')" aria-label="Italic"><i>I</i></button>
+        <input id="profile-bio-color" type="color" value="#e8e0c8" onchange="formatProfileBio('foreColor', this.value)" aria-label="Text color">
+      </div>
+      <div id="profile-bio-editor" class="profile-rich-editor" contenteditable="true" role="textbox" aria-multiline="true" data-placeholder="Write your place in the Order..." onkeyup="saveProfileBioSelection()" onmouseup="saveProfileBioSelection()" onblur="saveProfileBioSelection()" onpaste="handleProfileBioPaste(event)"></div>
     </div>
     <div class="profile-field">
       <label for="profile-ship-select">Ship</label>
@@ -1675,6 +1742,7 @@ function buildLocked() {
 }
 
 let _currentPlayer = null;
+let _profileBioSavedRange = null;
 
 function getViewerSession() {
   try { return JSON.parse(sessionStorage.getItem('ofs_discord_session') || 'null'); }
@@ -1764,6 +1832,95 @@ function sanitizeBioHtml(rawBio) {
   const wrapper = document.createElement('div');
   Array.from(doc.body.firstChild.childNodes).forEach(function (child) { wrapper.appendChild(cleanNode(child)); });
   return wrapper.innerHTML;
+}
+
+function saveProfileBioSelection() {
+  const editor = document.getElementById('profile-bio-editor');
+  const sel = window.getSelection && window.getSelection();
+  if (!editor || !sel || !sel.rangeCount) return;
+  const anchor = sel.anchorNode;
+  if (anchor && editor.contains(anchor)) _profileBioSavedRange = sel.getRangeAt(0).cloneRange();
+}
+
+function restoreProfileBioSelection() {
+  const editor = document.getElementById('profile-bio-editor');
+  if (!editor) return false;
+  editor.focus();
+  const sel = window.getSelection && window.getSelection();
+  if (!sel || !_profileBioSavedRange) return false;
+  sel.removeAllRanges();
+  sel.addRange(_profileBioSavedRange);
+  return true;
+}
+
+function selectionInsideProfileBio() {
+  const editor = document.getElementById('profile-bio-editor');
+  const sel = window.getSelection && window.getSelection();
+  return !!(editor && sel && sel.rangeCount && editor.contains(sel.anchorNode));
+}
+
+function wrapProfileBioSelection(style) {
+  const editor = document.getElementById('profile-bio-editor');
+  if (!editor) return;
+  restoreProfileBioSelection();
+  const sel = window.getSelection && window.getSelection();
+  if (!sel || !sel.rangeCount || !selectionInsideProfileBio()) return;
+  const range = sel.getRangeAt(0);
+  if (range.collapsed) return;
+  const span = document.createElement('span');
+  Object.keys(style || {}).forEach(function (key) { span.style[key] = style[key]; });
+  span.appendChild(range.extractContents());
+  range.insertNode(span);
+  sel.removeAllRanges();
+  const nextRange = document.createRange();
+  nextRange.selectNodeContents(span);
+  sel.addRange(nextRange);
+  _profileBioSavedRange = nextRange.cloneRange();
+}
+
+function formatProfileBio(command, value) {
+  restoreProfileBioSelection();
+  if (!selectionInsideProfileBio()) return;
+  document.execCommand('styleWithCSS', false, true);
+  document.execCommand(command, false, value || null);
+  saveProfileBioSelection();
+  const editor = document.getElementById('profile-bio-editor');
+  if (editor) editor.focus();
+}
+
+function applyProfileBioSize(size) {
+  const sizes = {
+    small: '.92rem',
+    default: '1.03rem',
+    large: '1.22rem'
+  };
+  if (!sizes[size]) return;
+  wrapProfileBioSelection({ fontSize: sizes[size] });
+}
+
+function handleProfileBioPaste(event) {
+  event.preventDefault();
+  const data = event.clipboardData || window.clipboardData;
+  const html = data && data.getData('text/html');
+  const text = data && data.getData('text/plain');
+  if (html) document.execCommand('insertHTML', false, sanitizeBioHtml(html));
+  else if (text) document.execCommand('insertText', false, text);
+  saveProfileBioSelection();
+}
+
+function setProfileBioEditor(rawBio) {
+  const editor = document.getElementById('profile-bio-editor');
+  if (!editor) return;
+  editor.innerHTML = sanitizeBioHtml(rawBio || '');
+  _profileBioSavedRange = null;
+}
+
+function getProfileBioEditorValue() {
+  const editor = document.getElementById('profile-bio-editor');
+  if (!editor) return '';
+  const text = String(editor.innerText || '').replace(/\u00a0/g, ' ').trim();
+  if (!text) return '';
+  return sanitizeBioHtml(editor.innerHTML || '');
 }
 
 function openProfileBioModal() {
@@ -1858,15 +2015,15 @@ function populateShipSelect(selectedShip) {
 function openProfileEditModal() {
   if (!_currentPlayer || !isSelfProfile(_currentPlayer)) return;
   const overlay = document.getElementById('profile-edit-overlay');
-  const bioInput = document.getElementById('profile-bio-input');
+  const bioEditor = document.getElementById('profile-bio-editor');
   const statusEl = document.getElementById('profile-save-status');
-  if (!overlay || !bioInput) return;
-  bioInput.value = _currentPlayer.backStory || '';
+  if (!overlay || !bioEditor) return;
+  setProfileBioEditor(_currentPlayer.backStory || '');
   populateShipSelect(_currentPlayer.ship || '');
   if (statusEl) statusEl.textContent = '';
   overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
-  setTimeout(function () { bioInput.focus(); }, 0);
+  setTimeout(function () { bioEditor.focus(); saveProfileBioSelection(); }, 0);
 }
 
 function closeProfileEditModal() {
@@ -1881,13 +2038,12 @@ function closeProfileEditModal() {
 
 async function saveProfileEdits() {
   if (!_currentPlayer || !isSelfProfile(_currentPlayer)) return;
-  const bioInput = document.getElementById('profile-bio-input');
   const select = document.getElementById('profile-ship-select');
   const saveBtn = document.getElementById('profile-save-btn');
   const statusEl = document.getElementById('profile-save-status');
   const shipEntry = getShipEntry(select && select.value);
   const payload = {
-    backStory: bioInput ? bioInput.value.trim() : '',
+    backStory: getProfileBioEditorValue(),
     ship: shipEntry ? shipDisplayName(shipEntry) : (select ? select.value : ''),
     shipImage: shipEntry ? shipEntry.imageUrl : ''
   };
