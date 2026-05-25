@@ -691,6 +691,7 @@
       color: var(--gold-lt);
       text-align: center;
     }
+    .profile-ship-brand-panel:not(.logo-missing) .profile-ship-brand-name { display: none; }
     .profile-ship-brand-count {
       font-size: .58rem;
       letter-spacing: .14em;
@@ -3208,9 +3209,11 @@ function renderShipBrandPanel(matches, brand) {
   const logoUrl = make === 'All Brands' ? '' : shipLogoUrlForMake(make);
   const code = make === 'All Brands' ? 'OFS' : shipMakeCode(make);
   const shipCount = Array.isArray(matches) ? matches.length : 0;
-  const logoHtml = logoUrl
-    ? '<img class="profile-ship-brand-logo-img' + shipMakeLogoClass(make) + '" src="' + _esc(logoUrl) + '" alt="" loading="lazy" decoding="async" onerror="this.outerHTML=\'<span class=&quot;profile-ship-brand-logo-placeholder&quot;>' + _esc(code) + '</span>\'">'
+  const hasLogo = !!logoUrl;
+  const logoHtml = hasLogo
+    ? '<img class="profile-ship-brand-logo-img' + shipMakeLogoClass(make) + '" src="' + _esc(logoUrl) + '" alt="" loading="lazy" decoding="async" onerror="this.closest(\'.profile-ship-brand-panel\').classList.add(\'logo-missing\');this.outerHTML=\'<span class=&quot;profile-ship-brand-logo-placeholder&quot;>' + _esc(code) + '</span>\'">'
     : '<span class="profile-ship-brand-logo-placeholder">' + _esc(code) + '</span>';
+  panel.classList.toggle('logo-missing', !hasLogo);
   panel.innerHTML = '<div class="profile-ship-brand-logo-frame">' + logoHtml + '</div>' +
     '<div class="profile-ship-brand-name">' + _esc(make) + '</div>' +
     '<div class="profile-ship-brand-count">' + _esc(shipCount + ' ship' + (shipCount === 1 ? '' : 's')) + '</div>';
