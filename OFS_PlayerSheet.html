@@ -353,6 +353,69 @@
       color: var(--silver-dim);
       text-align: center;
     }
+    .profile-ship-source { display: none; }
+    .profile-ship-enrichment {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(201,168,76,.12);
+    }
+    .profile-ship-enrichment.loading,
+    .profile-ship-enrichment.empty {
+      font-family: 'Crimson Text', serif;
+      font-style: italic;
+      font-size: .92rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+    .profile-ship-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .profile-ship-meta {
+      min-height: 52px;
+      padding: 9px 10px;
+      background: rgba(7,7,15,.48);
+      border: 1px solid rgba(201,168,76,.11);
+      border-radius: 4px;
+    }
+    .profile-ship-meta-label {
+      display: block;
+      margin-bottom: 5px;
+      font-family: 'Cinzel', serif;
+      font-size: .55rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+    .profile-ship-meta-value {
+      display: block;
+      font-size: .82rem;
+      line-height: 1.3;
+      color: var(--text);
+    }
+    .profile-ship-desc {
+      margin-top: 12px;
+      font-family: 'Crimson Text', serif;
+      font-size: .9rem;
+      line-height: 1.45;
+      color: rgba(221,216,204,.84);
+    }
+    .profile-ship-api-link {
+      display: inline-flex;
+      margin-top: 12px;
+      font-family: 'Cinzel', serif;
+      font-size: .58rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      opacity: .88;
+    }
+    .profile-ship-api-link:hover { color: var(--gold-lt); opacity: 1; }
+    @media (max-width: 700px) {
+      .profile-ship-meta-grid { grid-template-columns: 1fr; }
+    }
 
     /* ── Profile edit modal ─────────────────────────────── */
     .profile-modal-overlay {
@@ -2041,6 +2104,184 @@ function getShipEntry(shipName) {
   }) || null;
 }
 
+const SCWIKI_API_BASE = 'https://api.star-citizen.wiki/api';
+const SCWIKI_CACHE_PREFIX = 'ofs_scwiki_cache:';
+const SCWIKI_SEARCH_TTL = 10 * 60 * 1000;
+const SCWIKI_VEHICLE_TTL = 12 * 60 * 60 * 1000;
+let _shipEnrichmentToken = 0;
+
+function shipApiQuery(playerShip, shipEntry) {
+  const ship = String(playerShip || '').trim();
+  const model = String(shipEntry && shipEntry.model || '').trim();
+  const make = String(shipEntry && shipEntry.make || '').trim();
+  if (model) return make ? (make + ' ' + model) : model;
+  return ship;
+}
+
+function normalizeShipName(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function scWikiCacheGet(key, ttl) {
+  try {
+    const raw = localStorage.getItem(SCWIKI_CACHE_PREFIX + key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.cachedAt || (Date.now() - parsed.cachedAt) > ttl) return null;
+    return parsed.data;
+  } catch (e) { return null; }
+}
+
+function scWikiCacheSet(key, data) {
+  try {
+    localStorage.setItem(SCWIKI_CACHE_PREFIX + key, JSON.stringify({ cachedAt: Date.now(), data: data }));
+  } catch (e) { /* cache best-effort only */ }
+}
+
+async function scWikiFetch(path, params, ttl) {
+  const query = new URLSearchParams(params || {});
+  const cacheKey = path + '?' + query.toString();
+  const cached = scWikiCacheGet(cacheKey, ttl);
+  if (cached) return cached;
+  const url = SCWIKI_API_BASE + path + (query.toString() ? '?' + query.toString() : '');
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error('Star Citizen Wiki API returned ' + res.status);
+  const data = await res.json();
+  scWikiCacheSet(cacheKey, data);
+  return data;
+}
+
+function vehicleSlugFromApiUrl(apiUrl) {
+  const raw = String(apiUrl || '').trim();
+  const m = raw.match(/\/api\/vehicles\/([^/?#]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+
+function pickVehicleSearchResult(searchResponse, query) {
+  const groups = Array.isArray(searchResponse && searchResponse.data) ? searchResponse.data : [];
+  const vehicleGroup = groups.find(function (group) { return group && group.type === 'vehicles'; });
+  const results = vehicleGroup && Array.isArray(vehicleGroup.results) ? vehicleGroup.results : [];
+  if (!results.length) return null;
+  const q = normalizeShipName(query);
+  return results.slice().sort(function (a, b) {
+    function score(item) {
+      const name = normalizeShipName(item && item.name);
+      const className = normalizeShipName(item && item.class_name);
+      let points = 0;
+      if (name === q) points += 100;
+      if (name.endsWith(' ' + q) || name === q) points += 35;
+      if (name.indexOf(q) !== -1) points += 20;
+      if (className.indexOf(q) !== -1) points += 8;
+      if (/bis|expedition|paint|variant/.test(name)) points -= 8;
+      return points;
+    }
+    return score(b) - score(a);
+  })[0];
+}
+
+function formatMeters(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? (n + 'm') : '';
+}
+
+function formatMass(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? Math.round(n).toLocaleString() + ' kg' : '';
+}
+
+function shipApiImage(vehicle) {
+  const images = Array.isArray(vehicle && vehicle.images) ? vehicle.images : [];
+  const img = images[0] || null;
+  return img ? (img.thumbnail_url || img.original_url || '') : '';
+}
+
+function localizedApiText(value) {
+  if (!value) return '';
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (typeof value === 'object') {
+    return String(value.en_EN || value.en_US || value.en || value.label || value.name || value.code || '').trim();
+  }
+  return '';
+}
+
+function compactShipApiData(vehicle) {
+  const dims = vehicle && (vehicle.sizes || vehicle.dimension || {});
+  const crew = vehicle && vehicle.crew;
+  let crewValue = '';
+  if (crew && typeof crew === 'object') {
+    const min = crew.min || crew.minimum || crew.min_crew;
+    const max = crew.max || crew.maximum || crew.max_crew;
+    crewValue = min && max ? (min === max ? String(min) : (min + '–' + max)) : (min || max || '');
+  } else if (crew) crewValue = String(crew);
+  const sizeLabel = localizedApiText(vehicle && vehicle.size);
+  const sizeClass = vehicle && vehicle.size_class ? ('Size ' + vehicle.size_class) : '';
+  return {
+    name: vehicle && (vehicle.game_name || vehicle.name),
+    manufacturer: vehicle && vehicle.manufacturer && (vehicle.manufacturer.name || vehicle.manufacturer.display_name || vehicle.manufacturer.code),
+    role: localizedApiText(vehicle && (vehicle.role || vehicle.career)),
+    career: localizedApiText(vehicle && vehicle.career),
+    size: [sizeLabel, sizeClass].filter(Boolean).join(' · '),
+    dimensions: [formatMeters(dims.length), formatMeters(dims.beam || dims.width), formatMeters(dims.height)].filter(Boolean).join(' × '),
+    cargo: vehicle && Number(vehicle.cargo_capacity) > 0 ? (Number(vehicle.cargo_capacity).toLocaleString() + ' SCU') : '',
+    crew: crewValue,
+    mass: formatMass(vehicle && (vehicle.mass_total || vehicle.mass)),
+    status: localizedApiText(vehicle && vehicle.production_status),
+    description: localizedApiText(vehicle && vehicle.description),
+    webUrl: vehicle && (vehicle.web_url || vehicle.link),
+    imageUrl: shipApiImage(vehicle)
+  };
+}
+
+function renderShipEnrichment(data) {
+  const el = document.getElementById('js-ship-enrichment');
+  if (!el || !data) return;
+  const rows = [
+    ['Role', data.role || data.career],
+    ['Crew', data.crew]
+  ].filter(function (row) { return !!String(row[1] || '').trim(); });
+  if (!rows.length && !data.description) {
+    el.className = 'profile-ship-enrichment empty';
+    el.textContent = 'No Star Citizen Wiki enrichment found for this ship.';
+    return;
+  }
+  el.className = 'profile-ship-enrichment';
+  el.innerHTML = (rows.length ? '<div class="profile-ship-meta-grid">' + rows.map(function (row) {
+    return '<div class="profile-ship-meta"><span class="profile-ship-meta-label">' + _esc(row[0]) + '</span><span class="profile-ship-meta-value">' + _esc(row[1]) + '</span></div>';
+  }).join('') + '</div>' : '') +
+    (data.description ? '<div class="profile-ship-desc">' + _esc(data.description).slice(0, 260) + (data.description.length > 260 ? '…' : '') + '</div>' : '');
+}
+
+async function enhanceProfileShip(player, shipEntry, token) {
+  const el = document.getElementById('js-ship-enrichment');
+  if (!el || !player || !String(player.ship || '').trim()) return;
+  const query = shipApiQuery(player.ship, shipEntry);
+  if (!query) return;
+  el.className = 'profile-ship-enrichment loading';
+  el.textContent = 'Enriching ship record from Star Citizen Wiki…';
+  try {
+    const search = await scWikiFetch('/search', { 'filter[query]': query }, SCWIKI_SEARCH_TTL);
+    const picked = pickVehicleSearchResult(search, query);
+    const slug = vehicleSlugFromApiUrl(picked && picked.api_url);
+    if (!slug) throw new Error('No matching vehicle record');
+    const detail = await scWikiFetch('/vehicles/' + encodeURIComponent(slug), {}, SCWIKI_VEHICLE_TTL);
+    if (token !== _shipEnrichmentToken) return;
+    const data = compactShipApiData(detail && detail.data);
+    renderShipEnrichment(data);
+
+    const imgEl = document.getElementById('js-profile-ship-api-img');
+    if (imgEl && data.imageUrl && !imgEl.getAttribute('src')) {
+      imgEl.setAttribute('src', data.imageUrl);
+      imgEl.style.display = '';
+    }
+    const makeEl = document.getElementById('js-profile-ship-api-make');
+    if (makeEl && data.manufacturer && !makeEl.textContent.trim()) makeEl.textContent = data.manufacturer;
+  } catch (err) {
+    if (token !== _shipEnrichmentToken) return;
+    el.className = 'profile-ship-enrichment empty';
+    el.textContent = 'Star Citizen Wiki enrichment unavailable right now.';
+  }
+}
+
 function sanitizeBioHtml(rawBio) {
   const raw = String(rawBio || '').trim();
   if (!raw) return '';
@@ -2239,17 +2480,21 @@ function renderProfileRecord(p) {
       '<div class="profile-empty-note">No bio recorded yet. Use Edit Profile to add your personal record.</div>';
   }
 
+  const token = ++_shipEnrichmentToken;
   let shipHtml = '<div class="profile-record-label">Assigned Ship</div>';
-  if (shipImage) {
-    shipHtml += '<img class="profile-ship-img" src="' + _esc(shipImage) + '" alt="' + _esc(p.ship || 'Ship') + '" onerror="this.remove()">';
-  }
+  shipHtml += '<img class="profile-ship-img" id="js-profile-ship-api-img" ' +
+    (shipImage ? 'src="' + _esc(shipImage) + '" ' : 'style="display:none" ') +
+    'alt="' + _esc(p.ship || 'Ship') + '" onerror="this.style.display=&quot;none&quot;;this.removeAttribute(&quot;src&quot;)">';
   if (hasShip) {
     shipHtml += '<div class="profile-ship-name">' + _esc(p.ship) + '</div>';
-    if (shipEntry && shipEntry.make) shipHtml += '<div class="profile-ship-make">' + _esc(shipEntry.make) + '</div>';
+    shipHtml += '<div class="profile-ship-make" id="js-profile-ship-api-make">' + _esc(shipEntry && shipEntry.make ? shipEntry.make : '') + '</div>';
+    shipHtml += '<div class="profile-ship-source" aria-hidden="true">Star Citizen Wiki reference only · no OFS Sheet writes</div>';
+    shipHtml += '<div class="profile-ship-enrichment loading" id="js-ship-enrichment">Enriching ship record from Star Citizen Wiki…</div>';
   } else {
     shipHtml += '<div class="profile-empty-note">No ship selected yet.</div>';
   }
   shipCard.innerHTML = shipHtml;
+  if (hasShip) enhanceProfileShip(p, shipEntry, token);
 }
 
 function setShipPickerOpen(open) {
