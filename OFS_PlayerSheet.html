@@ -561,6 +561,24 @@
       transition: transform .15s;
     }
     .profile-ship-picker.open .profile-ship-trigger-caret { transform: rotate(180deg); }
+    .profile-ship-search {
+      display: none;
+      width: 100%;
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: rgba(7,7,15,.94);
+      border: 1px solid var(--b-dim);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: .82rem;
+      outline: none;
+    }
+    .profile-ship-search:focus {
+      border-color: var(--b-gold);
+      box-shadow: 0 0 0 2px rgba(201,168,76,.08);
+    }
+    .profile-ship-picker.open .profile-ship-search { display: block; }
     .profile-ship-menu {
       display: none;
       position: static;
@@ -1577,6 +1595,7 @@
           </span>
           <span class="profile-ship-trigger-caret" aria-hidden="true">▾</span>
         </button>
+        <input class="profile-ship-search" id="profile-ship-search" type="search" placeholder="Search by make or model…" autocomplete="off" oninput="handleShipPickerSearch(this.value)">
         <div class="profile-ship-menu" id="profile-ship-menu" role="listbox" aria-label="Ship Registry"></div>
         <div class="profile-ship-preview" id="profile-ship-preview" aria-live="polite"></div>
       </div>
@@ -1600,10 +1619,10 @@
   </div>
 </div>
 
-<script src="header_bar.js?v=profile-ship-picker-20260525"></script>
-<script src="ofs-data.js?v=profile-ship-picker-20260525"></script>
-<script src="ofs-sheets.js?v=profile-ship-picker-20260525"></script>
-<script src="ofs-nav.js?v=profile-ship-picker-20260525"></script>
+<script src="header_bar.js?v=profile-ship-search-20260525"></script>
+<script src="ofs-data.js?v=profile-ship-search-20260525"></script>
+<script src="ofs-sheets.js?v=profile-ship-search-20260525"></script>
+<script src="ofs-nav.js?v=profile-ship-search-20260525"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD
@@ -2130,6 +2149,10 @@ let _profileBioSavedRange = null;
 let _shipPickerPreviewToken = 0;
 let _shipPickerHydrateStarted = false;
 let _shipRegistryLoadPromise = null;
+let _shipPickerRegistry = [];
+let _shipPickerSelected = '';
+let _shipPickerQuery = '';
+const SHIP_PICKER_MAX_OPTIONS = 60;
 
 function getViewerSession() {
   var key = 'ofs_discord_session';
@@ -2678,8 +2701,11 @@ function setShipPickerOpen(open) {
   picker.classList.toggle('open', !!open);
   trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
   if (open && menu) {
-    hydrateShipPickerApiImages();
-    setTimeout(function () { menu.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 0);
+    setTimeout(function () {
+      menu.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const search = document.getElementById('profile-ship-search');
+      if (search) search.focus({ preventScroll: true });
+    }, 0);
   }
 }
 
@@ -2772,6 +2798,7 @@ async function hydrateShipPickerApiImages() {
 function selectProfileShip(model) {
   const select = document.getElementById('profile-ship-select');
   if (select) select.value = String(model || '');
+  _shipPickerSelected = String(model || '');
   const shipEntry = getShipEntry(model);
   const currentEntry = getShipEntry(_currentPlayer && _currentPlayer.ship);
   const fallbackImage = shipEntry && currentEntry && String(shipEntry.model || '') === String(currentEntry.model || '') ? _currentPlayer.shipImage : '';
@@ -2795,32 +2822,94 @@ function appendShipPickerMessage(menu, title, detail) {
   menu.appendChild(msg);
 }
 
+function shipPickerMatches(ship, query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return true;
+  const model = String(ship && ship.model || '').toLowerCase();
+  const make = String(ship && ship.make || '').toLowerCase();
+  const display = String(shipDisplayName(ship) || '').toLowerCase();
+  return model.indexOf(q) !== -1 || make.indexOf(q) !== -1 || display.indexOf(q) !== -1;
+}
+
+function shipPickerOptionHtml(ship) {
+  const imageUrl = normalizeImageUrl(ship && ship.imageUrl);
+  return (imageUrl
+    ? '<img class="profile-ship-option-img" loading="lazy" decoding="async" src="' + _esc(imageUrl) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;profile-ship-option-placeholder&quot;>SHIP</span>\'">'
+    : '<span class="profile-ship-option-placeholder">SHIP</span>') +
+    '<span><span class="profile-ship-option-name">' + _esc(ship.model) + '</span>' +
+    '<span class="profile-ship-option-make">' + _esc(ship.make || 'Unknown make') + '</span></span>';
+}
+
+function renderShipPickerOptions() {
+  const menu = document.getElementById('profile-ship-menu');
+  if (!menu) return;
+  menu.innerHTML = '';
+
+  const selected = String(_shipPickerSelected || '').trim();
+  const query = String(_shipPickerQuery || '').trim();
+
+  if (!query) {
+    const noneBtn = document.createElement('button');
+    noneBtn.type = 'button';
+    noneBtn.className = 'profile-ship-option' + (!selected ? ' active' : '');
+    noneBtn.setAttribute('role', 'option');
+    noneBtn.setAttribute('aria-selected', !selected ? 'true' : 'false');
+    noneBtn.setAttribute('data-model', '');
+    noneBtn.onclick = function () { selectProfileShip(''); };
+    noneBtn.innerHTML = '<span class="profile-ship-option-placeholder">NONE</span><span><span class="profile-ship-option-name">No ship selected</span><span class="profile-ship-option-make">Clear assigned ship</span></span>';
+    menu.appendChild(noneBtn);
+  }
+
+  if (!_shipPickerRegistry.length) {
+    appendShipPickerMessage(menu, 'Ship Registry loading unavailable', 'Refresh the page if this does not populate.');
+    return;
+  }
+
+  const matches = _shipPickerRegistry
+    .filter(function (ship) { return ship && ship.model && shipPickerMatches(ship, query); })
+    .sort(function (a, b) { return String(a.model || '').localeCompare(String(b.model || '')); });
+
+  const visible = matches.slice(0, SHIP_PICKER_MAX_OPTIONS);
+  visible.forEach(function (ship) {
+    const active = String(ship.model).trim() === selected;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'profile-ship-option' + (active ? ' active' : '');
+    btn.setAttribute('role', 'option');
+    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    btn.setAttribute('data-model', ship.model);
+    btn.onclick = function () { selectProfileShip(ship.model); };
+    btn.innerHTML = shipPickerOptionHtml(ship);
+    menu.appendChild(btn);
+  });
+
+  if (!matches.length) {
+    appendShipPickerMessage(menu, 'No ships found', 'Try a ship model or manufacturer name.');
+  } else if (matches.length > visible.length) {
+    appendShipPickerMessage(menu, 'Showing ' + visible.length + ' of ' + matches.length + ' matches', 'Keep typing to narrow the ship registry.');
+  }
+}
+
+function handleShipPickerSearch(value) {
+  _shipPickerQuery = String(value || '').trim();
+  renderShipPickerOptions();
+}
+
 function populateShipSelect(selectedShip, registryOverride) {
   const select = document.getElementById('profile-ship-select');
-  const menu = document.getElementById('profile-ship-menu');
+  const search = document.getElementById('profile-ship-search');
   if (!select) return;
   const registry = Array.isArray(registryOverride) ? registryOverride : currentShipRegistry();
   const selectedEntry = getShipEntry(selectedShip);
   const selected = String((selectedEntry && selectedEntry.model) || selectedShip || '').trim();
   select.innerHTML = '<option value="">No ship selected</option>';
-  if (menu) menu.innerHTML = '';
   _shipPickerHydrateStarted = false;
+  _shipPickerRegistry = registry.slice();
+  _shipPickerSelected = selected;
+  _shipPickerQuery = '';
+  if (search) search.value = '';
 
-  const noneBtn = document.createElement('button');
-  noneBtn.type = 'button';
-  noneBtn.className = 'profile-ship-option' + (!selected ? ' active' : '');
-  noneBtn.setAttribute('role', 'option');
-  noneBtn.setAttribute('aria-selected', !selected ? 'true' : 'false');
-  noneBtn.setAttribute('data-model', '');
-  noneBtn.onclick = function () { selectProfileShip(''); };
-  noneBtn.innerHTML = '<span class="profile-ship-option-placeholder">NONE</span><span><span class="profile-ship-option-name">No ship selected</span><span class="profile-ship-option-make">Clear assigned ship</span></span>';
-  if (menu) menu.appendChild(noneBtn);
-
-  if (!registry.length) {
-    appendShipPickerMessage(menu, 'Ship Registry loading unavailable', 'Refresh the page if this does not populate.');
-  }
-
-  registry
+  _shipPickerRegistry
     .slice()
     .sort(function (a, b) { return String(a.model || '').localeCompare(String(b.model || '')); })
     .forEach(function (ship) {
@@ -2830,25 +2919,9 @@ function populateShipSelect(selectedShip, registryOverride) {
       opt.textContent = ship.make ? (ship.model + ' — ' + ship.make) : ship.model;
       if (String(ship.model).trim() === selected) opt.selected = true;
       select.appendChild(opt);
-
-      if (menu) {
-        const btn = document.createElement('button');
-        const imageUrl = normalizeImageUrl(ship.imageUrl);
-        const active = String(ship.model).trim() === selected;
-        btn.type = 'button';
-        btn.className = 'profile-ship-option' + (active ? ' active' : '');
-        btn.setAttribute('role', 'option');
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
-        btn.setAttribute('data-model', ship.model);
-        btn.onclick = function () { selectProfileShip(ship.model); };
-        btn.innerHTML = (imageUrl
-          ? '<img class="profile-ship-option-img" loading="lazy" src="' + _esc(imageUrl) + '" alt="" onerror="this.outerHTML=\'<span class=&quot;profile-ship-option-placeholder&quot;>SHIP</span>\'">'
-          : '<span class="profile-ship-option-placeholder">SHIP</span>') +
-          '<span><span class="profile-ship-option-name">' + _esc(ship.model) + '</span>' +
-          '<span class="profile-ship-option-make">' + _esc(ship.make || 'Unknown make') + '</span></span>';
-        menu.appendChild(btn);
-      }
     });
+
+  renderShipPickerOptions();
   renderShipPickerPreview(selectedEntry, _currentPlayer && _currentPlayer.shipImage);
   setShipPickerOpen(false);
 }
