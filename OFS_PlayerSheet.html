@@ -905,11 +905,22 @@
     }
     .banner-progress-showcase .bp-medal-end.locked { filter: grayscale(1) brightness(.48) drop-shadow(0 0 12px rgba(201,168,76,.16)); }
     .banner-progress-showcase .bp-markers {
-      grid-template-columns: repeat(4, 1fr);
+      display: block;
+      position: relative;
+      height: 16px;
       margin-top: 7px;
-      gap: 6px;
     }
-    .banner-progress-showcase .bp-marker { font-size: .62rem; }
+    .banner-progress-showcase .bp-marker {
+      position: absolute;
+      top: 0;
+      font-size: .62rem;
+      white-space: nowrap;
+      transform: translateX(-50%);
+    }
+    .banner-progress-showcase .bp-marker:nth-child(1) { left: 0; transform: none; }
+    .banner-progress-showcase .bp-marker:nth-child(2) { left: 33.333%; }
+    .banner-progress-showcase .bp-marker:nth-child(3) { left: 66.667%; }
+    .banner-progress-showcase .bp-marker:nth-child(4) { right: 0; transform: none; text-align: right; }
     .banner-progress-showcase .bp-pts-label {
       margin-top: 3px;
       font-size: .66rem;
