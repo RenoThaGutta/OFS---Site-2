@@ -243,6 +243,7 @@
       padding: 22px 24px;
       box-shadow: inset 0 1px 0 rgba(201,168,76,.07), 0 0 30px rgba(0,0,0,.18);
     }
+    .profile-bio-card { padding-bottom: 48px; }
     .profile-bio-card::before,
     .profile-ship-card::before {
       content: '';
@@ -266,7 +267,7 @@
       font-size: 1.03rem;
       line-height: 1.62;
       color: var(--text);
-      max-height: 12rem;
+      max-height: 14.5rem;
       overflow-y: auto;
       padding-right: 10px;
       scrollbar-width: thin;
@@ -286,9 +287,12 @@
     .profile-bio-text a,
     .profile-bio-modal-body a { color: var(--gold); }
     .profile-bio-actions {
+      position: absolute;
+      right: 24px;
+      bottom: 13px;
       display: flex;
       justify-content: flex-end;
-      margin-top: 12px;
+      margin-top: 0;
     }
     .profile-bio-expand {
       background: rgba(201,168,76,.06);
