@@ -5214,10 +5214,14 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
       <div class="tf-section-head" style="display:flex;align-items:center;justify-content:space-between">${isNew?'New Banner':'Edit Banner'}${isNew?'':`<button type="button" class="bp-view-page-btn" onclick="openPagePreview('OFS_Banner.html?banner='+encodeURIComponent('${escHtml(def.name)}'))">View Page &rarr;</button>`}</div>
       <div class="tf-2col">
         <div class="tf-row"><div class="hf-label">Banner Name *</div>
-          <input id="bf-name" class="hf-input" type="text" value="${escHtml(def.name)}"${isNew?'':' readonly style="opacity:.6;cursor:default"'} placeholder="e.g. The Artificer"></div>
-        <div class="tf-row"><div class="hf-label">Medal Name</div>
-          <input id="bf-medalname" class="hf-input" type="text" value="${escHtml(def.medalName)}" placeholder="e.g. Medal of the Artificer"></div>
+          <input id="bf-name" class="hf-input" type="text" value="${escHtml(def.name)}"${isNew?'':' readonly style="opacity:.6;cursor:default"'} placeholder="e.g. The Artificer">
+          ${!isNew?`<button type="button" class="ctrl-btn" style="margin-top:8px;width:100%" onclick="banManageRename('${escHtml(def.name)}')">Rename Banner / Sync Members</button>`:''}
+        </div>
+        <div class="tf-row"><div class="hf-label">Discord Role ID</div>
+          <input id="bf-roleid" class="hf-input" type="text" value="${escHtml(def.roleId||'')}" placeholder="Role ID for Discord sync"></div>
       </div>
+      <div class="tf-row"><div class="hf-label">Medal Name</div>
+        <input id="bf-medalname" class="hf-input" type="text" value="${escHtml(def.medalName)}" placeholder="e.g. Medal of the Artificer"></div>
       <div class="tf-row" style="display:grid;grid-template-columns:1fr 1.8fr;gap:20px;align-items:start">
         <!-- Medal Image (left) -->
         <div>
@@ -5320,7 +5324,7 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
   }
 
   window.banManageNew = function(){
-    showBanForm({name:'',subRank0:'Apprentice',subRank1:'',subRank2:'',subRankMaster:'',medalName:'',medalUrl:'',bannerImageUrl:'',description:''},true);
+    showBanForm({name:'',roleId:'',subRank0:'Apprentice',subRank1:'',subRank2:'',subRankMaster:'',medalName:'',medalUrl:'',bannerImageUrl:'',description:''},true);
   };
   window.banManageEdit = function(name){
     const defs=(OFSSheets.getBannerDefs&&OFSSheets.getBannerDefs())||[];
@@ -5332,7 +5336,8 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     const name = (document.getElementById('bf-name')||{}).value?.trim();
     if(!name){ showToast('Banner name is required'); return; }
     const def={
-      name, subRank0:document.getElementById('bf-r0').value.trim()||'Apprentice',
+      name, roleId:(document.getElementById('bf-roleid')||{}).value?.trim()||'',
+      subRank0:document.getElementById('bf-r0').value.trim()||'Apprentice',
       subRank1:document.getElementById('bf-r1').value.trim(),
       subRank2:document.getElementById('bf-r2').value.trim(),
       subRankMaster:document.getElementById('bf-rm').value.trim(),
@@ -5351,6 +5356,106 @@ document.querySelector('[data-tab="pages"]').addEventListener('click',()=>{
     showToast('Banner saved');
     renderBanManageList();
     showBanForm(def,false);
+  };
+
+
+  function renameBannerInMedalsValue(medalsValue, oldName, newName){
+    return String(medalsValue || '')
+      .split(',')
+      .map(x => x.trim())
+      .filter(Boolean)
+      .map(x => x === oldName ? newName : x)
+      .join(',');
+  }
+
+  function playerMedalsValueForRename(p, oldName, newName){
+    const medals = [];
+    const banners = p && p.banners ? p.banners : {};
+    Object.keys(banners).forEach(function(bn){
+      if(banners[bn] && banners[bn].m) medals.push(bn === oldName ? newName : bn);
+    });
+    return medals.join(',');
+  }
+
+  window.banManageRename = async function(oldName){
+    const defs=(OFSSheets.getBannerDefs&&OFSSheets.getBannerDefs())||[];
+    const def=defs.find(d=>d.name===oldName);
+    if(!def){ showToast('Banner not found'); return; }
+    const newName=(prompt('Rename banner "'+oldName+'" to:', oldName)||'').trim();
+    if(!newName || newName===oldName) return;
+    if(defs.some(d=>d.name===newName)){ showToast('A banner with that name already exists'); return; }
+
+    const affectedActive = PLAYERS.filter(p=>p.activeBanner===oldName);
+    const affectedMedals = PLAYERS.filter(p=>p.banners && p.banners[oldName] && p.banners[oldName].m);
+    const fleets = (OFSSheets.getFleets&&OFSSheets.getFleets())||[];
+    const affectedFleets = fleets.filter(f=>f.banner===oldName);
+    const roleId = (def.roleId||'').trim();
+
+    const preview = [
+      'Rename banner:',
+      oldName+' → '+newName,
+      '',
+      'This will update:',
+      '- Banners row: 1',
+      '- Member Log active banner cells: '+affectedActive.length,
+      '- Member Log medal cells: '+affectedMedals.length,
+      '- Fleets banner rows: '+affectedFleets.length,
+      '- Banners points per user: formula-driven; no direct edit',
+      '- Discord Role ID: '+(roleId||'not set'),
+      '',
+      'Type RENAME '+oldName+' to confirm.'
+    ].join('\n');
+    const confirmation=(prompt(preview)||'').trim();
+    if(confirmation !== 'RENAME '+oldName){ showToast('Rename cancelled'); return; }
+
+    const renamedDef = Object.assign({}, def, { name:newName });
+    showToast('Renaming banner…');
+    try {
+      await OFSSheets.saveBannerDef(renamedDef, false, oldName);
+
+      for(const p of PLAYERS){
+        const nextBanner = p.activeBanner === oldName ? newName : p.activeBanner;
+        const hadMedal = p.banners && p.banners[oldName] && p.banners[oldName].m;
+        if(nextBanner !== p.activeBanner || hadMedal){
+          await OFSSheets.updateMemberBanner(p.id, nextBanner, playerMedalsValueForRename(p, oldName, newName));
+          p.activeBanner = nextBanner;
+          if(p.banners && p.banners[oldName]){
+            p.banners[newName] = Object.assign({}, p.banners[oldName]);
+            delete p.banners[oldName];
+          }
+        }
+      }
+
+      for(const f of affectedFleets){
+        await OFSSheets.saveFleetAssignment(Object.assign({}, f, { banner:newName }));
+        f.banner = newName;
+      }
+
+      var discordQueued = false;
+      try {
+        await OFSSheets.appendBannerRenameRequest([
+          new Date().toISOString(), oldName, newName, roleId,
+          affectedActive.length, affectedMedals.length, affectedFleets.length,
+          'Pending Discord role rename', 'admin_ui'
+        ]);
+        discordQueued = true;
+      } catch(queueErr) {
+        console.warn('Banner rename queue append failed:', queueErr);
+      }
+      window._lastBannerRenameDiscordQueued = discordQueued;
+    } catch(e){
+      console.error(e);
+      showToast('Rename failed: '+(e.message||e));
+      return;
+    }
+
+    const idx=defs.findIndex(d=>d.name===oldName);
+    if(idx>=0) defs[idx]=renamedDef;
+    BANNER_NAMES=BANNER_NAMES.map(n=>n===oldName?newName:n);
+    showToast(window._lastBannerRenameDiscordQueued ? 'Banner renamed; Discord role sync queued' : 'Banner renamed; Discord sync queue unavailable');
+    renderBanManageList();
+    renderBannerPop();
+    showBanForm(renamedDef,false);
   };
   window.banManageDel = async function(name){
     if(!confirm('Delete banner "'+name+'"? This cannot be undone.')) return;

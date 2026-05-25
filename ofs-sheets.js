@@ -204,23 +204,60 @@
   /* ── Timeline block overrides cache (in-memory) ───── */
   let _timelineBlocks = {};
 
+  let _bannerRoleIdIndex = 9;
+
+  function _bannerHeaderIndex(rows, label) {
+    const wanted = String(label || '').trim().toLowerCase();
+    for (const headerRow of (rows || []).slice(0, 2)) {
+      const idx = (headerRow || []).findIndex(function (cell) {
+        return String(cell || '').trim().toLowerCase() === wanted;
+      });
+      if (idx >= 0) return idx;
+    }
+    return -1;
+  }
+
+  function _bannerColumnMap(rows) {
+    // Legacy Banners layout has two non-data rows, then data rows:
+    // A Banner Name, B Sub Rank 0, C Sub Rank 1, D Sub Rank 2,
+    // E Sub Rank Master, F Medal Name, G Medal URL, H Description,
+    // I Banner Image URL. Role ID is appended at J by default.
+    const roleIdx = _bannerHeaderIndex(rows, 'Role ID');
+    const shiftedForRoleB = roleIdx === 1;
+    _bannerRoleIdIndex = roleIdx >= 0 ? roleIdx : 9;
+    return {
+      name: 0,
+      roleId: _bannerRoleIdIndex,
+      subRank0: shiftedForRoleB ? 2 : 1,
+      subRank1: shiftedForRoleB ? 3 : 2,
+      subRank2: shiftedForRoleB ? 4 : 3,
+      subRankMaster: shiftedForRoleB ? 5 : 4,
+      medalName: shiftedForRoleB ? 6 : 5,
+      medalUrl: shiftedForRoleB ? 7 : 6,
+      description: shiftedForRoleB ? 8 : 7,
+      bannerImageUrl: shiftedForRoleB ? 9 : 8
+    };
+  }
+
   function parseBannerDefs(rows) {
     if (!rows || rows.length < 3) return [];
+    const col = _bannerColumnMap(rows);
     return rows.slice(2)
-      .map(function (row) { return String(row[0] || '').trim(); })
+      .map(function (row) { return String(row[col.name] || '').trim(); })
       .filter(Boolean)
       .map(function (_, i) {
         var row = rows[i + 2];
         return {
-          name:          String(row[0] || '').trim(),
-          subRank0:      String(row[1] || '').trim() || 'Apprentice',
-          subRank1:      String(row[2] || '').trim() || 'Sub Rank 1',
-          subRank2:      String(row[3] || '').trim() || 'Sub Rank 2',
-          subRankMaster: String(row[4] || '').trim() || 'Sub Rank Master',
-          medalName:       String(row[5] || '').trim(),
-          medalUrl:        String(row[6] || '').trim(),
-          description:     String(row[7] || '').trim(),
-          bannerImageUrl:  String(row[8] || '').trim(),
+          name:          String(row[col.name] || '').trim(),
+          roleId:        String(row[col.roleId] || '').trim(),
+          subRank0:      String(row[col.subRank0] || '').trim() || 'Apprentice',
+          subRank1:      String(row[col.subRank1] || '').trim() || 'Sub Rank 1',
+          subRank2:      String(row[col.subRank2] || '').trim() || 'Sub Rank 2',
+          subRankMaster: String(row[col.subRankMaster] || '').trim() || 'Sub Rank Master',
+          medalName:       String(row[col.medalName] || '').trim(),
+          medalUrl:        String(row[col.medalUrl] || '').trim(),
+          description:     String(row[col.description] || '').trim(),
+          bannerImageUrl:  String(row[col.bannerImageUrl] || '').trim(),
         };
       });
   }
@@ -698,15 +735,46 @@
    * @param {object} def  { name, subRank0, subRank1, subRank2, subRankMaster, medalName, medalUrl, description }
    * @param {boolean} isNew  true = append new row, false = overwrite existing by name
    */
-  async function saveBannerDef(def, isNew) {
-    const row = [
+  function bannerDefRow(def) {
+    const legacyRow = [
       def.name, def.subRank0, def.subRank1, def.subRank2,
       def.subRankMaster, def.medalName, def.medalUrl, def.description, def.bannerImageUrl || ''
     ];
+    // Default to appending Role ID at the far right so existing Banners columns
+    // do not shift. If the live sheet has Role ID explicitly in column B, honor
+    // that schema to avoid overwriting the wrong fields.
+    if (_bannerRoleIdIndex === 1) {
+      return [
+        def.name, def.roleId || '', def.subRank0, def.subRank1, def.subRank2,
+        def.subRankMaster, def.medalName, def.medalUrl, def.description, def.bannerImageUrl || ''
+      ];
+    }
+    legacyRow[_bannerRoleIdIndex >= 0 ? _bannerRoleIdIndex : 9] = def.roleId || '';
+    return legacyRow;
+  }
+
+  async function saveBannerDef(def, isNew, oldName) {
+    const row = bannerDefRow(def);
     if (isNew) {
       return _apiPost('/write', { op: 'append', sheet: 'Banners', row: row });
     }
-    return overwriteTavernRow('Banners', def.name, row);
+    return overwriteTavernRow('Banners', oldName || def.name, row);
+  }
+
+  async function updateMemberBanner(userId, bannerName, medalsValue) {
+    const data = { Banner: String(bannerName || '') };
+    if (medalsValue != null) data.Medals = String(medalsValue || '');
+    return _apiPost('/write', {
+      op:     'update',
+      sheet:  'Member Log',
+      keyCol: 0,
+      keyVal: String(userId),
+      data:   data
+    });
+  }
+
+  async function appendBannerRenameRequest(row) {
+    return _apiPost('/write', { op: 'append', sheet: 'Banner Rename Requests', row: row });
   }
 
   /** Delete a banner row from the Banners sheet by name. */
@@ -760,6 +828,8 @@
     getBannerDefs,
     saveBannerDef,
     deleteBannerDef,
+    updateMemberBanner,
+    appendBannerRenameRequest,
     saveFleetAssignment,
     saveFleetAssignments,
     deleteFleetAssignment,
