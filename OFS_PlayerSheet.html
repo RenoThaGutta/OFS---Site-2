@@ -3448,11 +3448,15 @@ async function saveProfileEdits() {
     _currentPlayer.shipImage = payload.shipImage;
 
     if (window.OFSData && OFSData.getPlayers && OFSData.savePlayers) {
-      const players = OFSData.getPlayers().map(function (player) {
-        if (String(player.id) !== String(_currentPlayer.id)) return player;
-        return Object.assign({}, player, payload);
-      });
-      OFSData.savePlayers(players);
+      try {
+        const players = OFSData.getPlayers().map(function (player) {
+          if (String(player.id) !== String(_currentPlayer.id)) return player;
+          return Object.assign({}, player, payload);
+        });
+        OFSData.savePlayers(players);
+      } catch (cacheErr) {
+        console.warn('Profile saved, but local player cache refresh failed.', cacheErr);
+      }
     }
 
     render(_currentPlayer);

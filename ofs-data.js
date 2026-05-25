@@ -471,9 +471,27 @@
     return source.map(normalizePlayer);
   }
 
+  function isStorageQuotaError(error) {
+    return !!error && (
+      error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      error.code === 22 ||
+      error.code === 1014
+    );
+  }
+
   function savePlayers(players) {
     const normalized = (Array.isArray(players) ? players : []).map(normalizePlayer);
-    global.localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(normalized));
+    try {
+      global.localStorage.setItem(STORAGE_PLAYERS, JSON.stringify(normalized));
+    } catch (error) {
+      if (!isStorageQuotaError(error)) throw error;
+      // The live Worker/Sheets response is the source of truth. The full roster
+      // cache can exceed browser storage once bios/ship images grow, so never
+      // let a local cache write make a successful profile/admin save look failed.
+      try { global.localStorage.removeItem(STORAGE_PLAYERS); } catch (e) { /* ignore */ }
+      try { console.warn('OFSData: player cache skipped; browser storage quota exceeded.'); } catch (e) { /* ignore */ }
+    }
     return clone(normalized);
   }
 
