@@ -369,12 +369,19 @@
     .profile-modal-overlay.open { display: flex; }
     .profile-modal {
       width: min(640px, 100%);
+      max-height: calc(100vh - 56px);
+      overflow-y: auto;
       background: rgba(14,14,28,.98);
       border: 1px solid var(--b-gold);
       border-radius: 6px;
       box-shadow: 0 22px 70px rgba(0,0,0,.65), inset 0 1px 0 rgba(201,168,76,.08);
       padding: 24px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
     }
+    .profile-modal::-webkit-scrollbar { width: 8px; }
+    .profile-modal::-webkit-scrollbar-track { background: rgba(255,255,255,.05); border-radius: 8px; }
+    .profile-modal::-webkit-scrollbar-thumb { background: rgba(201,168,76,.55); border-radius: 8px; }
     .profile-modal-head {
       display: flex;
       align-items: center;
@@ -480,18 +487,15 @@
     .profile-ship-picker.open .profile-ship-trigger-caret { transform: rotate(180deg); }
     .profile-ship-menu {
       display: none;
-      position: absolute;
-      z-index: 735;
-      left: 0;
-      right: 0;
-      top: calc(100% + 6px);
-      max-height: 280px;
+      position: static;
+      max-height: 230px;
       overflow-y: auto;
       background: rgba(14,14,28,.99);
       border: 1px solid var(--b-gold);
       border-radius: 5px;
-      box-shadow: 0 18px 48px rgba(0,0,0,.72), inset 0 1px 0 rgba(201,168,76,.08);
+      box-shadow: 0 14px 34px rgba(0,0,0,.54), inset 0 1px 0 rgba(201,168,76,.08);
       padding: 6px;
+      margin-top: 8px;
       scrollbar-width: thin;
       scrollbar-color: rgba(201,168,76,.55) rgba(255,255,255,.05);
     }
@@ -2160,9 +2164,13 @@ function renderProfileRecord(p) {
 function setShipPickerOpen(open) {
   const picker = document.getElementById('profile-ship-picker');
   const trigger = document.getElementById('profile-ship-trigger');
+  const menu = document.getElementById('profile-ship-menu');
   if (!picker || !trigger) return;
   picker.classList.toggle('open', !!open);
   trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open && menu) {
+    setTimeout(function () { menu.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 0);
+  }
 }
 
 function toggleShipPicker() {
