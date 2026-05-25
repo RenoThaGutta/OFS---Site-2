@@ -1361,10 +1361,9 @@
       <button class="profile-edit-btn" id="js-profile-edit" type="button" onclick="openProfileEditModal()">Edit Profile</button>
       <div class="rep-block"      id="js-rep"></div>
     </div>
-    <div class="banner-progress" id="js-banner-progress" style="display:none"></div>
   </section>
 
-  <!-- Large banner progress preview — separate from reputation and identity progress -->
+  <!-- Banner progress preview — replaces the former identity top-right progress -->
   <section class="banner-progress-showcase" id="js-banner-progress-showcase" aria-label="Banner progress preview">
     <div class="banner-progress" id="js-banner-progress-large"></div>
   </section>
@@ -2454,8 +2453,7 @@ function render(p) {
     bannerEl.innerHTML = '';
   }
 
-  // Banner progress bar (top-right of identity)
-  const bpEl = document.getElementById('js-banner-progress');
+  // Banner progress preview (below identity; top-right compact version removed)
   const bpShowcaseEl = document.getElementById('js-banner-progress-showcase');
   const bpLargeEl = document.getElementById('js-banner-progress-large');
   if (p.activeBanner && BANNER_RANKS[p.activeBanner]) {
@@ -2533,15 +2531,11 @@ function render(p) {
       `<div class="bp-markers">${markersHTML}</div>` +
       `<div class="bp-pts-label">${ptsLine}</div>`;
 
-    bpEl.style.display = '';
-    bpEl.removeAttribute('title');
-    bpEl.innerHTML = progressHTML;
     if (bpShowcaseEl && bpLargeEl) {
       bpShowcaseEl.classList.add('open');
       bpLargeEl.innerHTML = progressHTML;
     }
   } else {
-    bpEl.style.display = 'none';
     if (bpShowcaseEl && bpLargeEl) {
       bpShowcaseEl.classList.remove('open');
       bpLargeEl.innerHTML = '';
