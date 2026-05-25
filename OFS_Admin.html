@@ -2100,65 +2100,137 @@ function _qrWithinDays(iso, days) {
 }
 
 /* Pick the leader row out of a patrol's rows. Mirrors editor's findLeaderIndex:
-   1) prefer the row where col X (PAUSED_DUR) is populated, else
-   2) fall back to a row where col K (PLAYER_ID) is empty and col C (LEADER_ID) is set,
-   3) else fall back to the first row with col C populated. */
-function _qrPickLeader(patrolRows) {
+   1) prefer the row where Total Paused Duration is populated, else
+   2) fall back to a row where Player ID is empty and Patrol Leader ID is set,
+   3) else fall back to the first row with Patrol Leader ID populated. */
+function _qrPickLeader(patrolRows, COL) {
   for (var i = 0; i < patrolRows.length; i++) {
-    if (String(patrolRows[i][23] || '').trim() !== '') return patrolRows[i];
+    if (String(patrolRows[i][COL.PAUSED_DUR] || '').trim() !== '') return patrolRows[i];
   }
   for (var j = 0; j < patrolRows.length; j++) {
-    if (!String(patrolRows[j][10] || '').trim() &&
-         String(patrolRows[j][2]  || '').trim()) return patrolRows[j];
+    if (!String(patrolRows[j][COL.PLAYER_ID] || '').trim() &&
+         String(patrolRows[j][COL.LEADER_ID] || '').trim()) return patrolRows[j];
   }
   for (var k = 0; k < patrolRows.length; k++) {
-    if (String(patrolRows[k][2] || '').trim()) return patrolRows[k];
+    if (String(patrolRows[k][COL.LEADER_ID] || '').trim()) return patrolRows[k];
   }
   return null;
 }
 
+function _qrColIndex(header, name, fallback) {
+  var target = String(name || '').trim().toLowerCase();
+  for (var i = 0; i < header.length; i++) {
+    if (String(header[i] || '').trim().toLowerCase() === target) return i;
+  }
+  return fallback;
+}
+
+function _qrVal(row, idx) {
+  return String((row && row[idx] != null) ? row[idx] : '').trim();
+}
+
+function _qrHasStatus(value) {
+  var s = String(value || '').trim().toLowerCase();
+  return !!s && s !== '0' && s !== 'false' && s !== 'no' && s !== 'n' && s !== '❓' && s !== 'none' && s !== 'null';
+}
+
+function _qrDateTime(value) {
+  var s = String(value || '').trim().replace(' ', 'T');
+  if (!s) return null;
+  if (!/Z$|[+-]\d{2}:\d{2}$/.test(s)) s += 'Z';
+  var d = new Date(s);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function _qrLatestValue(rows, idx) {
+  var fallback = '';
+  var latest = null;
+  var latestRaw = '';
+  rows.forEach(function (row) {
+    var v = _qrVal(row, idx);
+    if (!_qrHasStatus(v)) return;
+    fallback = v;
+    var d = _qrDateTime(v);
+    if (d && (!latest || d > latest)) {
+      latest = d;
+      latestRaw = v;
+    }
+  });
+  return latestRaw || fallback;
+}
+
 function _qrGroup(rows) {
   if (!rows || rows.length < 2) return [];
+  var header = rows[0] || [];
+  var COL = {
+    ID:          _qrColIndex(header, 'Patrol ID', 0),
+    LEADER:      _qrColIndex(header, 'Patrol Leader', 1),
+    LEADER_ID:   _qrColIndex(header, 'Patrol Leader ID', 2),
+    NAME:        _qrColIndex(header, 'Patrol Name', 4),
+    START:       _qrColIndex(header, 'Patrol Start Time', 7),
+    PLAYER_ID:   _qrColIndex(header, 'Player ID', 10),
+    PAUSED_DUR:  _qrColIndex(header, 'Total Paused Duration', 23),
+    SENT_REVIEW: _qrColIndex(header, 'Sent for review', 24),
+    APPROVED:    _qrColIndex(header, 'Admin Approved', 25),
+    CANCELLED:   _qrColIndex(header, 'Quest Cancelled ', 29),
+    COMPLETED:   _qrColIndex(header, 'Quest Completed', 30),
+    TYPE:        _qrColIndex(header, 'Type', 32)
+  };
   var groups = {};
-  rows.forEach(function (row) {
-    var pid = String(row[0] || '').trim();
+  rows.slice(1).forEach(function (row) {
+    var pid = _qrVal(row, COL.ID);
     if (!pid || !/^P\d/.test(pid)) return;
     (groups[pid] || (groups[pid] = [])).push(row);
   });
   var out = [];
   Object.keys(groups).forEach(function (pid) {
     var patrolRows = groups[pid];
-    var lead = _qrPickLeader(patrolRows);
+    var lead = _qrPickLeader(patrolRows, COL);
     if (!lead) return;
     var participantCount = 0;
     for (var i = 0; i < patrolRows.length; i++) {
-      if (String(patrolRows[i][10] || '').trim()) participantCount++;
+      if (_qrVal(patrolRows[i], COL.PLAYER_ID)) participantCount++;
     }
+
+    var sentReview = _qrLatestValue(patrolRows, COL.SENT_REVIEW);
+    var approved   = _qrLatestValue(patrolRows, COL.APPROVED);
+    var cancelled  = _qrLatestValue(patrolRows, COL.CANCELLED);
+    var completed  = _qrLatestValue(patrolRows, COL.COMPLETED);
+    var startTime  = _qrLatestValue([lead].concat(patrolRows), COL.START) || _qrVal(lead, COL.START);
+
     out.push({
       id:               pid,
-      leaderName:       String(lead[1]  || '').trim(),
-      leaderId:         String(lead[2]  || '').trim(),
-      name:             String(lead[4]  || '').trim(),
-      type:             String(lead[32] || 'Quest').trim(),
-      y:                String(lead[24] || '').trim(),
-      z:                String(lead[25] || '').trim(),
-      approved:         String(lead[25] || '').trim(),
-      cancelled:        String(lead[29] || '').trim(),
-      completed:        String(lead[30] || '').trim(),
-      startTime:        String(lead[7]  || '').trim(),
+      leaderName:       _qrVal(lead, COL.LEADER),
+      leaderId:         _qrVal(lead, COL.LEADER_ID),
+      name:             _qrVal(lead, COL.NAME),
+      type:             _qrVal(lead, COL.TYPE) || 'Quest',
+      y:                sentReview,
+      z:                approved,
+      approved:         approved,
+      cancelled:        cancelled,
+      completed:        completed,
+      startTime:        startTime,
       participantCount: participantCount
     });
   });
   return out;
 }
 
+function _qrPendingDate(q) {
+  if (_qrDateTime(q.y)) return q.y;
+  if (_qrDateTime(q.completed)) return q.completed;
+  // Some bot/status writes store labels like "Quest Completed" instead of timestamps.
+  // Use the start time only as an age cutoff fallback so current review items do not vanish.
+  return q.startTime;
+}
+
 function _qrBuild(rows) {
   return _qrGroup(rows)
     .filter(function (q) {
-      var reviewDate = q.y || q.completed;
-      return reviewDate && _qrWithinDays(reviewDate, QUEST_REVIEW_RECENT_DAYS) && !q.approved && !q.cancelled;
+      var reviewDate = _qrPendingDate(q);
+      return (q.y || q.completed) && _qrWithinDays(reviewDate, QUEST_REVIEW_RECENT_DAYS) && !q.approved && !q.cancelled;
     })
-    .sort(function (a, b) { return new Date(b.y || b.completed || 0) - new Date(a.y || a.completed || 0); });
+    .sort(function (a, b) { return new Date(_qrPendingDate(b) || 0) - new Date(_qrPendingDate(a) || 0); });
 }
 
 function _qrBuildActive(rows) {

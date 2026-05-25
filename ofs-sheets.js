@@ -13,9 +13,10 @@
   'use strict';
 
   const WORKER_URL        = 'https://ofs-api.orderofthefallenstar.workers.dev';
-  const CACHE_KEY         = 'ofs_sheets_cache';
-  const BANNER_CACHE_KEY  = 'ofs_banner_defs_cache';
-  const CACHE_TTL_MS      = 5 * 60 * 1000; // 5 minutes
+  const CACHE_KEY          = 'ofs_sheets_cache';
+  const BANNER_CACHE_KEY   = 'ofs_banner_defs_cache';
+  const TAVERN_CACHE_KEY   = 'ofs_tavern_sheets_cache';
+  const CACHE_TTL_MS       = 5 * 60 * 1000; // 5 minutes
 
   /* ── Column indices ───────────────────────────────── */
   const ML = {
@@ -228,6 +229,8 @@
 
   /* ── Tavern data cache (in-memory, set on each load) ─ */
   let _tavernData = null;
+  let _loadPromise = null;
+  let _lastLoadInfo = { source: 'none', ts: 0, message: '' };
 
   /* ── Fleet/ship data cache (in-memory) ─ */
   let _shipRegistry = [];
@@ -273,6 +276,36 @@
     } catch (e) { return null; }
   }
 
+  function normalizeTavernData(data) {
+    data = data || {};
+    return {
+      quests:            data.quests            || [],
+      patrolAdjustments: data.patrolAdjustments || [],
+      tavAnnouncements:  data.tavAnnouncements  || [],
+      tavEvents:         data.tavEvents         || [],
+      tavMedia:          data.tavMedia          || [],
+    };
+  }
+
+  function saveTavernDataCache(tavernData) {
+    try {
+      global.localStorage.setItem(TAVERN_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        data: tavernData
+      }));
+    } catch (e) { /* storage full */ }
+  }
+
+  function loadTavernDataCache() {
+    try {
+      const raw = global.localStorage.getItem(TAVERN_CACHE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.data) return null;
+      return { ts: obj.ts || 0, data: normalizeTavernData(obj.data) };
+    } catch (e) { return null; }
+  }
+
   /* ── Public API ──────────────────────────────────── */
 
   /**
@@ -281,6 +314,12 @@
    * @returns {Promise<object[]>} Normalized player array.
    */
   async function load() {
+    if (_loadPromise) return _loadPromise;
+    _loadPromise = _loadFresh().finally(function () { _loadPromise = null; });
+    return _loadPromise;
+  }
+
+  async function _loadFresh() {
     let data;
     try {
       const res = await fetch(WORKER_URL + '/data');
@@ -288,18 +327,18 @@
       data = await res.json();
     } catch (err) {
       console.warn('OFSSheets: fetch failed, using cache.', err.message);
-      return _fallbackToCache();
+      return _fallbackToCache(err.message);
     }
 
     if (!data.ok) {
       console.warn('OFSSheets: Worker error:', data);
-      return _fallbackToCache();
+      return _fallbackToCache(data.error || data.reason || 'Worker returned ok:false');
     }
 
     const raw = buildPlayers(data);
     if (!raw) {
       console.warn('OFSSheets: Member Log is empty.');
-      return _fallbackToCache();
+      return _fallbackToCache('Member Log is empty');
     }
 
     // Parse reputation thresholds and save for pages to use
@@ -324,14 +363,12 @@
     _shipRegistry = parseShipRegistry(data.shipRegistry || data.ship_registry || data['Ship Registry'] || []);
     _fleets = parseFleets(data.fleets || data.Fleets || []);
 
-    // Cache tavern data for OFS_TavernHall.html to consume
-    _tavernData = {
-      quests:            data.quests            || [],
-      patrolAdjustments: data.patrolAdjustments || [],
-      tavAnnouncements:  data.tavAnnouncements  || [],
-      tavEvents:         data.tavEvents         || [],
-      tavMedia:          data.tavMedia          || [],
-    };
+    // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
+    // This is intentionally cached separately from normalized players so quest boards
+    // can continue to render the last known good Patrols data during Sheets 429s.
+    _tavernData = normalizeTavernData(data);
+    saveTavernDataCache(_tavernData);
+    _lastLoadInfo = { source: 'live', ts: Date.now(), message: '' };
 
     // Fetch /content for timeline block overrides (optional — non-fatal)
     try {
@@ -364,7 +401,18 @@
 
   /** Return the last-fetched tavern data (quests, announcements, events, media). */
   function getTavernData() {
+    if (!_tavernData) {
+      const cached = loadTavernDataCache();
+      if (cached) {
+        _tavernData = cached.data;
+        _lastLoadInfo = { source: 'cache', ts: cached.ts, message: 'Loaded from local cache' };
+      }
+    }
     return _tavernData;
+  }
+
+  function getLoadInfo() {
+    return _lastLoadInfo;
   }
 
   function parseShipRegistry(rows) {
@@ -409,7 +457,23 @@
   function getShipRegistry() { return _shipRegistry || []; }
   function getFleets() { return _fleets || []; }
 
-  function _fallbackToCache() {
+  function _fallbackToCache(message) {
+    const cachedTavern = loadTavernDataCache();
+    if (cachedTavern) {
+      _tavernData = cachedTavern.data;
+      _lastLoadInfo = {
+        source: 'cache',
+        ts: cachedTavern.ts,
+        message: message || 'Live sheet refresh failed'
+      };
+    } else {
+      _lastLoadInfo = {
+        source: 'empty-cache',
+        ts: 0,
+        message: message || 'Live sheet refresh failed and no cached tavern data exists'
+      };
+    }
+
     const cached = loadCache();
     if (cached && global.OFSData) global.OFSData.savePlayers(cached);
     return cached || [];
@@ -690,6 +754,7 @@
   global.OFSSheets = {
     load,
     getTavernData,
+    getLoadInfo,
     getShipRegistry,
     getFleets,
     getBannerDefs,
