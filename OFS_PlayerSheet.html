@@ -2384,6 +2384,7 @@ const SCWIKI_API_BASE = 'https://api.star-citizen.wiki/api';
 const SCWIKI_CACHE_PREFIX = 'ofs_scwiki_cache:';
 const SCWIKI_SEARCH_TTL = 10 * 60 * 1000;
 const SCWIKI_VEHICLE_TTL = 12 * 60 * 60 * 1000;
+const SCWIKI_FETCH_TIMEOUT = 9000;
 let _shipEnrichmentToken = 0;
 
 const SHIP_MAKE_LOGOS = {
@@ -2535,6 +2536,20 @@ function reversedShipModelCandidates(model) {
   return [last + ' ' + parts.slice(0, -1).join(' ')];
 }
 
+function addShipQueryCandidate(list, value) {
+  const raw = String(value || '').trim();
+  if (!raw) return;
+  const variants = [raw];
+  const spaced = raw.replace(/[‐‑‒–—-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (spaced && spaced !== raw) variants.push(spaced);
+  const normalizedEdition = spaced.replace(/\bexecutive\s+edition\b/i, 'Executive Edition').trim();
+  if (normalizedEdition && variants.indexOf(normalizedEdition) === -1) variants.push(normalizedEdition);
+  variants.forEach(function (candidate) {
+    candidate = candidate.trim();
+    if (candidate && list.indexOf(candidate) === -1) list.push(candidate);
+  });
+}
+
 function shipApiQueries(playerShip, shipEntry) {
   const ship = String(playerShip || '').trim();
   const model = String(shipEntry && shipEntry.model || '').trim();
@@ -2548,15 +2563,19 @@ function shipApiQueries(playerShip, shipEntry) {
     .replace(/\s+/g, ' ')
     .trim();
   const candidates = [];
-  if (model && shortMake) candidates.push(shortMake + ' ' + model);
-  if (model && make) candidates.push(make + ' ' + model);
-  if (model) candidates.push(model);
+  if (model && shortMake) addShipQueryCandidate(candidates, shortMake + ' ' + model);
+  if (model && make) addShipQueryCandidate(candidates, make + ' ' + model);
+  if (model) addShipQueryCandidate(candidates, model);
   reversedShipModelCandidates(model).forEach(function (candidate) {
-    if (shortMake) candidates.push(shortMake + ' ' + candidate);
-    if (make) candidates.push(make + ' ' + candidate);
-    candidates.push(candidate);
+    if (shortMake) addShipQueryCandidate(candidates, shortMake + ' ' + candidate);
+    if (make) addShipQueryCandidate(candidates, make + ' ' + candidate);
+    addShipQueryCandidate(candidates, candidate);
   });
-  if (ship) candidates.push(shortShip, ship.replace(make, '').replace(/\s+/g, ' ').trim(), ship);
+  if (ship) {
+    addShipQueryCandidate(candidates, shortShip);
+    addShipQueryCandidate(candidates, ship.replace(make, '').replace(/\s+/g, ' ').trim());
+    addShipQueryCandidate(candidates, ship);
+  }
   return candidates.filter(function (query, idx, all) {
     query = String(query || '').trim();
     return query && all.indexOf(query) === idx;
@@ -2589,11 +2608,17 @@ async function scWikiFetch(path, params, ttl) {
   const cached = scWikiCacheGet(cacheKey, ttl);
   if (cached) return cached;
   const url = SCWIKI_API_BASE + path + (query.toString() ? '?' + query.toString() : '');
-  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-  if (!res.ok) throw new Error('Star Citizen Wiki API returned ' + res.status);
-  const data = await res.json();
-  scWikiCacheSet(cacheKey, data);
-  return data;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeout = controller ? setTimeout(function () { controller.abort(); }, SCWIKI_FETCH_TIMEOUT) : null;
+  try {
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' }, signal: controller && controller.signal });
+    if (!res.ok) throw new Error('Star Citizen Wiki API returned ' + res.status);
+    const data = await res.json();
+    scWikiCacheSet(cacheKey, data);
+    return data;
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
 }
 
 function vehicleSlugFromApiUrl(apiUrl) {
@@ -2635,9 +2660,20 @@ function formatMass(value) {
 }
 
 function shipApiImage(vehicle) {
+  const candidates = [];
   const images = Array.isArray(vehicle && vehicle.images) ? vehicle.images : [];
-  const img = images[0] || null;
-  return img ? (img.original_url || img.thumbnail_url || '') : '';
+  images.forEach(function (img) {
+    if (!img) return;
+    candidates.push(img.original_url, img.thumbnail_url, img.url, img.source_url);
+  });
+  candidates.push(
+    vehicle && vehicle.image_url,
+    vehicle && vehicle.image,
+    vehicle && vehicle.thumbnail_url,
+    vehicle && vehicle.thumbnail,
+    vehicle && vehicle.store_image
+  );
+  return candidates.map(function (url) { return String(url || '').trim(); }).find(Boolean) || '';
 }
 
 function syncProfileRecordHeight() {
@@ -3097,15 +3133,21 @@ function renderShipPickerPreview(ship, fallbackImageUrl) {
 
 async function enrichShipPickerPreviewFromApi(ship, token) {
   const preview = document.getElementById('profile-ship-preview');
+  function showUnavailable() {
+    if (token !== _shipPickerPreviewToken || !preview) return;
+    preview.className = 'profile-ship-preview has-image is-empty';
+    preview.innerHTML = shipPickerPreviewHtml(ship, '', null) + '<div class="profile-ship-preview-meta">Image unavailable</div>';
+  }
   try {
     const data = await getShipApiDataForPicker(ship);
-    if (token !== _shipPickerPreviewToken || !preview || !data) return;
+    if (token !== _shipPickerPreviewToken || !preview) return;
+    if (!data) { showUnavailable(); return; }
     const imageUrl = normalizeImageUrl(data.imageUrl || ship.imageUrl);
     preview.className = 'profile-ship-preview has-image' + (imageUrl ? '' : ' is-empty');
     preview.innerHTML = imageUrl
       ? shipPickerPreviewHtml(ship, imageUrl, data)
       : (shipPickerPreviewHtml(ship, '', data) + '<div class="profile-ship-preview-meta">Image unavailable</div>');
-  } catch (e) { /* API enrichment is best-effort */ }
+  } catch (e) { showUnavailable(); }
 }
 
 function updateShipPickerOptionImage(model, imageUrl, apiData) {
