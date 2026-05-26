@@ -1255,8 +1255,7 @@
           <section class="shop-card" style="grid-column:1/-1">
             <h4>How Pay Rules Work</h4>
             <div class="shop-help-grid">
-              <div class="shop-help-card"><strong>Stat Column</strong>The player stat the bot watches, such as completed quests, crusades, kills, or total quest time.</div>
-              <div class="shop-help-card"><strong>Snapshot Column</strong>The last value already paid. The bot pays only the increase since this snapshot, then updates the snapshot.</div>
+              <div class="shop-help-card"><strong>Rule</strong>The fixed payout rule the bot already knows. Stat and snapshot columns stay protected here so this screen only changes safe rule settings.</div>
               <div class="shop-help-card"><strong>Amount Per Unit</strong>How much currency is paid for each new unit. Example: 3 Silver per completed quest means +2 quests pays 6 Silver.</div>
               <div class="shop-help-card"><strong>Time Units</strong>For time stats, 1 unit = 1 minute. 60 units = 60 minutes = 1 hour. If a rule pays 1 Silver per unit, 1 hour pays 60 Silver.</div>
               <div class="shop-help-card"><strong>Min Role</strong>The lowest Discord/OFS rank allowed to earn this rule. Leave blank only if every tracked member should qualify.</div>
@@ -1277,7 +1276,7 @@
               <div class="field-row"><label>Snapshot Column</label><input id="shop-rule-snapshot" placeholder="Quest_Total_Paid"></div>
               <div class="field-row"><label>Currency Type</label><input id="shop-rule-currency" placeholder="Gold, Silver, Copper"></div>
               <div class="field-row"><label>Amount Per Unit</label><input id="shop-rule-amount" type="number" value="0"></div>
-              <div class="field-row"><label>Min Role</label><input id="shop-rule-min-role" placeholder="Squire, Knight…"></div>
+              <div class="field-row"><label>Min Role</label><select id="shop-rule-min-role"></select></div>
               <div class="field-row"><label>Enabled</label><select id="shop-rule-enabled"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
               <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="shop-rule-notes"></div>
             </div>
@@ -2938,6 +2937,9 @@ function shopEsc(s){ var el=document.createElement('span'); el.textContent=s==nu
 function shopSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-'+Date.now()); }
 function shopItems(){ return (window.OFSSheets && OFSSheets.getShopItems) ? OFSSheets.getShopItems() : []; }
 function shopRules(){ return (window.OFSSheets && OFSSheets.getShopPayRules) ? OFSSheets.getShopPayRules() : []; }
+function shopRanks(){ return (window.OFSSheets && OFSSheets.getRanks) ? OFSSheets.getRanks() : []; }
+function shopRankOptions(selected){ var ranks=shopRanks(); if(!ranks.length) ranks=['Squire','Knight']; return ranks.map(function(rank){ return '<option value="'+shopEsc(rank)+'" '+(String(rank)===String(selected||'')?'selected':'')+'>'+shopEsc(rank)+'</option>'; }).join(''); }
+function shopFillRankSelect(el, selected){ if(!el) return; el.innerHTML=shopRankOptions(selected); if(selected && !Array.prototype.some.call(el.options,function(o){return o.value===selected;})){ var opt=document.createElement('option'); opt.value=selected; opt.textContent=selected; opt.selected=true; el.insertBefore(opt, el.firstChild); } }
 function shopImageFallback(img){ if(img) img.onerror=function(){ this.style.display='none'; }; }
 const SHOP_CATEGORY_LABELS={all:'All Items',materials:'Materials / Cargo',guns:'Guns',armor:'Armor',food:'Food',drink:'Drink',medical:'Medical',mining:'Mining',clothing:'Clothing','ship-weapons':'Ship Weapons'};
 function shopItemCategoryText(item){ return [item.type,item.classification,item.subType,item.itemType,item.manufacturer,item.name].filter(Boolean).join(' ').toLowerCase(); }
@@ -3105,10 +3107,11 @@ function renderShopItems(){
 
 function shopRuleFieldId(id, field){ return 'shop-rule-row-'+shopSlug(id)+'-'+field; }
 function shopReadRuleRow(id){
+  var original=shopRules().find(function(x){ return String(x.ruleId||x.id)===String(id); }) || {};
   return {
     id:id, ruleId:id,
-    statColumn:(document.getElementById(shopRuleFieldId(id,'stat'))||{}).value||'',
-    snapshotColumn:(document.getElementById(shopRuleFieldId(id,'snapshot'))||{}).value||'',
+    statColumn:original.statColumn||'',
+    snapshotColumn:original.snapshotColumn||'',
     currencyType:(document.getElementById(shopRuleFieldId(id,'currency'))||{}).value||'',
     amountPerUnit:Number((document.getElementById(shopRuleFieldId(id,'amount'))||{}).value)||0,
     minRole:(document.getElementById(shopRuleFieldId(id,'role'))||{}).value||'',
@@ -3129,7 +3132,7 @@ function shopSetRuleForm(rule){
   document.getElementById('shop-rule-snapshot').value=rule.snapshotColumn||'';
   document.getElementById('shop-rule-currency').value=rule.currencyType||'';
   document.getElementById('shop-rule-amount').value=rule.amountPerUnit||0;
-  document.getElementById('shop-rule-min-role').value=rule.minRole||'';
+  shopFillRankSelect(document.getElementById('shop-rule-min-role'), rule.minRole||'');
   document.getElementById('shop-rule-enabled').value=rule.enabled===false?'FALSE':'TRUE';
   document.getElementById('shop-rule-notes').value=rule.notes||'';
   document.getElementById('shop-rule-form-title').textContent=(rule.ruleId||rule.id)?'Edit Currency Rule':'Currency Rule';
@@ -3156,14 +3159,12 @@ function renderShopRules(){
   var q=(document.getElementById('shop-rule-filter')&&document.getElementById('shop-rule-filter').value||'').toLowerCase();
   var rules=shopRules().filter(function(r){ return !q || [r.ruleId,r.statColumn,r.snapshotColumn,r.currencyType,r.minRole,r.notes].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.ruleId||a.id||'').localeCompare(b.ruleId||b.id||''); });
   if(!rules.length){ box.innerHTML='<div class="tav-list-empty">No currency rules returned yet. Confirm the Worker exposes currencyRules from the currency_rules Sheet.</div>'; return; }
-  box.innerHTML='<table class="shop-rules-table"><thead><tr><th>Rule</th><th>Stat Column</th><th>Snapshot</th><th>Currency</th><th>Amount / Unit</th><th>Min Role</th><th>Enabled</th><th>Notes</th><th>Action</th></tr></thead><tbody>'+rules.map(function(r){
+  box.innerHTML='<table class="shop-rules-table"><thead><tr><th>Rule</th><th>Currency</th><th>Amount / Unit</th><th>Min Role</th><th>Enabled</th><th>Notes</th><th>Action</th></tr></thead><tbody>'+rules.map(function(r){
     var id=r.ruleId||r.id;
-    return '<tr><td class="rule-id-cell">'+shopEsc(id)+'<div class="shop-unit-note">Sheet row key</div></td>'+
-      '<td><input id="'+shopRuleFieldId(id,'stat')+'" value="'+shopEsc(r.statColumn||'')+'"><div class="shop-unit-note">Which player stat earns pay</div></td>'+
-      '<td><input id="'+shopRuleFieldId(id,'snapshot')+'" value="'+shopEsc(r.snapshotColumn||'')+'"><div class="shop-unit-note">Already-paid checkpoint</div></td>'+
+    return '<tr><td class="rule-id-cell">'+shopEsc(id)+'<div class="shop-unit-note">'+shopEsc(r.statColumn||'Protected stat')+' · '+shopEsc(r.snapshotColumn||'Protected snapshot')+'</div></td>'+
       '<td><select id="'+shopRuleFieldId(id,'currency')+'"><option '+(r.currencyType==='Gold'?'selected':'')+'>Gold</option><option '+(r.currencyType==='Silver'?'selected':'')+'>Silver</option><option '+(r.currencyType==='Copper'?'selected':'')+'>Copper</option></select></td>'+
       '<td><input type="number" step="0.01" id="'+shopRuleFieldId(id,'amount')+'" value="'+shopEsc(r.amountPerUnit||0)+'"><div class="shop-unit-note">For time: 1 unit = 1 minute</div></td>'+
-      '<td><input id="'+shopRuleFieldId(id,'role')+'" value="'+shopEsc(r.minRole||'')+'"></td>'+
+      '<td><select id="'+shopRuleFieldId(id,'role')+'">'+shopRankOptions(r.minRole||'')+'</select></td>'+
       '<td><select id="'+shopRuleFieldId(id,'enabled')+'"><option value="TRUE" '+(r.enabled!==false?'selected':'')+'>TRUE</option><option value="FALSE" '+(r.enabled===false?'selected':'')+'>FALSE</option></select></td>'+
       '<td><input class="shop-rule-note" id="'+shopRuleFieldId(id,'notes')+'" value="'+shopEsc(r.notes||'')+'"></td>'+
       '<td><button class="save-btn" onclick="shopSaveRuleRow(\''+shopEsc(id)+'\')">Save</button><button class="edit-btn" style="margin-top:6px" onclick="shopEditRule(\''+shopEsc(id)+'\')">Form Edit</button></td></tr>';

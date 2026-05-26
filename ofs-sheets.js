@@ -287,6 +287,7 @@
   let _fleets = [];
   let _shopItems = [];
   let _shopPayRules = []; // Backed by existing bot sheet: currency_rules
+  let _ranks = [];
 
   /* ── Cache ───────────────────────────────────────── */
   function saveCache(players) {
@@ -449,6 +450,7 @@
     _fleets = parseFleets(data.fleets || data.Fleets || []);
     _shopItems = parseShopItems(data.itemList || data.item_list || data['Item List'] || data.shopItems || data.shop_items || data['Shop Items'] || []);
     _shopPayRules = parseShopPayRules(data.currencyRules || data.currency_rules || data['currency_rules'] || data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
+    _ranks = parseRanks(data.ranks || data.Ranks || data['Ranks'] || []);
 
     // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
     // This is intentionally cached separately from normalized players so quest boards
@@ -617,6 +619,16 @@
     }).filter(function (item) { return item.id && item.name && String(item.id).toLowerCase() !== 'item id'; });
   }
 
+  function parseRanks(rows) {
+    if (!rows || !rows.length) return [];
+    // Current OFS Ranks sheet: use only A2:A13 for the Shop Min Role dropdown.
+    return rows.slice(1, 13).map(function (row) {
+      return String((row && row[0]) || '').trim();
+    }).filter(function (rank) {
+      return rank && rank.toLowerCase() !== 'rank';
+    });
+  }
+
   function parseShopPayRules(rows) {
     if (!rows || !rows.length) return [];
     const first = rows[0] || [];
@@ -667,6 +679,7 @@
   function getFleets() { return _fleets || []; }
   function getShopItems() { return _shopItems || []; }
   function getShopPayRules() { return _shopPayRules || []; }
+  function getRanks() { return _ranks || []; }
 
   function _fallbackToCache(message) {
     const cachedTavern = loadTavernDataCache();
@@ -1065,6 +1078,7 @@
     getFleets,
     getShopItems,
     getShopPayRules,
+    getRanks,
     getBannerDefs,
     getBannerAliases,
     resolveBannerName,
