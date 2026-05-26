@@ -212,11 +212,27 @@
     .fleet-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
     .field-row { display: flex; flex-direction: column; gap: 6px; }
     .field-row label { font-family: 'Cinzel', serif; font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--silver-dim); }
-    .field-row input, .field-row select {
+    .field-row input, .field-row select, .field-row textarea {
       background: var(--bg-card2); border: 1px solid var(--b-dim); border-radius: 3px; color: var(--text);
       padding: 9px 11px; font-family: 'Inter', sans-serif; font-size: .84rem; outline: none; min-width: 0;
     }
-    .field-row input:focus, .field-row select:focus { border-color: var(--b-gold); }
+    .field-row textarea { min-height: 90px; resize: vertical; }
+    .field-row input:focus, .field-row select:focus, .field-row textarea:focus { border-color: var(--b-gold); }
+    .shop-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr); gap: 18px; align-items: start; }
+    .shop-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
+    .shop-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; margin-bottom:14px; }
+    .shop-field-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+    .shop-results, .shop-list { display:grid; gap:8px; max-height:480px; overflow:auto; }
+    .shop-result-row, .shop-item-row { display:grid; grid-template-columns:52px 1fr auto; gap:10px; align-items:center; padding:10px 12px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:3px; }
+    .shop-result-row img, .shop-item-row img { width:52px; height:42px; object-fit:cover; border:1px solid var(--b-dim); border-radius:3px; background:var(--bg-card2); }
+    .shop-result-title, .shop-item-title { color:var(--gold-lt); font-weight:600; font-size:.88rem; }
+    .shop-result-meta, .shop-item-meta { color:var(--silver-dim); font-size:.74rem; margin-top:3px; }
+    .shop-preview { display:grid; grid-template-columns:160px 1fr; gap:14px; align-items:start; margin-bottom:14px; padding:12px; border:1px solid var(--b-dim); background:rgba(201,168,76,.035); border-radius:4px; }
+    .shop-preview img { width:160px; max-height:120px; object-fit:contain; background:#05050a; border:1px solid var(--b-dim); border-radius:3px; }
+    .shop-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; margin-top:14px; }
+    .shop-stab { background:transparent; border:1px solid var(--b-dim); color:var(--silver-dim); padding:8px 14px; font-family:'Cinzel',serif; font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; border-radius:3px; }
+    .shop-stab.active, .shop-stab:hover { border-color:var(--b-gold); color:var(--gold); background:rgba(201,168,76,.06); }
+    @media (max-width: 980px) { .shop-layout { grid-template-columns:1fr; } .shop-field-grid, .shop-preview { grid-template-columns:1fr; } .shop-preview img { width:100%; } }
     .fleet-rule-panel { margin-top: 14px; background: rgba(201,168,76,.035); }
     .fleet-rule-head { font-family: 'Cinzel', serif; color: var(--gold); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; }
     .fleet-rule-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
@@ -1003,6 +1019,7 @@
       <div class="nav-tab active" data-tab="roster">Roster</div>
       <div class="nav-tab"        data-tab="banners">Banners</div>
       <div class="nav-tab"        data-tab="fleet">Fleet</div>
+      <div class="nav-tab"        data-tab="shop">Shop</div>
       <div class="nav-tab"        data-tab="quests">Quest Review</div>
       <div class="nav-tab"        data-tab="audit">Audit Log</div>
       <div class="nav-tab"        data-tab="pages">Pages</div>
@@ -1128,6 +1145,102 @@
       <div class="field-discord-note" style="margin-top:18px;">
         <strong>Fleets tab header row for A1:Q1:</strong><br>
         Fleet ID | Fleet Name | User ID | Username | House | Banner | Ship Model | Ship Make | Ship Image URL | Role | Sort Order | Notes | Active | Fighter Cap | Med Evac Cap | Command Cap | Support Cap
+      </div>
+    </div>
+
+    <!-- ── Shop ── -->
+    <div class="tab-panel" id="tab-shop">
+      <div class="sec-head"><h2>Shop</h2><div class="sec-line"></div></div>
+      <div class="tav-subtabs" id="shop-subtabs">
+        <button class="shop-stab active" data-shoptab="items">Items</button>
+        <button class="shop-stab"        data-shoptab="rules">Pay Rules</button>
+      </div>
+
+      <div id="shop-items-panel">
+        <div class="controls">
+          <input class="ctrl-input" id="shop-item-filter" placeholder="Filter saved shop items…" oninput="renderShopItems()">
+          <button class="add-btn" onclick="shopNewItem()">+ Add Manual Item</button>
+          <button class="ctrl-btn" onclick="renderShopItems()">Refresh</button>
+        </div>
+        <div class="field-discord-note" style="margin-bottom:14px;">Admin-only item list. Star Citizen API data fills known fields only; Discord bot shop behavior is not wired in this pass.</div>
+        <div class="shop-layout">
+          <section class="shop-card">
+            <h4>Search Star Citizen Items</h4>
+            <div class="controls" style="margin-bottom:12px">
+              <input class="ctrl-input" id="shop-sc-query" placeholder="Search item: medpen, rifle, armor…" onkeydown="if(event.key==='Enter')shopSearchSC()">
+              <button class="ctrl-btn" onclick="shopSearchSC()">Search</button>
+            </div>
+            <div id="shop-sc-results" class="shop-results"><div class="tav-list-empty">Search the Star Citizen Wiki API to import item details and images.</div></div>
+          </section>
+
+          <section class="shop-card">
+            <h4 id="shop-item-form-title">Shop Item</h4>
+            <div id="shop-item-preview" class="shop-preview" style="display:none"></div>
+            <input id="shop-item-id" type="hidden">
+            <div class="shop-field-grid">
+              <div class="field-row"><label>Item Name</label><input id="shop-item-name"></div>
+              <div class="field-row"><label>Item Slug</label><input id="shop-item-slug"></div>
+              <div class="field-row"><label>Source</label><input id="shop-item-source" value="manual"></div>
+              <div class="field-row"><label>Type</label><input id="shop-item-type"></div>
+              <div class="field-row"><label>Classification</label><input id="shop-item-classification"></div>
+              <div class="field-row"><label>Manufacturer</label><input id="shop-item-manufacturer"></div>
+              <div class="field-row" style="grid-column:1/-1"><label>Image URL</label><input id="shop-item-image"></div>
+              <div class="field-row" style="grid-column:1/-1"><label>Description</label><textarea id="shop-item-description"></textarea></div>
+              <div class="field-row"><label>Active</label><select id="shop-item-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
+              <div class="field-row"><label>Sort Order</label><input id="shop-item-sort" type="number" value="0"></div>
+              <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="shop-item-notes" placeholder="Optional admin note"></div>
+            </div>
+            <div class="shop-actions">
+              <button class="cancel-btn" onclick="shopClearItemForm()">Clear</button>
+              <button class="save-btn" onclick="shopSaveItem()">Save Item</button>
+            </div>
+          </section>
+        </div>
+        <section class="shop-card" style="margin-top:18px">
+          <h4>Saved Shop Items</h4>
+          <div id="shop-items-list" class="shop-list"><div class="tav-list-empty">Loading…</div></div>
+        </section>
+        <div class="field-discord-note" style="margin-top:18px;">
+          <strong>Shop Items header row for A1:L1:</strong><br>
+          Item ID | Item Name | Item Slug | Source | Type | Classification | Manufacturer | Image URL | Description | Active | Sort Order | Notes
+        </div>
+      </div>
+
+      <div id="shop-rules-panel" style="display:none">
+        <div class="controls">
+          <input class="ctrl-input" id="shop-rule-filter" placeholder="Filter rules…" oninput="renderShopRules()">
+          <button class="add-btn" onclick="shopNewRule()">+ Add Pay Rule</button>
+          <button class="ctrl-btn" onclick="renderShopRules()">Refresh</button>
+        </div>
+        <div class="shop-layout">
+          <section class="shop-card">
+            <h4>Saved Pay Rules</h4>
+            <div id="shop-rules-list" class="shop-list"><div class="tav-list-empty">Loading…</div></div>
+          </section>
+          <section class="shop-card">
+            <h4 id="shop-rule-form-title">Pay Rule</h4>
+            <input id="shop-rule-id" type="hidden">
+            <div class="shop-field-grid">
+              <div class="field-row"><label>Rule Name</label><input id="shop-rule-name" placeholder="Quest Completion"></div>
+              <div class="field-row"><label>Rule Type</label><input id="shop-rule-type" placeholder="quest_completion"></div>
+              <div class="field-row"><label>Gold</label><input id="shop-rule-gold" type="number" value="0"></div>
+              <div class="field-row"><label>Silver</label><input id="shop-rule-silver" type="number" value="0"></div>
+              <div class="field-row"><label>Copper</label><input id="shop-rule-copper" type="number" value="0"></div>
+              <div class="field-row"><label>Applies To</label><input id="shop-rule-applies" placeholder="all, Knight, banner name…"></div>
+              <div class="field-row"><label>Active</label><select id="shop-rule-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
+              <div class="field-row"><label>Sort Order</label><input id="shop-rule-sort" type="number" value="0"></div>
+              <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="shop-rule-notes"></div>
+            </div>
+            <div class="shop-actions">
+              <button class="cancel-btn" onclick="shopClearRuleForm()">Clear</button>
+              <button class="save-btn" onclick="shopSaveRule()">Save Rule</button>
+            </div>
+          </section>
+        </div>
+        <div class="field-discord-note" style="margin-top:18px;">
+          <strong>Shop Pay Rules header row for A1:J1:</strong><br>
+          Rule ID | Rule Name | Rule Type | Gold | Silver | Copper | Applies To | Active | Sort Order | Notes
+        </div>
       </div>
     </div>
 
@@ -2445,6 +2558,7 @@ document.querySelectorAll('.nav-tab').forEach(t=>{
       renderBanManageList();
     }
     if(t.dataset.tab==='fleet') renderFleetAdmin();
+    if(t.dataset.tab==='shop') renderShopAdmin();
     if(t.dataset.tab==='audit')        renderAudit();
   });
 });
@@ -2458,6 +2572,7 @@ function renderAll(){
   renderRoster();
   renderBanManageList();
   seedFleetForm();
+  renderShopAdmin();
   // Pre-seed tavern data so it's ready when the tab opens
   if(window._tavSeedFromSheet) window._tavSeedFromSheet();
 }
@@ -2763,6 +2878,116 @@ async function fleetSaveBuild(){
   } catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
 }
 async function fleetSave(){ return fleetSaveBuild(); }
+
+/* ══════════════════════════════════════════════════════════
+   SHOP ADMIN
+══════════════════════════════════════════════════════════ */
+var SHOP_SC_RESULTS=[];
+function shopEsc(s){ var el=document.createElement('span'); el.textContent=s==null?'':String(s); return el.innerHTML; }
+function shopSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-'+Date.now()); }
+function shopItems(){ return (window.OFSSheets && OFSSheets.getShopItems) ? OFSSheets.getShopItems() : []; }
+function shopRules(){ return (window.OFSSheets && OFSSheets.getShopPayRules) ? OFSSheets.getShopPayRules() : []; }
+function shopImageFallback(img){ if(img) img.onerror=function(){ this.style.display='none'; }; }
+function renderShopAdmin(){ renderShopItems(); renderShopRules(); }
+
+document.addEventListener('click', function(e){
+  var btn=e.target.closest && e.target.closest('#shop-subtabs .shop-stab');
+  if(!btn) return;
+  document.querySelectorAll('#shop-subtabs .shop-stab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  var tab=btn.getAttribute('data-shoptab');
+  document.getElementById('shop-items-panel').style.display = tab==='items' ? '' : 'none';
+  document.getElementById('shop-rules-panel').style.display = tab==='rules' ? '' : 'none';
+  if(tab==='items') renderShopItems(); else renderShopRules();
+});
+
+function normalizeSCItem(raw){
+  var data=raw && raw.data ? raw.data : raw;
+  var desc=data && data.description;
+  if(desc && typeof desc==='object') desc=desc.en_EN || Object.values(desc)[0] || '';
+  var img='';
+  if(data && Array.isArray(data.images) && data.images.length){ img=data.images[0].original_url || data.images[0].thumbnail_url || ''; }
+  return {
+    id: 'shop-'+shopSlug((data&&data.slug)||(data&&data.name)||Date.now()),
+    name: (data&&data.name)||'', slug: (data&&data.slug)||'', source:'starcitizen_wiki',
+    type: (data&&((data.type_label)||(data.item_type_label)||(data.type)))||'',
+    classification: (data&&((data.classification_label)||(data.classification)))||'',
+    manufacturer: (data&&data.manufacturer&&data.manufacturer.name) || (data&&data.manufacturer_description) || '',
+    imageUrl: img, description: desc || '', active:true, sortOrder:0, notes:''
+  };
+}
+
+async function shopFetchJson(url){ var res=await fetch(url,{cache:'no-store'}); if(!res.ok) throw new Error('Search failed: '+res.status); return res.json(); }
+async function shopSearchSC(){
+  var q=(document.getElementById('shop-sc-query').value||'').trim();
+  var box=document.getElementById('shop-sc-results');
+  if(!q){ box.innerHTML='<div class="tav-list-empty">Enter an item name to search.</div>'; return; }
+  box.innerHTML='<div class="tav-list-empty">Searching Star Citizen Wiki…</div>';
+  try{
+    var data;
+    try { data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/search?q='+encodeURIComponent(q)); }
+    catch(e){ data=await shopFetchJson('https://api.star-citizen.wiki/api/search?filter%5Bquery%5D='+encodeURIComponent(q)); }
+    var groups=(data.data&&data.data.data) || data.data || [];
+    var results=[];
+    groups.forEach(function(g){ if((g.type==='items'||g.label==='Items') && Array.isArray(g.results)) results=results.concat(g.results); });
+    SHOP_SC_RESULTS=results.slice(0,20);
+    if(!SHOP_SC_RESULTS.length){ box.innerHTML='<div class="tav-list-empty">No Star Citizen items found.</div>'; return; }
+    box.innerHTML=SHOP_SC_RESULTS.map(function(r,i){ return '<div class="shop-result-row"><img alt="" style="display:none"><div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(r.classification_label||r.item_type_label||r.classification||'Item')+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use</button></div>'; }).join('');
+  }catch(e){ console.error(e); box.innerHTML='<div class="tav-list-empty">Search failed: '+shopEsc(e.message)+'</div>'; }
+}
+
+async function shopUseSCResult(i){
+  var r=SHOP_SC_RESULTS[i]; if(!r) return;
+  try{
+    var slug=(r.api_url||'').split('/').pop() || r.slug || shopSlug(r.name);
+    var data;
+    try { data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/items/'+encodeURIComponent(slug)); }
+    catch(e){ data=await shopFetchJson('https://api.star-citizen.wiki/api/items/'+encodeURIComponent(slug)); }
+    shopSetItemForm(normalizeSCItem(data));
+  }catch(e){
+    console.error(e);
+    shopSetItemForm({ id:'shop-'+shopSlug(r.name), name:r.name||'', slug:(r.api_url||'').split('/').pop()||'', source:'starcitizen_wiki', type:r.item_type_label||'', classification:r.classification_label||r.classification||'', manufacturer:'', imageUrl:'', description:'', active:true, sortOrder:0, notes:'' });
+  }
+}
+
+function shopSetItemForm(item){
+  document.getElementById('shop-item-form-title').textContent=item.id ? 'Edit Shop Item' : 'Shop Item';
+  document.getElementById('shop-item-id').value=item.id||'';
+  document.getElementById('shop-item-name').value=item.name||'';
+  document.getElementById('shop-item-slug').value=item.slug||'';
+  document.getElementById('shop-item-source').value=item.source||'manual';
+  document.getElementById('shop-item-type').value=item.type||'';
+  document.getElementById('shop-item-classification').value=item.classification||'';
+  document.getElementById('shop-item-manufacturer').value=item.manufacturer||'';
+  document.getElementById('shop-item-image').value=item.imageUrl||'';
+  document.getElementById('shop-item-description').value=item.description||'';
+  document.getElementById('shop-item-active').value=item.active===false?'FALSE':'TRUE';
+  document.getElementById('shop-item-sort').value=item.sortOrder||0;
+  document.getElementById('shop-item-notes').value=item.notes||'';
+  renderShopItemPreview(item);
+}
+function renderShopItemPreview(item){
+  var box=document.getElementById('shop-item-preview');
+  if(!item || (!item.name && !item.imageUrl)){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display='grid';
+  box.innerHTML='<img src="'+shopEsc(item.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'"><div><div class="shop-item-title">'+shopEsc(item.name||'Unnamed Item')+'</div><div class="shop-item-meta">'+shopEsc([item.type,item.classification,item.manufacturer].filter(Boolean).join(' / '))+'</div><p style="margin-top:8px;color:var(--text-dim);font-size:.78rem;line-height:1.45">'+shopEsc((item.description||'').slice(0,420))+'</p></div>';
+}
+function shopNewItem(){ shopClearItemForm(); document.getElementById('shop-item-name').focus(); }
+function shopClearItemForm(){ shopSetItemForm({id:'',name:'',slug:'',source:'manual',type:'',classification:'',manufacturer:'',imageUrl:'',description:'',active:true,sortOrder:0,notes:''}); document.getElementById('shop-item-form-title').textContent='Shop Item'; }
+function shopReadItemForm(){ var name=document.getElementById('shop-item-name').value.trim(); var slug=document.getElementById('shop-item-slug').value.trim()||shopSlug(name); return { id:document.getElementById('shop-item-id').value.trim()||('shop-'+slug), name:name, slug:slug, source:document.getElementById('shop-item-source').value.trim()||'manual', type:document.getElementById('shop-item-type').value.trim(), classification:document.getElementById('shop-item-classification').value.trim(), manufacturer:document.getElementById('shop-item-manufacturer').value.trim(), imageUrl:document.getElementById('shop-item-image').value.trim(), description:document.getElementById('shop-item-description').value.trim(), active:document.getElementById('shop-item-active').value!=='FALSE', sortOrder:Number(document.getElementById('shop-item-sort').value)||0, notes:document.getElementById('shop-item-notes').value.trim() }; }
+async function shopSaveItem(){ if(!window.OFSSheets || !OFSSheets.saveShopItem){ alert('Shop write helper unavailable.'); return; } var item=shopReadItemForm(); if(!item.name){ alert('Item Name is required.'); return; } try{ await OFSSheets.saveShopItem(item); alert('Shop item saved. Refresh after Worker /data updates to see the saved list.'); shopClearItemForm(); renderShopItems(); }catch(e){ console.error(e); alert('Shop item save failed: '+e.message); } }
+function shopEditItem(id){ var item=shopItems().find(function(x){return x.id===id;}); if(item) shopSetItemForm(item); }
+async function shopDeleteItem(id){ if(!confirm('Delete this shop item?')) return; try{ await OFSSheets.deleteShopItem(id); alert('Shop item deleted.'); renderShopItems(); }catch(e){ console.error(e); alert('Delete failed: '+e.message); } }
+function renderShopItems(){ var box=document.getElementById('shop-items-list'); if(!box) return; var q=(document.getElementById('shop-item-filter')&&document.getElementById('shop-item-filter').value||'').toLowerCase(); var items=shopItems().filter(function(item){ return !q || [item.name,item.type,item.classification,item.manufacturer,item.notes].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0) || (a.name||'').localeCompare(b.name||''); }); if(!items.length){ box.innerHTML='<div class="tav-list-empty">No shop items returned yet. Confirm the Worker exposes shopItems and the Sheet has headers.</div>'; return; } box.innerHTML=items.map(function(item){ return '<div class="shop-item-row"><img src="'+shopEsc(item.imageUrl||'')+'" onerror="this.style.display=\'none\'" alt=""><div><div class="shop-item-title">'+shopEsc(item.name)+'</div><div class="shop-item-meta">'+shopEsc([item.type,item.classification,item.manufacturer].filter(Boolean).join(' / '))+' · '+(item.active?'Active':'Inactive')+'</div></div><div><button class="edit-btn" onclick="shopEditItem(\''+shopEsc(item.id)+'\')">Edit</button><button class="edit-btn" style="margin-left:6px;color:var(--danger)" onclick="shopDeleteItem(\''+shopEsc(item.id)+'\')">Delete</button></div></div>'; }).join(''); }
+
+function shopNewRule(){ shopClearRuleForm(); document.getElementById('shop-rule-name').focus(); }
+function shopSetRuleForm(rule){ document.getElementById('shop-rule-id').value=rule.id||''; document.getElementById('shop-rule-name').value=rule.name||''; document.getElementById('shop-rule-type').value=rule.type||''; document.getElementById('shop-rule-gold').value=rule.gold||0; document.getElementById('shop-rule-silver').value=rule.silver||0; document.getElementById('shop-rule-copper').value=rule.copper||0; document.getElementById('shop-rule-applies').value=rule.appliesTo||''; document.getElementById('shop-rule-active').value=rule.active===false?'FALSE':'TRUE'; document.getElementById('shop-rule-sort').value=rule.sortOrder||0; document.getElementById('shop-rule-notes').value=rule.notes||''; document.getElementById('shop-rule-form-title').textContent=rule.id?'Edit Pay Rule':'Pay Rule'; }
+function shopClearRuleForm(){ shopSetRuleForm({id:'',name:'',type:'',gold:0,silver:0,copper:0,appliesTo:'all',active:true,sortOrder:0,notes:''}); }
+function shopReadRuleForm(){ var name=document.getElementById('shop-rule-name').value.trim(); var type=document.getElementById('shop-rule-type').value.trim(); return { id:document.getElementById('shop-rule-id').value.trim()||('rule-'+shopSlug(type||name)), name:name, type:type, gold:Number(document.getElementById('shop-rule-gold').value)||0, silver:Number(document.getElementById('shop-rule-silver').value)||0, copper:Number(document.getElementById('shop-rule-copper').value)||0, appliesTo:document.getElementById('shop-rule-applies').value.trim()||'all', active:document.getElementById('shop-rule-active').value!=='FALSE', sortOrder:Number(document.getElementById('shop-rule-sort').value)||0, notes:document.getElementById('shop-rule-notes').value.trim() }; }
+async function shopSaveRule(){ if(!window.OFSSheets || !OFSSheets.saveShopPayRule){ alert('Shop rule write helper unavailable.'); return; } var rule=shopReadRuleForm(); if(!rule.name){ alert('Rule Name is required.'); return; } try{ await OFSSheets.saveShopPayRule(rule); alert('Pay rule saved.'); shopClearRuleForm(); renderShopRules(); }catch(e){ console.error(e); alert('Pay rule save failed: '+e.message); } }
+function shopEditRule(id){ var rule=shopRules().find(function(x){return x.id===id;}); if(rule) shopSetRuleForm(rule); }
+async function shopDeleteRule(id){ if(!confirm('Delete this pay rule?')) return; try{ await OFSSheets.deleteShopPayRule(id); alert('Pay rule deleted.'); renderShopRules(); }catch(e){ console.error(e); alert('Delete failed: '+e.message); } }
+function renderShopRules(){ var box=document.getElementById('shop-rules-list'); if(!box) return; var q=(document.getElementById('shop-rule-filter')&&document.getElementById('shop-rule-filter').value||'').toLowerCase(); var rules=shopRules().filter(function(r){ return !q || [r.name,r.type,r.appliesTo,r.notes].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0) || (a.name||'').localeCompare(b.name||''); }); if(!rules.length){ box.innerHTML='<div class="tav-list-empty">No pay rules returned yet. Confirm the Worker exposes shopPayRules and the Sheet has headers.</div>'; return; } box.innerHTML=rules.map(function(r){ return '<div class="shop-item-row"><div class="avatar-sm" style="border-radius:3px">$</div><div><div class="shop-item-title">'+shopEsc(r.name)+'</div><div class="shop-item-meta">'+shopEsc(r.type||'rule')+' · '+(r.gold||0)+'g '+(r.silver||0)+'s '+(r.copper||0)+'c · '+shopEsc(r.appliesTo||'all')+' · '+(r.active?'Active':'Inactive')+'</div></div><div><button class="edit-btn" onclick="shopEditRule(\''+shopEsc(r.id)+'\')">Edit</button><button class="edit-btn" style="margin-left:6px;color:var(--danger)" onclick="shopDeleteRule(\''+shopEsc(r.id)+'\')">Delete</button></div></div>'; }).join(''); }
 
 /* ══════════════════════════════════════════════════════════
    AUDIT LOG

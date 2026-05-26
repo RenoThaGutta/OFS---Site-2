@@ -285,6 +285,8 @@
   /* ── Fleet/ship data cache (in-memory) ─ */
   let _shipRegistry = [];
   let _fleets = [];
+  let _shopItems = [];
+  let _shopPayRules = [];
 
   /* ── Cache ───────────────────────────────────────── */
   function saveCache(players) {
@@ -445,6 +447,8 @@
     // Cache ship/fleet data for Fleet pages and admin. These keys require Worker /data support.
     _shipRegistry = parseShipRegistry(data.shipRegistry || data.ship_registry || data['Ship Registry'] || []);
     _fleets = parseFleets(data.fleets || data.Fleets || []);
+    _shopItems = parseShopItems(data.shopItems || data.shop_items || data['Shop Items'] || []);
+    _shopPayRules = parseShopPayRules(data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
 
     // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
     // This is intentionally cached separately from normalized players so quest boards
@@ -541,8 +545,59 @@
     }).filter(function (f) { return f.id && f.fleetName && String(f.id).toLowerCase() !== 'fleet id'; });
   }
 
+  function parseBool(value, defaultValue) {
+    if (value == null || value === '') return defaultValue !== false;
+    return String(value).trim().toUpperCase() !== 'FALSE';
+  }
+
+  function parseShopItems(rows) {
+    if (!rows || !rows.length) return [];
+    const first = rows[0] || [];
+    const hasHeader = String(first[0] || '').trim().toLowerCase() === 'item id' ||
+                      String(first[1] || '').trim().toLowerCase() === 'item name';
+    return rows.slice(hasHeader ? 1 : 0).map(function (row) {
+      return {
+        id: String(row[0] || '').trim(),
+        name: String(row[1] || '').trim(),
+        slug: String(row[2] || '').trim(),
+        source: String(row[3] || '').trim(),
+        type: String(row[4] || '').trim(),
+        classification: String(row[5] || '').trim(),
+        manufacturer: String(row[6] || '').trim(),
+        imageUrl: String(row[7] || '').trim(),
+        description: String(row[8] || '').trim(),
+        active: parseBool(row[9], true),
+        sortOrder: Number(row[10]) || 0,
+        notes: String(row[11] || '').trim()
+      };
+    }).filter(function (item) { return item.id && item.name && String(item.id).toLowerCase() !== 'item id'; });
+  }
+
+  function parseShopPayRules(rows) {
+    if (!rows || !rows.length) return [];
+    const first = rows[0] || [];
+    const hasHeader = String(first[0] || '').trim().toLowerCase() === 'rule id' ||
+                      String(first[1] || '').trim().toLowerCase() === 'rule name';
+    return rows.slice(hasHeader ? 1 : 0).map(function (row) {
+      return {
+        id: String(row[0] || '').trim(),
+        name: String(row[1] || '').trim(),
+        type: String(row[2] || '').trim(),
+        gold: Number(row[3]) || 0,
+        silver: Number(row[4]) || 0,
+        copper: Number(row[5]) || 0,
+        appliesTo: String(row[6] || '').trim(),
+        active: parseBool(row[7], true),
+        sortOrder: Number(row[8]) || 0,
+        notes: String(row[9] || '').trim()
+      };
+    }).filter(function (rule) { return rule.id && rule.name && String(rule.id).toLowerCase() !== 'rule id'; });
+  }
+
   function getShipRegistry() { return _shipRegistry || []; }
   function getFleets() { return _fleets || []; }
+  function getShopItems() { return _shopItems || []; }
+  function getShopPayRules() { return _shopPayRules || []; }
 
   function _fallbackToCache(message) {
     const cachedTavern = loadTavernDataCache();
@@ -865,6 +920,37 @@
     return _apiPost('/write', { op: 'deleteRow', sheet: 'Fleets', keyCol: 0, keyVal: id });
   }
 
+  function shopItemRow(item) {
+    return [
+      item.id, item.name, item.slug || '', item.source || 'manual', item.type || '', item.classification || '',
+      item.manufacturer || '', item.imageUrl || '', item.description || '', item.active === false ? 'FALSE' : 'TRUE',
+      item.sortOrder || 0, item.notes || ''
+    ];
+  }
+
+  function saveShopItem(item) {
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Shop Items', keyCol: 0, keyVal: item.id, row: shopItemRow(item) });
+  }
+
+  function deleteShopItem(id) {
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'Shop Items', keyCol: 0, keyVal: id });
+  }
+
+  function shopPayRuleRow(rule) {
+    return [
+      rule.id, rule.name, rule.type || '', rule.gold || 0, rule.silver || 0, rule.copper || 0,
+      rule.appliesTo || '', rule.active === false ? 'FALSE' : 'TRUE', rule.sortOrder || 0, rule.notes || ''
+    ];
+  }
+
+  function saveShopPayRule(rule) {
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Shop Pay Rules', keyCol: 0, keyVal: rule.id, row: shopPayRuleRow(rule) });
+  }
+
+  function deleteShopPayRule(id) {
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'Shop Pay Rules', keyCol: 0, keyVal: id });
+  }
+
   /** Return the cached timeline block overrides keyed by original block title/id. */
   function getTimelineBlocks() {
     return _timelineBlocks;
@@ -886,6 +972,8 @@
     getLoadInfo,
     getShipRegistry,
     getFleets,
+    getShopItems,
+    getShopPayRules,
     getBannerDefs,
     getBannerAliases,
     resolveBannerName,
@@ -897,6 +985,10 @@
     saveFleetAssignment,
     saveFleetAssignments,
     deleteFleetAssignment,
+    saveShopItem,
+    deleteShopItem,
+    saveShopPayRule,
+    deleteShopPayRule,
     appendStatAdjustment,
     updateWallet,
     appendBankLog,
