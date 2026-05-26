@@ -447,7 +447,7 @@
     // Cache ship/fleet data for Fleet pages and admin. These keys require Worker /data support.
     _shipRegistry = parseShipRegistry(data.shipRegistry || data.ship_registry || data['Ship Registry'] || []);
     _fleets = parseFleets(data.fleets || data.Fleets || []);
-    _shopItems = parseShopItems(data.shopItems || data.shop_items || data['Shop Items'] || []);
+    _shopItems = parseShopItems(data.itemList || data.item_list || data['Item List'] || data.shopItems || data.shop_items || data['Shop Items'] || []);
     _shopPayRules = parseShopPayRules(data.currencyRules || data.currency_rules || data['currency_rules'] || data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
 
     // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
@@ -553,11 +553,49 @@
   function parseShopItems(rows) {
     if (!rows || !rows.length) return [];
     const first = rows[0] || [];
-    const hasHeader = String(first[0] || '').trim().toLowerCase() === 'item id' ||
-                      String(first[1] || '').trim().toLowerCase() === 'item name';
-    return rows.slice(hasHeader ? 1 : 0).map(function (row) {
+    const norm = function (v) { return String(v || '').trim().toLowerCase().replace(/[\s-]+/g, '_'); };
+    const headers = first.map(norm);
+    const hasItemListHeader = headers.indexOf('item_name') !== -1 || headers.indexOf('item_id') !== -1;
+    const hasShopItemsHeader = String(first[0] || '').trim().toLowerCase() === 'item id' ||
+                               String(first[1] || '').trim().toLowerCase() === 'item name';
+    const rowsOnly = rows.slice((hasItemListHeader || hasShopItemsHeader) ? 1 : 0);
+
+    // Current OFS shop item source: Item List
+    // Item_Name | Item Image | Item Roll Buy in amount | Can Auction? Y/N | Tradeable? Y/N | Market Value | Item_ID | Enabled | Notes | Description | Price Gold | Price Silver | Price Copper | Stock | Category
+    if (hasItemListHeader) {
+      return rowsOnly.map(function (row) {
+        const itemId = String(row[6] || '').trim();
+        const name = String(row[0] || '').trim();
+        return {
+          id: itemId || ('item-' + name.toLowerCase().replace(/[^a-z0-9]+/g, '-')),
+          itemId: itemId,
+          name: name,
+          imageUrl: String(row[1] || '').trim(),
+          rollBuyInAmount: String(row[2] || '').trim(),
+          canAuction: String(row[3] || '').trim(),
+          tradeable: String(row[4] || '').trim(),
+          marketValue: String(row[5] || '').trim(),
+          enabled: parseBool(row[7], true),
+          active: parseBool(row[7], true),
+          notes: String(row[8] || '').trim(),
+          description: String(row[9] || '').trim(),
+          priceGold: Number(row[10]) || 0,
+          priceSilver: Number(row[11]) || 0,
+          priceCopper: Number(row[12]) || 0,
+          stock: Number(row[13]) || 0,
+          category: String(row[14] || '').trim(),
+          type: String(row[14] || '').trim(),
+          classification: String(row[14] || '').trim(),
+          extra: row.slice(15)
+        };
+      }).filter(function (item) { return item.name && String(item.name).toLowerCase() !== 'item_name'; });
+    }
+
+    // Backward compatibility for the first-pass Shop Items sheet, if present locally.
+    return rowsOnly.map(function (row) {
       return {
         id: String(row[0] || '').trim(),
+        itemId: String(row[0] || '').replace(/^shop-/, '').trim(),
         name: String(row[1] || '').trim(),
         slug: String(row[2] || '').trim(),
         source: String(row[3] || '').trim(),
@@ -566,9 +604,15 @@
         manufacturer: String(row[6] || '').trim(),
         imageUrl: String(row[7] || '').trim(),
         description: String(row[8] || '').trim(),
+        enabled: parseBool(row[9], true),
         active: parseBool(row[9], true),
         sortOrder: Number(row[10]) || 0,
-        notes: String(row[11] || '').trim()
+        notes: String(row[11] || '').trim(),
+        priceGold: 0,
+        priceSilver: 0,
+        priceCopper: 0,
+        stock: 0,
+        category: String(row[4] || row[5] || '').trim()
       };
     }).filter(function (item) { return item.id && item.name && String(item.id).toLowerCase() !== 'item id'; });
   }
@@ -946,19 +990,34 @@
   }
 
   function shopItemRow(item) {
-    return [
-      item.id, item.name, item.slug || '', item.source || 'manual', item.type || '', item.classification || '',
-      item.manufacturer || '', item.imageUrl || '', item.description || '', item.active === false ? 'FALSE' : 'TRUE',
-      item.sortOrder || 0, item.notes || ''
+    const itemId = item.itemId || item.id || '';
+    const row = [
+      item.name || '',
+      item.imageUrl || '',
+      item.rollBuyInAmount || '',
+      item.canAuction || '',
+      item.tradeable || '',
+      item.marketValue || '',
+      itemId,
+      item.enabled === false || item.active === false ? 'N' : 'Y',
+      item.notes || '',
+      item.description || '',
+      item.priceGold || 0,
+      item.priceSilver || 0,
+      item.priceCopper || 0,
+      item.stock || 0,
+      item.category || item.type || item.classification || ''
     ];
+    return row.concat(item.extra || []);
   }
 
   function saveShopItem(item) {
-    return _apiPost('/write', { op: 'overwrite', sheet: 'Shop Items', keyCol: 0, keyVal: item.id, row: shopItemRow(item) });
+    const itemId = item.itemId || item.id;
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Item List', keyCol: 6, keyVal: itemId, row: shopItemRow(item) });
   }
 
   function deleteShopItem(id) {
-    return _apiPost('/write', { op: 'deleteRow', sheet: 'Shop Items', keyCol: 0, keyVal: id });
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'Item List', keyCol: 6, keyVal: id });
   }
 
   function shopPayRuleRow(rule) {

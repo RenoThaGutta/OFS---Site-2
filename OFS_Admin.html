@@ -1162,7 +1162,7 @@
           <button class="add-btn" onclick="shopNewItem()">+ Add Manual Item</button>
           <button class="ctrl-btn" onclick="renderShopItems()">Refresh</button>
         </div>
-        <div class="field-discord-note" style="margin-bottom:14px;">Admin-only item list. Star Citizen API data fills known fields only; Discord bot shop behavior is not wired in this pass.</div>
+        <div class="field-discord-note" style="margin-bottom:14px;">Admin-only view of the current <strong>Item List</strong> Sheet tab. Star Citizen API data fills known item fields only; Discord bot shop behavior is not changed in this pass.</div>
         <div class="shop-layout">
           <section class="shop-card">
             <h4>Search Star Citizen Items</h4>
@@ -1191,15 +1191,19 @@
             <input id="shop-item-id" type="hidden">
             <div class="shop-field-grid">
               <div class="field-row"><label>Item Name</label><input id="shop-item-name"></div>
-              <div class="field-row"><label>Item Slug</label><input id="shop-item-slug"></div>
-              <div class="field-row"><label>Source</label><input id="shop-item-source" value="manual"></div>
-              <div class="field-row"><label>Type</label><input id="shop-item-type"></div>
-              <div class="field-row"><label>Classification</label><input id="shop-item-classification"></div>
-              <div class="field-row"><label>Manufacturer</label><input id="shop-item-manufacturer"></div>
-              <div class="field-row" style="grid-column:1/-1"><label>Image URL</label><input id="shop-item-image"></div>
+              <div class="field-row"><label>Item ID</label><input id="shop-item-item-id" placeholder="4512"></div>
+              <div class="field-row" style="grid-column:1/-1"><label>Item Image</label><input id="shop-item-image"></div>
+              <div class="field-row"><label>Item Roll Buy in amount</label><input id="shop-item-roll" placeholder="1 Silver"></div>
+              <div class="field-row"><label>Market Value</label><input id="shop-item-market" placeholder="50 Silver"></div>
+              <div class="field-row"><label>Can Auction? Y/N</label><select id="shop-item-auction"><option value="Y">Y</option><option value="N">N</option><option value=""></option></select></div>
+              <div class="field-row"><label>Tradeable? Y/N</label><select id="shop-item-tradeable"><option value="Y">Y</option><option value="N">N</option><option value=""></option></select></div>
+              <div class="field-row"><label>Enabled</label><select id="shop-item-active"><option value="Y">Y</option><option value="N">N</option></select></div>
+              <div class="field-row"><label>Price Gold</label><input id="shop-item-price-gold" type="number" value="0"></div>
+              <div class="field-row"><label>Price Silver</label><input id="shop-item-price-silver" type="number" value="0"></div>
+              <div class="field-row"><label>Price Copper</label><input id="shop-item-price-copper" type="number" value="0"></div>
+              <div class="field-row"><label>Stock</label><input id="shop-item-stock" type="number" value="0"></div>
+              <div class="field-row"><label>Category</label><input id="shop-item-category" placeholder="Sword, Ring, Ticket..."></div>
               <div class="field-row" style="grid-column:1/-1"><label>Description</label><textarea id="shop-item-description"></textarea></div>
-              <div class="field-row"><label>Active</label><select id="shop-item-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
-              <div class="field-row"><label>Sort Order</label><input id="shop-item-sort" type="number" value="0"></div>
               <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="shop-item-notes" placeholder="Optional admin note"></div>
             </div>
             <div class="shop-actions">
@@ -1213,8 +1217,8 @@
           <div id="shop-items-list" class="shop-list"><div class="tav-list-empty">Loading…</div></div>
         </section>
         <div class="field-discord-note" style="margin-top:18px;">
-          <strong>Shop Items header row for A1:L1:</strong><br>
-          Item ID | Item Name | Item Slug | Source | Type | Classification | Manufacturer | Image URL | Description | Active | Sort Order | Notes
+          <strong>Item List header row:</strong><br>
+          Item_Name | Item Image | Item Roll Buy in amount | Can Auction? Y/N | Tradeable? Y/N | Market Value | Item_ID | Enabled | Notes | Description | Price Gold | Price Silver | Price Copper | Stock | Category
         </div>
       </div>
 
@@ -2937,14 +2941,18 @@ function normalizeSCItem(raw){
   if(desc && typeof desc==='object') desc=desc.en_EN || Object.values(desc)[0] || '';
   var img='';
   if(data && Array.isArray(data.images) && data.images.length){ img=data.images[0].original_url || data.images[0].thumbnail_url || ''; }
+  var category=(data&&((data.type_label)||(data.item_type_label)||(data.type)||(data.classification_label)||(data.classification)))||'';
   return {
-    id: 'shop-'+shopSlug((data&&data.slug)||(data&&data.name)||Date.now()),
-    name: (data&&data.name)||'', slug: (data&&data.slug)||'', source:'starcitizen_wiki',
-    type: (data&&((data.type_label)||(data.item_type_label)||(data.type)))||'',
-    subType: (data&&((data.sub_type_label)||(data.sub_type)))||'',
+    id: '', itemId:'',
+    name: (data&&data.name)||'',
+    imageUrl: img,
+    rollBuyInAmount:'', canAuction:'Y', tradeable:'Y', marketValue:'',
+    description: desc || '', enabled:true, active:true,
+    priceGold:0, priceSilver:0, priceCopper:0, stock:0,
+    category: category,
+    type: category,
     classification: (data&&((data.classification_label)||(data.classification)))||'',
-    manufacturer: (data&&data.manufacturer&&data.manufacturer.name) || (data&&data.manufacturer_description) || '',
-    imageUrl: img, description: desc || '', active:true, sortOrder:0, notes:''
+    notes:'Imported from Star Citizen Wiki'
   };
 }
 
@@ -2978,7 +2986,7 @@ async function shopUseSCResult(i){
     shopSetItemForm(normalizeSCItem(data));
   }catch(e){
     console.error(e);
-    shopSetItemForm({ id:'shop-'+shopSlug(r.name), name:r.name||'', slug:(r.api_url||'').split('/').pop()||'', source:'starcitizen_wiki', type:r.item_type_label||'', classification:r.classification_label||r.classification||'', manufacturer:'', imageUrl:'', description:'', active:true, sortOrder:0, notes:'' });
+    shopSetItemForm({ id:'', itemId:'', name:r.name||'', imageUrl:'', rollBuyInAmount:'', canAuction:'Y', tradeable:'Y', marketValue:'', description:'', enabled:true, active:true, priceGold:0, priceSilver:0, priceCopper:0, stock:0, category:r.item_type_label||r.classification_label||r.classification||'', notes:'Imported from Star Citizen Wiki' });
   }
 }
 
@@ -2986,15 +2994,19 @@ function shopSetItemForm(item){
   document.getElementById('shop-item-form-title').textContent=item.id ? 'Edit Shop Item' : 'Shop Item';
   document.getElementById('shop-item-id').value=item.id||'';
   document.getElementById('shop-item-name').value=item.name||'';
-  document.getElementById('shop-item-slug').value=item.slug||'';
-  document.getElementById('shop-item-source').value=item.source||'manual';
-  document.getElementById('shop-item-type').value=item.type||'';
-  document.getElementById('shop-item-classification').value=item.classification||'';
-  document.getElementById('shop-item-manufacturer').value=item.manufacturer||'';
+  document.getElementById('shop-item-item-id').value=item.itemId||item.id||'';
   document.getElementById('shop-item-image').value=item.imageUrl||'';
+  document.getElementById('shop-item-roll').value=item.rollBuyInAmount||'';
+  document.getElementById('shop-item-market').value=item.marketValue||'';
+  document.getElementById('shop-item-auction').value=item.canAuction||'';
+  document.getElementById('shop-item-tradeable').value=item.tradeable||'';
+  document.getElementById('shop-item-active').value=item.enabled===false||item.active===false?'N':'Y';
+  document.getElementById('shop-item-price-gold').value=item.priceGold||0;
+  document.getElementById('shop-item-price-silver').value=item.priceSilver||0;
+  document.getElementById('shop-item-price-copper').value=item.priceCopper||0;
+  document.getElementById('shop-item-stock').value=item.stock||0;
+  document.getElementById('shop-item-category').value=item.category||item.type||item.classification||'';
   document.getElementById('shop-item-description').value=item.description||'';
-  document.getElementById('shop-item-active').value=item.active===false?'FALSE':'TRUE';
-  document.getElementById('shop-item-sort').value=item.sortOrder||0;
   document.getElementById('shop-item-notes').value=item.notes||'';
   renderShopItemPreview(item);
 }
@@ -3002,15 +3014,45 @@ function renderShopItemPreview(item){
   var box=document.getElementById('shop-item-preview');
   if(!item || (!item.name && !item.imageUrl)){ box.style.display='none'; box.innerHTML=''; return; }
   box.style.display='grid';
-  box.innerHTML='<img src="'+shopEsc(item.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'"><div><div class="shop-item-title">'+shopEsc(item.name||'Unnamed Item')+'</div><div class="shop-item-meta">'+shopEsc([item.type,item.classification,item.manufacturer].filter(Boolean).join(' / '))+'</div><p style="margin-top:8px;color:var(--text-dim);font-size:.78rem;line-height:1.45">'+shopEsc((item.description||'').slice(0,420))+'</p></div>';
+  var price=[]; if(Number(item.priceGold)) price.push(item.priceGold+'g'); if(Number(item.priceSilver)) price.push(item.priceSilver+'s'); if(Number(item.priceCopper)) price.push(item.priceCopper+'c');
+  box.innerHTML='<img src="'+shopEsc(item.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'"><div><div class="shop-item-title">'+shopEsc(item.name||'Unnamed Item')+'</div><div class="shop-item-meta">ID '+shopEsc(item.itemId||item.id||'new')+' · '+shopEsc(item.category||item.type||'Uncategorized')+' · '+shopEsc(item.enabled===false||item.active===false?'Disabled':'Enabled')+'</div><div class="shop-item-meta">Price: '+shopEsc(price.join(' ')||'none')+' · Stock: '+shopEsc(item.stock||0)+' · Market: '+shopEsc(item.marketValue||'')+'</div><p style="margin-top:8px;color:var(--text-dim);font-size:.78rem;line-height:1.45">'+shopEsc((item.description||'').slice(0,420))+'</p></div>';
 }
 function shopNewItem(){ shopClearItemForm(); document.getElementById('shop-item-name').focus(); }
-function shopClearItemForm(){ shopSetItemForm({id:'',name:'',slug:'',source:'manual',type:'',classification:'',manufacturer:'',imageUrl:'',description:'',active:true,sortOrder:0,notes:''}); document.getElementById('shop-item-form-title').textContent='Shop Item'; }
-function shopReadItemForm(){ var name=document.getElementById('shop-item-name').value.trim(); var slug=document.getElementById('shop-item-slug').value.trim()||shopSlug(name); return { id:document.getElementById('shop-item-id').value.trim()||('shop-'+slug), name:name, slug:slug, source:document.getElementById('shop-item-source').value.trim()||'manual', type:document.getElementById('shop-item-type').value.trim(), classification:document.getElementById('shop-item-classification').value.trim(), manufacturer:document.getElementById('shop-item-manufacturer').value.trim(), imageUrl:document.getElementById('shop-item-image').value.trim(), description:document.getElementById('shop-item-description').value.trim(), active:document.getElementById('shop-item-active').value!=='FALSE', sortOrder:Number(document.getElementById('shop-item-sort').value)||0, notes:document.getElementById('shop-item-notes').value.trim() }; }
-async function shopSaveItem(){ if(!window.OFSSheets || !OFSSheets.saveShopItem){ alert('Shop write helper unavailable.'); return; } var item=shopReadItemForm(); if(!item.name){ alert('Item Name is required.'); return; } try{ await OFSSheets.saveShopItem(item); alert('Shop item saved. Refresh after Worker /data updates to see the saved list.'); shopClearItemForm(); renderShopItems(); }catch(e){ console.error(e); alert('Shop item save failed: '+e.message); } }
-function shopEditItem(id){ var item=shopItems().find(function(x){return x.id===id;}); if(item) shopSetItemForm(item); }
-async function shopDeleteItem(id){ if(!confirm('Delete this shop item?')) return; try{ await OFSSheets.deleteShopItem(id); alert('Shop item deleted.'); renderShopItems(); }catch(e){ console.error(e); alert('Delete failed: '+e.message); } }
-function renderShopItems(){ var box=document.getElementById('shop-items-list'); if(!box) return; var q=(document.getElementById('shop-item-filter')&&document.getElementById('shop-item-filter').value||'').toLowerCase(); var items=shopItems().filter(function(item){ return !q || [item.name,item.type,item.classification,item.manufacturer,item.notes].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0) || (a.name||'').localeCompare(b.name||''); }); if(!items.length){ box.innerHTML='<div class="tav-list-empty">No shop items returned yet. Confirm the Worker exposes shopItems and the Sheet has headers.</div>'; return; } box.innerHTML=items.map(function(item){ return '<div class="shop-item-row"><img src="'+shopEsc(item.imageUrl||'')+'" onerror="this.style.display=\'none\'" alt=""><div><div class="shop-item-title">'+shopEsc(item.name)+'</div><div class="shop-item-meta">'+shopEsc([item.type,item.classification,item.manufacturer].filter(Boolean).join(' / '))+' · '+(item.active?'Active':'Inactive')+'</div></div><div><button class="edit-btn" onclick="shopEditItem(\''+shopEsc(item.id)+'\')">Edit</button><button class="edit-btn" style="margin-left:6px;color:var(--danger)" onclick="shopDeleteItem(\''+shopEsc(item.id)+'\')">Delete</button></div></div>'; }).join(''); }
+function shopClearItemForm(){ shopSetItemForm({id:'',itemId:'',name:'',imageUrl:'',rollBuyInAmount:'',canAuction:'Y',tradeable:'Y',marketValue:'',description:'',enabled:true,active:true,priceGold:0,priceSilver:0,priceCopper:0,stock:0,category:'',notes:''}); document.getElementById('shop-item-form-title').textContent='Shop Item'; }
+function shopReadItemForm(){
+  var name=document.getElementById('shop-item-name').value.trim();
+  var itemId=document.getElementById('shop-item-item-id').value.trim()||document.getElementById('shop-item-id').value.trim()||String(Date.now()).slice(-6);
+  return {
+    id:itemId, itemId:itemId, name:name,
+    imageUrl:document.getElementById('shop-item-image').value.trim(),
+    rollBuyInAmount:document.getElementById('shop-item-roll').value.trim(),
+    canAuction:document.getElementById('shop-item-auction').value.trim(),
+    tradeable:document.getElementById('shop-item-tradeable').value.trim(),
+    marketValue:document.getElementById('shop-item-market').value.trim(),
+    enabled:document.getElementById('shop-item-active').value!=='N',
+    active:document.getElementById('shop-item-active').value!=='N',
+    notes:document.getElementById('shop-item-notes').value.trim(),
+    description:document.getElementById('shop-item-description').value.trim(),
+    priceGold:Number(document.getElementById('shop-item-price-gold').value)||0,
+    priceSilver:Number(document.getElementById('shop-item-price-silver').value)||0,
+    priceCopper:Number(document.getElementById('shop-item-price-copper').value)||0,
+    stock:Number(document.getElementById('shop-item-stock').value)||0,
+    category:document.getElementById('shop-item-category').value.trim()
+  };
+}
+async function shopSaveItem(){ if(!window.OFSSheets || !OFSSheets.saveShopItem){ alert('Shop write helper unavailable.'); return; } var item=shopReadItemForm(); if(!item.name){ alert('Item Name is required.'); return; } try{ await OFSSheets.saveShopItem(item); alert('Shop item saved to Item List.'); shopClearItemForm(); if(window.OFSSheets&&OFSSheets.load){ await OFSSheets.load({force:true}); } renderShopItems(); }catch(e){ console.error(e); alert('Shop item save failed: '+e.message); } }
+function shopEditItem(id){ var item=shopItems().find(function(x){return String(x.id)===String(id)||String(x.itemId)===String(id);}); if(item) shopSetItemForm(item); }
+async function shopDeleteItem(id){ if(!confirm('Delete this Item List row?')) return; try{ await OFSSheets.deleteShopItem(id); alert('Shop item deleted.'); if(window.OFSSheets&&OFSSheets.load){ await OFSSheets.load({force:true}); } renderShopItems(); }catch(e){ console.error(e); alert('Delete failed: '+e.message); } }
+function renderShopItems(){
+  var box=document.getElementById('shop-items-list'); if(!box) return;
+  var q=(document.getElementById('shop-item-filter')&&document.getElementById('shop-item-filter').value||'').toLowerCase();
+  var items=shopItems().filter(function(item){ return !q || [item.name,item.category,item.type,item.classification,item.marketValue,item.notes,item.description].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  if(!items.length){ box.innerHTML='<div class="tav-list-empty">No Item List rows returned yet. Confirm the Worker exposes itemList/shopItems from the Item List Sheet.</div>'; return; }
+  box.innerHTML=items.map(function(item){
+    var id=item.itemId||item.id; var price=[]; if(Number(item.priceGold)) price.push(item.priceGold+'g'); if(Number(item.priceSilver)) price.push(item.priceSilver+'s'); if(Number(item.priceCopper)) price.push(item.priceCopper+'c');
+    return '<div class="shop-item-row"><img src="'+shopEsc(item.imageUrl||'')+'" onerror="this.style.display=\'none\'" alt=""><div><div class="shop-item-title">'+shopEsc(item.name)+'</div><div class="shop-item-meta">ID '+shopEsc(id||'')+' · '+shopEsc(item.category||item.type||'Uncategorized')+' · '+(item.enabled!==false&&item.active!==false?'Enabled':'Disabled')+' · Stock '+shopEsc(item.stock||0)+'</div><div class="shop-item-meta">Price: '+shopEsc(price.join(' ')||'none')+' · Market: '+shopEsc(item.marketValue||'')+(item.notes?' · '+shopEsc(item.notes):'')+'</div></div><div><button class="edit-btn" onclick="shopEditItem(\''+shopEsc(id)+'\')">Edit</button><button class="edit-btn" style="margin-left:6px;color:var(--danger)" onclick="shopDeleteItem(\''+shopEsc(id)+'\')">Delete</button></div></div>';
+  }).join('');
+}
 
 function shopNewRule(){ shopClearRuleForm(); document.getElementById('shop-rule-id').focus(); }
 function shopSetRuleForm(rule){
