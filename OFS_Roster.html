@@ -556,9 +556,9 @@
 </footer>
 
 <script src="header_bar.js"></script>
-<script src="ofs-data.js"></script>
-<script src="ofs-sheets.js"></script>
-<script src="ofs-nav.js"></script>
+<script src="ofs-data.js?v=data-refresh-20260526"></script>
+<script src="ofs-sheets.js?v=data-refresh-20260526"></script>
+<script src="ofs-nav.js?v=data-refresh-20260526"></script>
 <script>
 /* ── Star field ─────────────────────────────────────────────── */
 (function(){
@@ -681,7 +681,16 @@ let PLAYERS = [
 ];
 
 const OFS_SHARED = window.OFSData;
-PLAYERS = OFS_SHARED.getPlayers();
+function isDemoRoster(players){
+  if(!Array.isArray(players) || players.length !== 8) return false;
+  const ids = players.map(p => String(p && p.id || '')).sort().join('|');
+  const names = players.map(p => String(p && p.username || '').toLowerCase()).join('|');
+  return ids === '1|2|3|4|5|6|7|8' && names.includes('vanderan') && names.includes('rook ashveil');
+}
+function liveRosterPlayers(players){
+  return isDemoRoster(players) ? [] : (Array.isArray(players) ? players : []);
+}
+PLAYERS = liveRosterPlayers(OFS_SHARED.getPlayers());
 
 function syncControls(){
   const ranks = OFS_SHARED.sortRanks([...new Set(PLAYERS.map(player => player.rank))]);
@@ -738,8 +747,7 @@ function displayName(p) {
 }
 
 function getFiltered(){
-  PLAYERS = OFS_SHARED.getPlayers();
-
+  PLAYERS = liveRosterPlayers(OFS_SHARED.getPlayers());
   const q    = document.getElementById('ctrl-search').value.trim().toLowerCase();
   const rank = document.getElementById('ctrl-rank').value;
   const ban  = document.getElementById('ctrl-banner').value;
@@ -845,7 +853,7 @@ function renderTable(list){
 
 /* ── Leaderboard render ───────────────────────────────────── */
 function renderLB(){
-  PLAYERS = OFS_SHARED.getPlayers();
+  PLAYERS = liveRosterPlayers(OFS_SHARED.getPlayers());
   const metric = document.querySelector('#lb-tabs .lb-tab.active').dataset.lb;
   const sorted = [...PLAYERS].sort((a,b) => {
     switch(metric){
@@ -915,7 +923,7 @@ function renderLB(){
 /* ── Main render ──────────────────────────────────────────── */
 function render(){
   if(viewMode === 'leaderboard'){ renderLB(); return; }
-  PLAYERS = OFS_SHARED.getPlayers();
+  PLAYERS = liveRosterPlayers(OFS_SHARED.getPlayers());
   const list = getFiltered();
   document.getElementById('shown-count').textContent = list.length;
   document.getElementById('total-count').textContent = PLAYERS.length;
@@ -1008,13 +1016,13 @@ document.getElementById('lb-tabs').addEventListener('click', e => {
 render();
 
 window.addEventListener('storage', () => {
-  PLAYERS = OFS_SHARED.getPlayers();
+  PLAYERS = liveRosterPlayers(OFS_SHARED.getPlayers());
   syncControls();
   render();
 });
 
 OFSSheets.load().then(function() {
-  PLAYERS = OFS_SHARED.getPlayers();
+  PLAYERS = liveRosterPlayers(OFS_SHARED.getPlayers());
   syncControls();
   render();
   if (window.OFSNav) OFSNav.refresh();

@@ -292,6 +292,7 @@
     }
 
     renderZone();
+    window.addEventListener('ofs:sheets-loaded', renderZone);
   }
 
   if (document.readyState === 'loading') {

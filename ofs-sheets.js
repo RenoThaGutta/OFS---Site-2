@@ -379,9 +379,26 @@
    * Falls back to cached data on network error.
    * @returns {Promise<object[]>} Normalized player array.
    */
+  function notifySheetsLoaded(players) {
+    try {
+      global.dispatchEvent(new CustomEvent('ofs:sheets-loaded', {
+        detail: { players: Array.isArray(players) ? players : [], loadInfo: _lastLoadInfo }
+      }));
+    } catch (e) { /* non-fatal: older browsers or blocked events */ }
+  }
+
   async function load() {
     if (_loadPromise) return _loadPromise;
-    _loadPromise = _loadFresh().finally(function () { _loadPromise = null; });
+    _loadPromise = _loadFresh()
+      .then(function (players) {
+        notifySheetsLoaded(players);
+        return players;
+      })
+      .catch(function (error) {
+        notifySheetsLoaded([]);
+        throw error;
+      })
+      .finally(function () { _loadPromise = null; });
     return _loadPromise;
   }
 
