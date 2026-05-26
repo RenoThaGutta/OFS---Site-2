@@ -247,6 +247,14 @@
     .shop-rules-table th { position:sticky; top:0; z-index:1; background:#111018; color:var(--gold); font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; text-align:left; padding:9px 8px; border-bottom:1px solid var(--b-dim); }
     .shop-rules-table td { padding:8px; border-bottom:1px solid rgba(201,168,76,.12); vertical-align:top; }
     .shop-rules-table input, .shop-rules-table select { width:100%; min-width:86px; background:var(--bg-card2); border:1px solid var(--b-dim); color:var(--text); padding:7px 8px; border-radius:3px; font-size:.76rem; }
+    .shop-number-stepper { display:grid; grid-template-columns:minmax(92px,1fr) 24px; align-items:stretch; border:1px solid var(--b-dim); border-radius:3px; background:var(--bg-card2); overflow:hidden; }
+    .shop-rules-table .shop-number-stepper input { border:0; border-radius:0; min-width:0; background:transparent; padding-right:6px; -moz-appearance:textfield; }
+    .shop-rules-table .shop-number-stepper input::-webkit-outer-spin-button, .shop-rules-table .shop-number-stepper input::-webkit-inner-spin-button { -webkit-appearance:none; margin:0; }
+    .shop-step-buttons { display:grid; grid-template-rows:1fr 1fr; border-left:1px solid var(--b-dim); background:linear-gradient(180deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); }
+    .shop-step-buttons button { border:0; border-bottom:1px solid rgba(201,168,76,.20); background:transparent; color:var(--gold); font-size:.55rem; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+    .shop-step-buttons button:last-child { border-bottom:0; }
+    .shop-step-buttons button:hover { background:rgba(201,168,76,.18); color:var(--gold-lt); }
+    .shop-step-buttons button:active { background:rgba(201,168,76,.28); transform:translateY(1px); }
     .shop-rules-table .rule-id-cell { color:var(--gold-lt); font-weight:700; min-width:110px; }
     .shop-rule-note-readonly { min-width:220px; color:var(--text-dim); font-size:.78rem; line-height:1.35; }
     .shop-unit-note { color:var(--silver-dim); font-size:.72rem; margin-top:3px; }
@@ -2939,7 +2947,7 @@ function shopRuleDisplay(rule){ return shopRuleLabel(rule.statColumn) || shopRul
 function shopRuleUnitNote(rule){
   var key=[rule&&rule.statColumn, rule&&rule.ruleId, rule&&rule.id].join(' ').toUpperCase();
   if(/TOTAL\s*QUEST\s*LENGTH|TOTAL_LENGTH|TOTALLENGTH/.test(key)) return 'For time: 1 unit = 1 minute';
-  var amount=Number(rule&&rule.amountPerUnit);
+  var amount=Math.round(Number(rule&&rule.amountPerUnit));
   var currency=(rule&&rule.currencyType) || 'currency';
   return (amount ? amount : 1)+' '+currency+' per 1 unit';
 }
@@ -3110,6 +3118,20 @@ function renderShopItems(){
 }
 
 function shopRuleFieldId(id, field){ return 'shop-rule-row-'+shopSlug(id)+'-'+field; }
+function shopRoundRuleAmount(id){
+  var el=document.getElementById(shopRuleFieldId(id,'amount'));
+  if(!el) return;
+  var val=Number(el.value);
+  el.value=String(Number.isFinite(val) ? Math.round(val) : 0);
+}
+function shopStepRuleAmount(id, delta){
+  var el=document.getElementById(shopRuleFieldId(id,'amount'));
+  if(!el) return;
+  var val=Number(el.value);
+  if(!Number.isFinite(val)) val=0;
+  el.value=String(Math.max(0, Math.round(val) + delta));
+  el.dispatchEvent(new Event('change',{bubbles:true}));
+}
 function shopReadRuleRow(id){
   var original=shopRules().find(function(x){ return String(x.ruleId||x.id)===String(id); }) || {};
   return {
@@ -3117,7 +3139,7 @@ function shopReadRuleRow(id){
     statColumn:original.statColumn||'',
     snapshotColumn:original.snapshotColumn||'',
     currencyType:(document.getElementById(shopRuleFieldId(id,'currency'))||{}).value||'',
-    amountPerUnit:Number((document.getElementById(shopRuleFieldId(id,'amount'))||{}).value)||0,
+    amountPerUnit:Math.round(Number((document.getElementById(shopRuleFieldId(id,'amount'))||{}).value)||0),
     minRole:(document.getElementById(shopRuleFieldId(id,'role'))||{}).value||'',
     enabled:((document.getElementById(shopRuleFieldId(id,'enabled'))||{}).value||'TRUE')!=='FALSE',
     notes:original.notes||''
@@ -3138,7 +3160,7 @@ function renderShopRules(){
     var id=r.ruleId||r.id;
     return '<tr><td class="rule-id-cell">'+shopEsc(shopRuleDisplay(r))+'<div class="shop-unit-note">Payout setting</div></td>'+
       '<td><select id="'+shopRuleFieldId(id,'currency')+'"><option '+(r.currencyType==='Gold'?'selected':'')+'>Gold</option><option '+(r.currencyType==='Silver'?'selected':'')+'>Silver</option><option '+(r.currencyType==='Copper'?'selected':'')+'>Copper</option></select></td>'+
-      '<td><input type="number" step="0.01" id="'+shopRuleFieldId(id,'amount')+'" value="'+shopEsc(r.amountPerUnit||0)+'"><div class="shop-unit-note">'+shopEsc(shopRuleUnitNote(r))+'</div></td>'+
+      '<td><div class="shop-number-stepper"><input type="number" step="1" min="0" inputmode="numeric" id="'+shopRuleFieldId(id,'amount')+'" value="'+shopEsc(Math.round(Number(r.amountPerUnit)||0))+'" onchange="shopRoundRuleAmount(\''+shopEsc(id)+'\')"><div class="shop-step-buttons"><button type="button" aria-label="Increase amount" onclick="shopStepRuleAmount(\''+shopEsc(id)+'\',1)">▲</button><button type="button" aria-label="Decrease amount" onclick="shopStepRuleAmount(\''+shopEsc(id)+'\',-1)">▼</button></div></div><div class="shop-unit-note">'+shopEsc(shopRuleUnitNote(r))+'</div></td>'+
       '<td><select id="'+shopRuleFieldId(id,'role')+'">'+shopRankOptions(r.minRole||'')+'</select></td>'+
       '<td><select id="'+shopRuleFieldId(id,'enabled')+'"><option value="TRUE" '+(r.enabled!==false?'selected':'')+'>TRUE</option><option value="FALSE" '+(r.enabled===false?'selected':'')+'>FALSE</option></select></td>'+
       '<td><div class="shop-rule-note-readonly">'+shopEsc(r.notes||'—')+'</div></td>'+
