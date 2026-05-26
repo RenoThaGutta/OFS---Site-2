@@ -227,12 +227,33 @@
     .shop-result-row img, .shop-item-row img { width:52px; height:42px; object-fit:cover; border:1px solid var(--b-dim); border-radius:3px; background:var(--bg-card2); }
     .shop-result-title, .shop-item-title { color:var(--gold-lt); font-weight:600; font-size:.88rem; }
     .shop-result-meta, .shop-item-meta { color:var(--silver-dim); font-size:.74rem; margin-top:3px; }
-    .shop-preview { display:grid; grid-template-columns:160px 1fr; gap:14px; align-items:start; margin-bottom:14px; padding:12px; border:1px solid var(--b-dim); background:rgba(201,168,76,.035); border-radius:4px; }
-    .shop-preview img { width:160px; max-height:120px; object-fit:contain; background:#05050a; border:1px solid var(--b-dim); border-radius:3px; }
+    .shop-item-picker { display:flex; gap:10px; overflow-x:auto; padding:10px; margin:0 0 14px; border:1px solid var(--b-dim); background:rgba(201,168,76,.035); border-radius:4px; }
+    .shop-pick-card { flex:0 0 138px; min-height:142px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:4px; padding:8px; cursor:pointer; transition:border-color .18s, background .18s, transform .18s; }
+    .shop-pick-card:hover, .shop-pick-card.active { border-color:var(--b-gold); background:rgba(201,168,76,.08); transform:translateY(-1px); }
+    .shop-pick-card img { width:100%; height:74px; object-fit:cover; border:1px solid var(--b-dim); border-radius:3px; background:#05050a; margin-bottom:7px; }
+    .shop-pick-name { color:var(--gold-lt); font-weight:600; font-size:.76rem; line-height:1.25; white-space:normal; }
+    .shop-pick-meta { color:var(--silver-dim); font-size:.66rem; margin-top:4px; }
+    .shop-item-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; max-height:520px; overflow:auto; }
+    .shop-item-card { display:grid; grid-template-columns:96px minmax(0,1fr); gap:12px; padding:12px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:4px; align-items:start; }
+    .shop-item-card img { width:96px; height:82px; object-fit:cover; border:1px solid var(--b-dim); border-radius:3px; background:#05050a; }
+    .shop-item-card-actions { grid-column:1/-1; display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+    .shop-preview { display:grid; grid-template-columns:190px 1fr; gap:14px; align-items:start; margin-bottom:14px; padding:12px; border:1px solid var(--b-dim); background:rgba(201,168,76,.035); border-radius:4px; }
+    .shop-preview img { width:190px; max-height:150px; object-fit:contain; background:#05050a; border:1px solid var(--b-dim); border-radius:3px; }
+    .shop-help-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+    .shop-help-card { border:1px solid var(--b-dim); background:rgba(255,255,255,.025); padding:11px 12px; border-radius:4px; color:var(--text-dim); font-size:.76rem; line-height:1.45; }
+    .shop-help-card strong { display:block; color:var(--gold-lt); font-family:'Cinzel',serif; font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; margin-bottom:5px; }
+    .shop-rules-table-wrap { overflow:auto; border:1px solid var(--b-dim); border-radius:4px; background:rgba(255,255,255,.018); }
+    .shop-rules-table { width:100%; border-collapse:collapse; min-width:980px; }
+    .shop-rules-table th { position:sticky; top:0; z-index:1; background:#111018; color:var(--gold); font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; text-align:left; padding:9px 8px; border-bottom:1px solid var(--b-dim); }
+    .shop-rules-table td { padding:8px; border-bottom:1px solid rgba(201,168,76,.12); vertical-align:top; }
+    .shop-rules-table input, .shop-rules-table select { width:100%; min-width:86px; background:var(--bg-card2); border:1px solid var(--b-dim); color:var(--text); padding:7px 8px; border-radius:3px; font-size:.76rem; }
+    .shop-rules-table .rule-id-cell { color:var(--gold-lt); font-weight:700; min-width:110px; }
+    .shop-rule-note { min-width:220px !important; }
+    .shop-unit-note { color:var(--silver-dim); font-size:.72rem; margin-top:3px; }
     .shop-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:10px; margin-top:14px; }
     .shop-stab { background:transparent; border:1px solid var(--b-dim); color:var(--silver-dim); padding:8px 14px; font-family:'Cinzel',serif; font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; border-radius:3px; }
     .shop-stab.active, .shop-stab:hover { border-color:var(--b-gold); color:var(--gold); background:rgba(201,168,76,.06); }
-    @media (max-width: 980px) { .shop-layout { grid-template-columns:1fr; } .shop-field-grid, .shop-preview { grid-template-columns:1fr; } .shop-preview img { width:100%; } }
+    @media (max-width: 980px) { .shop-layout { grid-template-columns:1fr; } .shop-field-grid, .shop-preview, .shop-help-grid { grid-template-columns:1fr; } .shop-preview img { width:100%; } }
     .fleet-rule-panel { margin-top: 14px; background: rgba(201,168,76,.035); }
     .fleet-rule-head { font-family: 'Cinzel', serif; color: var(--gold); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 10px; }
     .fleet-rule-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
@@ -1162,7 +1183,8 @@
           <button class="add-btn" onclick="shopNewItem()">+ Add Manual Item</button>
           <button class="ctrl-btn" onclick="renderShopItems()">Refresh</button>
         </div>
-        <div class="field-discord-note" style="margin-bottom:14px;">Admin-only view of the current <strong>Item List</strong> Sheet tab. Star Citizen API data fills known item fields only; Discord bot shop behavior is not changed in this pass.</div>
+        <div class="field-discord-note" style="margin-bottom:14px;">Admin-only view of the current <strong>Item List</strong> Sheet tab. Pick an item from the image bar to edit it, or import a Star Citizen item to prefill known fields.</div>
+        <div id="shop-item-picker-bar" class="shop-item-picker"><div class="tav-list-empty">Loading Item List…</div></div>
         <div class="shop-layout">
           <section class="shop-card">
             <h4>Search Star Citizen Items</h4>
@@ -1230,11 +1252,24 @@
         </div>
         <div class="field-discord-note" style="margin-bottom:14px;">These are the live Discord bot pay rules from the existing <strong>currency_rules</strong> Sheet tab.</div>
         <div class="shop-layout">
-          <section class="shop-card">
-            <h4>Saved Pay Rules</h4>
-            <div id="shop-rules-list" class="shop-list"><div class="tav-list-empty">Loading…</div></div>
+          <section class="shop-card" style="grid-column:1/-1">
+            <h4>How Pay Rules Work</h4>
+            <div class="shop-help-grid">
+              <div class="shop-help-card"><strong>Stat Column</strong>The player stat the bot watches, such as completed quests, crusades, kills, or total quest time.</div>
+              <div class="shop-help-card"><strong>Snapshot Column</strong>The last value already paid. The bot pays only the increase since this snapshot, then updates the snapshot.</div>
+              <div class="shop-help-card"><strong>Amount Per Unit</strong>How much currency is paid for each new unit. Example: 3 Silver per completed quest means +2 quests pays 6 Silver.</div>
+              <div class="shop-help-card"><strong>Time Units</strong>For time stats, 1 unit = 1 minute. 60 units = 60 minutes = 1 hour. If a rule pays 1 Silver per unit, 1 hour pays 60 Silver.</div>
+              <div class="shop-help-card"><strong>Min Role</strong>The lowest Discord/OFS rank allowed to earn this rule. Leave blank only if every tracked member should qualify.</div>
+              <div class="shop-help-card"><strong>Enabled</strong>TRUE means the bot can pay this rule. FALSE keeps the rule visible but stops future payouts from it.</div>
+              <div class="shop-help-card"><strong>Currency Type</strong>The currency paid by this rule: Gold, Silver, or Copper. Keep spelling consistent with the bot economy.</div>
+              <div class="shop-help-card"><strong>Notes</strong>Plain-language admin notes explaining the rule purpose. Notes do not change payout logic.</div>
+            </div>
           </section>
-          <section class="shop-card">
+          <section class="shop-card" style="grid-column:1/-1">
+            <h4>Pay Rules Table</h4>
+            <div id="shop-rules-list" class="shop-rules-table-wrap"><div class="tav-list-empty">Loading…</div></div>
+          </section>
+          <section class="shop-card" style="grid-column:1/-1">
             <h4 id="shop-rule-form-title">Currency Rule</h4>
             <div class="shop-field-grid">
               <div class="field-row"><label>Rule ID</label><input id="shop-rule-id" placeholder="quest_completion"></div>
@@ -2898,6 +2933,7 @@ async function fleetSave(){ return fleetSaveBuild(); }
    SHOP ADMIN
 ══════════════════════════════════════════════════════════ */
 var SHOP_SC_RESULTS=[];
+var SHOP_SELECTED_ITEM_ID='';
 function shopEsc(s){ var el=document.createElement('span'); el.textContent=s==null?'':String(s); return el.innerHTML; }
 function shopSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-'+Date.now()); }
 function shopItems(){ return (window.OFSSheets && OFSSheets.getShopItems) ? OFSSheets.getShopItems() : []; }
@@ -2993,6 +3029,7 @@ async function shopUseSCResult(i){
 function shopSetItemForm(item){
   document.getElementById('shop-item-form-title').textContent=item.id ? 'Edit Shop Item' : 'Shop Item';
   document.getElementById('shop-item-id').value=item.id||'';
+  SHOP_SELECTED_ITEM_ID=String(item.itemId||item.id||'');
   document.getElementById('shop-item-name').value=item.name||'';
   document.getElementById('shop-item-item-id').value=item.itemId||item.id||'';
   document.getElementById('shop-item-image').value=item.imageUrl||'';
@@ -3045,13 +3082,44 @@ function shopEditItem(id){ var item=shopItems().find(function(x){return String(x
 async function shopDeleteItem(id){ if(!confirm('Delete this Item List row?')) return; try{ await OFSSheets.deleteShopItem(id); alert('Shop item deleted.'); if(window.OFSSheets&&OFSSheets.load){ await OFSSheets.load({force:true}); } renderShopItems(); }catch(e){ console.error(e); alert('Delete failed: '+e.message); } }
 function renderShopItems(){
   var box=document.getElementById('shop-items-list'); if(!box) return;
+  var picker=document.getElementById('shop-item-picker-bar');
   var q=(document.getElementById('shop-item-filter')&&document.getElementById('shop-item-filter').value||'').toLowerCase();
-  var items=shopItems().filter(function(item){ return !q || [item.name,item.category,item.type,item.classification,item.marketValue,item.notes,item.description].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
-  if(!items.length){ box.innerHTML='<div class="tav-list-empty">No Item List rows returned yet. Confirm the Worker exposes itemList/shopItems from the Item List Sheet.</div>'; return; }
+  var allItems=shopItems().sort(function(a,b){ return (a.name||'').localeCompare(b.name||''); });
+  var items=allItems.filter(function(item){ return !q || [item.name,item.category,item.type,item.classification,item.marketValue,item.notes,item.description].join(' ').toLowerCase().indexOf(q)!==-1; });
+  if(picker){
+    if(!allItems.length){ picker.innerHTML='<div class="tav-list-empty">No Item List rows returned yet.</div>'; }
+    else {
+      picker.innerHTML=allItems.map(function(item){
+        var id=item.itemId||item.id; var active=String(id)===String(SHOP_SELECTED_ITEM_ID);
+        return '<button type="button" class="shop-pick-card '+(active?'active':'')+'" onclick="shopEditItem(\''+shopEsc(id)+'\')"><img src="'+shopEsc(item.imageUrl||'')+'" onerror="this.style.display=\'none\'" alt=""><div class="shop-pick-name">'+shopEsc(item.name||'Unnamed')+'</div><div class="shop-pick-meta">'+shopEsc(item.category||item.type||'Item')+' · '+(item.enabled!==false&&item.active!==false?'On':'Off')+'</div></button>';
+      }).join('');
+    }
+  }
+  if(!items.length){ box.className='shop-list'; box.innerHTML='<div class="tav-list-empty">No Item List rows match this filter.</div>'; return; }
+  box.className='shop-item-grid';
   box.innerHTML=items.map(function(item){
     var id=item.itemId||item.id; var price=[]; if(Number(item.priceGold)) price.push(item.priceGold+'g'); if(Number(item.priceSilver)) price.push(item.priceSilver+'s'); if(Number(item.priceCopper)) price.push(item.priceCopper+'c');
-    return '<div class="shop-item-row"><img src="'+shopEsc(item.imageUrl||'')+'" onerror="this.style.display=\'none\'" alt=""><div><div class="shop-item-title">'+shopEsc(item.name)+'</div><div class="shop-item-meta">ID '+shopEsc(id||'')+' · '+shopEsc(item.category||item.type||'Uncategorized')+' · '+(item.enabled!==false&&item.active!==false?'Enabled':'Disabled')+' · Stock '+shopEsc(item.stock||0)+'</div><div class="shop-item-meta">Price: '+shopEsc(price.join(' ')||'none')+' · Market: '+shopEsc(item.marketValue||'')+(item.notes?' · '+shopEsc(item.notes):'')+'</div></div><div><button class="edit-btn" onclick="shopEditItem(\''+shopEsc(id)+'\')">Edit</button><button class="edit-btn" style="margin-left:6px;color:var(--danger)" onclick="shopDeleteItem(\''+shopEsc(id)+'\')">Delete</button></div></div>';
+    return '<div class="shop-item-card"><img src="'+shopEsc(item.imageUrl||'')+'" onerror="this.style.display=\'none\'" alt=""><div><div class="shop-item-title">'+shopEsc(item.name)+'</div><div class="shop-item-meta">ID '+shopEsc(id||'')+' · '+shopEsc(item.category||item.type||'Uncategorized')+' · '+(item.enabled!==false&&item.active!==false?'Enabled':'Disabled')+'</div><div class="shop-item-meta">Price: '+shopEsc(price.join(' ')||'none')+' · Stock '+shopEsc(item.stock||0)+'</div><div class="shop-item-meta">Market: '+shopEsc(item.marketValue||'')+(item.notes?' · '+shopEsc(item.notes):'')+'</div></div><div class="shop-item-card-actions"><button class="edit-btn" onclick="shopEditItem(\''+shopEsc(id)+'\')">Edit</button><button class="edit-btn" style="color:var(--danger)" onclick="shopDeleteItem(\''+shopEsc(id)+'\')">Delete</button></div></div>';
   }).join('');
+}
+
+function shopRuleFieldId(id, field){ return 'shop-rule-row-'+shopSlug(id)+'-'+field; }
+function shopReadRuleRow(id){
+  return {
+    id:id, ruleId:id,
+    statColumn:(document.getElementById(shopRuleFieldId(id,'stat'))||{}).value||'',
+    snapshotColumn:(document.getElementById(shopRuleFieldId(id,'snapshot'))||{}).value||'',
+    currencyType:(document.getElementById(shopRuleFieldId(id,'currency'))||{}).value||'',
+    amountPerUnit:Number((document.getElementById(shopRuleFieldId(id,'amount'))||{}).value)||0,
+    minRole:(document.getElementById(shopRuleFieldId(id,'role'))||{}).value||'',
+    enabled:((document.getElementById(shopRuleFieldId(id,'enabled'))||{}).value||'TRUE')!=='FALSE',
+    notes:(document.getElementById(shopRuleFieldId(id,'notes'))||{}).value||''
+  };
+}
+async function shopSaveRuleRow(id){
+  if(!window.OFSSheets || !OFSSheets.saveShopPayRule){ alert('Currency rule write helper unavailable.'); return; }
+  try{ await OFSSheets.saveShopPayRule(shopReadRuleRow(id)); alert('Currency rule saved.'); if(window.OFSSheets&&OFSSheets.load){ await OFSSheets.load({force:true}); } renderShopRules(); }
+  catch(e){ console.error(e); alert('Currency rule save failed: '+e.message); }
 }
 
 function shopNewRule(){ shopClearRuleForm(); document.getElementById('shop-rule-id').focus(); }
@@ -3083,7 +3151,24 @@ function shopReadRuleForm(){
 async function shopSaveRule(){ if(!window.OFSSheets || !OFSSheets.saveShopPayRule){ alert('Currency rule write helper unavailable.'); return; } var rule=shopReadRuleForm(); if(!rule.ruleId){ alert('Rule ID is required.'); return; } try{ await OFSSheets.saveShopPayRule(rule); alert('Currency rule saved to currency_rules.'); shopClearRuleForm(); renderShopRules(); }catch(e){ console.error(e); alert('Currency rule save failed: '+e.message); } }
 function shopEditRule(id){ var rule=shopRules().find(function(x){return (x.ruleId||x.id)===id;}); if(rule) shopSetRuleForm(rule); }
 async function shopDeleteRule(id){ if(!confirm('Delete this currency rule from currency_rules?')) return; try{ await OFSSheets.deleteShopPayRule(id); alert('Currency rule deleted.'); renderShopRules(); }catch(e){ console.error(e); alert('Delete failed: '+e.message); } }
-function renderShopRules(){ var box=document.getElementById('shop-rules-list'); if(!box) return; var q=(document.getElementById('shop-rule-filter')&&document.getElementById('shop-rule-filter').value||'').toLowerCase(); var rules=shopRules().filter(function(r){ return !q || [r.ruleId,r.statColumn,r.snapshotColumn,r.currencyType,r.minRole,r.notes].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.ruleId||a.id||'').localeCompare(b.ruleId||b.id||''); }); if(!rules.length){ box.innerHTML='<div class="tav-list-empty">No currency rules returned yet. Confirm the Worker exposes currencyRules from the currency_rules Sheet.</div>'; return; } box.innerHTML=rules.map(function(r){ var id=r.ruleId||r.id; return '<div class="shop-item-row"><div class="avatar-sm" style="border-radius:3px">$</div><div><div class="shop-item-title">'+shopEsc(id)+'</div><div class="shop-item-meta">'+shopEsc(r.statColumn||'No stat column')+' → '+shopEsc(r.currencyType||'Currency')+' × '+shopEsc(r.amountPerUnit||0)+' · min '+shopEsc(r.minRole||'none')+' · '+(r.enabled!==false?'Enabled':'Disabled')+'</div><div class="shop-item-meta">Snapshot: '+shopEsc(r.snapshotColumn||'none')+(r.notes?' · '+shopEsc(r.notes):'')+'</div></div><div><button class="edit-btn" onclick="shopEditRule(\''+shopEsc(id)+'\')">Edit</button><button class="edit-btn" style="margin-left:6px;color:var(--danger)" onclick="shopDeleteRule(\''+shopEsc(id)+'\')">Delete</button></div></div>'; }).join(''); }
+function renderShopRules(){
+  var box=document.getElementById('shop-rules-list'); if(!box) return;
+  var q=(document.getElementById('shop-rule-filter')&&document.getElementById('shop-rule-filter').value||'').toLowerCase();
+  var rules=shopRules().filter(function(r){ return !q || [r.ruleId,r.statColumn,r.snapshotColumn,r.currencyType,r.minRole,r.notes].join(' ').toLowerCase().indexOf(q)!==-1; }).sort(function(a,b){ return (a.ruleId||a.id||'').localeCompare(b.ruleId||b.id||''); });
+  if(!rules.length){ box.innerHTML='<div class="tav-list-empty">No currency rules returned yet. Confirm the Worker exposes currencyRules from the currency_rules Sheet.</div>'; return; }
+  box.innerHTML='<table class="shop-rules-table"><thead><tr><th>Rule</th><th>Stat Column</th><th>Snapshot</th><th>Currency</th><th>Amount / Unit</th><th>Min Role</th><th>Enabled</th><th>Notes</th><th>Action</th></tr></thead><tbody>'+rules.map(function(r){
+    var id=r.ruleId||r.id;
+    return '<tr><td class="rule-id-cell">'+shopEsc(id)+'<div class="shop-unit-note">Sheet row key</div></td>'+
+      '<td><input id="'+shopRuleFieldId(id,'stat')+'" value="'+shopEsc(r.statColumn||'')+'"><div class="shop-unit-note">Which player stat earns pay</div></td>'+
+      '<td><input id="'+shopRuleFieldId(id,'snapshot')+'" value="'+shopEsc(r.snapshotColumn||'')+'"><div class="shop-unit-note">Already-paid checkpoint</div></td>'+
+      '<td><select id="'+shopRuleFieldId(id,'currency')+'"><option '+(r.currencyType==='Gold'?'selected':'')+'>Gold</option><option '+(r.currencyType==='Silver'?'selected':'')+'>Silver</option><option '+(r.currencyType==='Copper'?'selected':'')+'>Copper</option></select></td>'+
+      '<td><input type="number" step="0.01" id="'+shopRuleFieldId(id,'amount')+'" value="'+shopEsc(r.amountPerUnit||0)+'"><div class="shop-unit-note">For time: 1 unit = 1 minute</div></td>'+
+      '<td><input id="'+shopRuleFieldId(id,'role')+'" value="'+shopEsc(r.minRole||'')+'"></td>'+
+      '<td><select id="'+shopRuleFieldId(id,'enabled')+'"><option value="TRUE" '+(r.enabled!==false?'selected':'')+'>TRUE</option><option value="FALSE" '+(r.enabled===false?'selected':'')+'>FALSE</option></select></td>'+
+      '<td><input class="shop-rule-note" id="'+shopRuleFieldId(id,'notes')+'" value="'+shopEsc(r.notes||'')+'"></td>'+
+      '<td><button class="save-btn" onclick="shopSaveRuleRow(\''+shopEsc(id)+'\')">Save</button><button class="edit-btn" style="margin-top:6px" onclick="shopEditRule(\''+shopEsc(id)+'\')">Form Edit</button></td></tr>';
+  }).join('')+'</tbody></table>';
+}
 
 /* ══════════════════════════════════════════════════════════
    AUDIT LOG
