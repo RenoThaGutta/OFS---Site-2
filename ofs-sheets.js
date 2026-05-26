@@ -286,7 +286,7 @@
   let _shipRegistry = [];
   let _fleets = [];
   let _shopItems = [];
-  let _shopPayRules = [];
+  let _shopPayRules = []; // Backed by existing bot sheet: currency_rules
 
   /* ── Cache ───────────────────────────────────────── */
   function saveCache(players) {
@@ -448,7 +448,7 @@
     _shipRegistry = parseShipRegistry(data.shipRegistry || data.ship_registry || data['Ship Registry'] || []);
     _fleets = parseFleets(data.fleets || data.Fleets || []);
     _shopItems = parseShopItems(data.shopItems || data.shop_items || data['Shop Items'] || []);
-    _shopPayRules = parseShopPayRules(data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
+    _shopPayRules = parseShopPayRules(data.currencyRules || data.currency_rules || data['currency_rules'] || data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
 
     // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
     // This is intentionally cached separately from normalized players so quest boards
@@ -576,22 +576,47 @@
   function parseShopPayRules(rows) {
     if (!rows || !rows.length) return [];
     const first = rows[0] || [];
-    const hasHeader = String(first[0] || '').trim().toLowerCase() === 'rule id' ||
-                      String(first[1] || '').trim().toLowerCase() === 'rule name';
-    return rows.slice(hasHeader ? 1 : 0).map(function (row) {
+    const norm = function (v) { return String(v || '').trim().toLowerCase().replace(/[\s-]+/g, '_'); };
+    const hasCurrencyRulesHeader = norm(first[0]) === 'rule_id' || first.map(norm).indexOf('stat_column') !== -1;
+    const hasLegacyHeader = String(first[0] || '').trim().toLowerCase() === 'rule id' ||
+                            String(first[1] || '').trim().toLowerCase() === 'rule name';
+    const rowsOnly = rows.slice((hasCurrencyRulesHeader || hasLegacyHeader) ? 1 : 0);
+
+    // Current OFS bot source-of-truth sheet: currency_rules
+    // Rule_ID | Stat_Column | Snapshot_Column | Currency_Type | Amount_Per_Unit | Min_Role | Enabled | Notes
+    if (hasCurrencyRulesHeader) {
+      return rowsOnly.map(function (row) {
+        return {
+          id: String(row[0] || '').trim(),
+          ruleId: String(row[0] || '').trim(),
+          statColumn: String(row[1] || '').trim(),
+          snapshotColumn: String(row[2] || '').trim(),
+          currencyType: String(row[3] || '').trim(),
+          amountPerUnit: Number(row[4]) || 0,
+          minRole: String(row[5] || '').trim(),
+          enabled: parseBool(row[6], true),
+          notes: String(row[7] || '').trim()
+        };
+      }).filter(function (rule) {
+        const id = String(rule.ruleId || rule.id || '').toLowerCase();
+        return id && id !== 'rule_id' && id !== 'instructions';
+      });
+    }
+
+    // Backward compatibility for the first-pass Shop Pay Rules sheet, if present locally.
+    return rowsOnly.map(function (row) {
       return {
         id: String(row[0] || '').trim(),
-        name: String(row[1] || '').trim(),
-        type: String(row[2] || '').trim(),
-        gold: Number(row[3]) || 0,
-        silver: Number(row[4]) || 0,
-        copper: Number(row[5]) || 0,
-        appliesTo: String(row[6] || '').trim(),
-        active: parseBool(row[7], true),
-        sortOrder: Number(row[8]) || 0,
+        ruleId: String(row[0] || '').trim(),
+        statColumn: String(row[2] || '').trim(),
+        snapshotColumn: '',
+        currencyType: String(row[2] || '').trim(),
+        amountPerUnit: Number(row[3]) || Number(row[4]) || Number(row[5]) || 0,
+        minRole: String(row[6] || '').trim(),
+        enabled: parseBool(row[7], true),
         notes: String(row[9] || '').trim()
       };
-    }).filter(function (rule) { return rule.id && rule.name && String(rule.id).toLowerCase() !== 'rule id'; });
+    }).filter(function (rule) { return rule.id && String(rule.id).toLowerCase() !== 'rule id'; });
   }
 
   function getShipRegistry() { return _shipRegistry || []; }
@@ -938,17 +963,24 @@
 
   function shopPayRuleRow(rule) {
     return [
-      rule.id, rule.name, rule.type || '', rule.gold || 0, rule.silver || 0, rule.copper || 0,
-      rule.appliesTo || '', rule.active === false ? 'FALSE' : 'TRUE', rule.sortOrder || 0, rule.notes || ''
+      rule.ruleId || rule.id,
+      rule.statColumn || '',
+      rule.snapshotColumn || '',
+      rule.currencyType || '',
+      rule.amountPerUnit || 0,
+      rule.minRole || '',
+      rule.enabled === false ? 'FALSE' : 'TRUE',
+      rule.notes || ''
     ];
   }
 
   function saveShopPayRule(rule) {
-    return _apiPost('/write', { op: 'overwrite', sheet: 'Shop Pay Rules', keyCol: 0, keyVal: rule.id, row: shopPayRuleRow(rule) });
+    const ruleId = rule.ruleId || rule.id;
+    return _apiPost('/write', { op: 'overwrite', sheet: 'currency_rules', keyCol: 0, keyVal: ruleId, row: shopPayRuleRow(rule) });
   }
 
   function deleteShopPayRule(id) {
-    return _apiPost('/write', { op: 'deleteRow', sheet: 'Shop Pay Rules', keyCol: 0, keyVal: id });
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'currency_rules', keyCol: 0, keyVal: id });
   }
 
   /** Return the cached timeline block overrides keyed by original block title/id. */
