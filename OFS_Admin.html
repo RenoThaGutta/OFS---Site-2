@@ -1256,7 +1256,7 @@
             <div class="shop-help-grid">
               <div class="shop-help-card"><strong>Rule</strong>The fixed payout rule the bot already knows. Stat and snapshot columns stay protected here so this screen only changes safe rule settings.</div>
               <div class="shop-help-card"><strong>Amount Per Unit</strong>How much currency is paid for each new unit. Example: 3 Silver per completed quest means +2 quests pays 6 Silver.</div>
-              <div class="shop-help-card"><strong>Time Units</strong>For time stats, 1 unit = 1 minute. 60 units = 60 minutes = 1 hour. If a rule pays 1 Silver per unit, 1 hour pays 60 Silver.</div>
+              <div class="shop-help-card"><strong>Unit Notes</strong>Only <em>Total Quest Length</em> uses time units: 1 unit = 1 minute. All other rules pay per tracked event, using the selected currency.</div>
               <div class="shop-help-card"><strong>Min Role</strong>The lowest Discord/OFS rank allowed to earn this rule. Leave blank only if every tracked member should qualify.</div>
               <div class="shop-help-card"><strong>Enabled</strong>TRUE means the bot can pay this rule. FALSE keeps the rule visible but stops future payouts from it.</div>
               <div class="shop-help-card"><strong>Currency Type</strong>The currency paid by this rule: Gold, Silver, or Copper. Keep spelling consistent with the bot economy.</div>
@@ -2936,6 +2936,13 @@ function shopRuleLabel(value){
   return raw.replace(/_Paid$/i,'').replace(/_Snapshot$/i,'').replace(/_/g,' ').replace(/\b\w/g,function(c){ return c.toUpperCase(); });
 }
 function shopRuleDisplay(rule){ return shopRuleLabel(rule.statColumn) || shopRuleLabel(rule.ruleId||rule.id) || 'Pay Rule'; }
+function shopRuleUnitNote(rule){
+  var key=[rule&&rule.statColumn, rule&&rule.ruleId, rule&&rule.id].join(' ').toUpperCase();
+  if(/TOTAL\s*QUEST\s*LENGTH|TOTAL_LENGTH|TOTALLENGTH/.test(key)) return 'For time: 1 unit = 1 minute';
+  var amount=Number(rule&&rule.amountPerUnit);
+  var currency=(rule&&rule.currencyType) || 'currency';
+  return (amount ? amount : 1)+' '+currency+' per 1 unit';
+}
 
 function shopImageFallback(img){ if(img) img.onerror=function(){ this.style.display='none'; }; }
 const SHOP_CATEGORY_LABELS={all:'All Items',materials:'Materials / Cargo',guns:'Guns',armor:'Armor',food:'Food',drink:'Drink',medical:'Medical',mining:'Mining',clothing:'Clothing','ship-weapons':'Ship Weapons'};
@@ -3131,7 +3138,7 @@ function renderShopRules(){
     var id=r.ruleId||r.id;
     return '<tr><td class="rule-id-cell">'+shopEsc(shopRuleDisplay(r))+'<div class="shop-unit-note">Payout setting</div></td>'+
       '<td><select id="'+shopRuleFieldId(id,'currency')+'"><option '+(r.currencyType==='Gold'?'selected':'')+'>Gold</option><option '+(r.currencyType==='Silver'?'selected':'')+'>Silver</option><option '+(r.currencyType==='Copper'?'selected':'')+'>Copper</option></select></td>'+
-      '<td><input type="number" step="0.01" id="'+shopRuleFieldId(id,'amount')+'" value="'+shopEsc(r.amountPerUnit||0)+'"><div class="shop-unit-note">For time: 1 unit = 1 minute</div></td>'+
+      '<td><input type="number" step="0.01" id="'+shopRuleFieldId(id,'amount')+'" value="'+shopEsc(r.amountPerUnit||0)+'"><div class="shop-unit-note">'+shopEsc(shopRuleUnitNote(r))+'</div></td>'+
       '<td><select id="'+shopRuleFieldId(id,'role')+'">'+shopRankOptions(r.minRole||'')+'</select></td>'+
       '<td><select id="'+shopRuleFieldId(id,'enabled')+'"><option value="TRUE" '+(r.enabled!==false?'selected':'')+'>TRUE</option><option value="FALSE" '+(r.enabled===false?'selected':'')+'>FALSE</option></select></td>'+
       '<td><div class="shop-rule-note-readonly">'+shopEsc(r.notes||'—')+'</div></td>'+
