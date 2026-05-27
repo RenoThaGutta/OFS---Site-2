@@ -280,24 +280,41 @@
     .fleet-missing-panel { display: none; }
     .fleet-missing-panel.active { display: block; }
     .fleet-structure-toolbar { display:grid; grid-template-columns:190px minmax(180px,1fr) auto auto; gap:8px; align-items:center; margin-bottom:10px; }
-    .fleet-structure-grid { display:grid; gap:8px; }
-    .fleet-command-board { display:grid; grid-template-columns:repeat(6,minmax(145px,1fr)); gap:8px; align-items:start; }
-    .fleet-command-column { display:contents; }
-    .fleet-structure-group { background:var(--bg-card); border:1px solid var(--b-dim); border-radius:4px; padding:8px; min-width:0; }
-    .fleet-structure-group h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; margin:0 0 7px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .fleet-structure-grid { display:grid; gap:10px; }
+    .fleet-command-board { display:grid; gap:10px; }
+    .fleet-tier { border:1px solid var(--b-dim); background:linear-gradient(180deg, rgba(201,168,76,.045), rgba(255,255,255,.018)); border-radius:5px; padding:10px; }
+    .fleet-tier-head { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px; }
+    .fleet-tier-title { font-family:'Cinzel',serif; color:var(--gold); font-size:.68rem; letter-spacing:.16em; text-transform:uppercase; }
+    .fleet-tier-meta { color:var(--silver-dim); font-size:.58rem; letter-spacing:.12em; text-transform:uppercase; }
+    .fleet-fleet-crown { text-align:center; padding:12px 14px; border-color:rgba(201,168,76,.42); background:radial-gradient(circle at top, rgba(201,168,76,.12), rgba(255,255,255,.018) 60%); }
+    .fleet-fleet-name { font-family:'Cinzel',serif; color:var(--gold-lt); font-size:1.05rem; letter-spacing:.18em; text-transform:uppercase; }
+    .fleet-fleet-sub { color:var(--silver-dim); font-size:.7rem; margin-top:4px; letter-spacing:.08em; text-transform:uppercase; }
+    .fleet-tier-row { display:grid; gap:8px; align-items:start; }
+    .fleet-tier-row.three { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .fleet-tier-row.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .fleet-tier-row.houses { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .fleet-structure-group { background:rgba(7,7,15,.62); border:1px solid rgba(176,184,200,.16); border-radius:4px; padding:9px; min-width:0; }
+    .fleet-structure-group.house-card { background:linear-gradient(180deg, rgba(201,168,76,.065), rgba(7,7,15,.62)); border-color:rgba(201,168,76,.24); }
+    .fleet-structure-group h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+    .fleet-house-desc { color:var(--silver-dim); font-size:.68rem; line-height:1.28; min-height:2.4em; margin:-2px 0 8px; }
     .fleet-structure-section { color:var(--silver-dim); font-size:.55rem; letter-spacing:.12em; text-transform:uppercase; }
-    .fleet-structure-slot { display:grid; grid-template-columns:minmax(96px,.78fr) minmax(120px,1fr); gap:6px; align-items:center; border:1px solid rgba(176,184,200,.13); background:rgba(255,255,255,.018); border-radius:3px; padding:6px; margin-bottom:5px; }
+    .fleet-structure-slot { display:grid; grid-template-columns:minmax(130px,.75fr) minmax(170px,1fr); gap:8px; align-items:center; border:1px solid rgba(176,184,200,.13); background:rgba(255,255,255,.025); border-radius:3px; padding:7px; margin-bottom:6px; }
+    .fleet-structure-slot.commander-slot { grid-template-columns:minmax(120px,.82fr) minmax(160px,1fr); }
     .fleet-structure-slot:last-child { margin-bottom:0; }
-    .fleet-structure-slot.empty { border-color:rgba(176,184,200,.18); opacity:.82; }
+    .fleet-structure-slot.empty { border-color:rgba(176,184,200,.18); opacity:.86; }
+    .fleet-structure-slot.house-lord-slot { border-color:rgba(201,168,76,.26); background:rgba(201,168,76,.055); }
     .fleet-slot-label { min-width:0; }
-    .fleet-slot-title { display:block; color:var(--gold-lt); font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .fleet-slot-meta { display:block; color:var(--silver-dim); font-size:.62rem; line-height:1.15; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
-    .fleet-slot-fields { display:grid; grid-template-columns:minmax(0,1fr) 76px; gap:5px; align-items:center; min-width:0; }
-    .fleet-slot-fields input, .fleet-slot-fields select { width:100%; min-width:0; padding:6px 7px; font-size:.72rem; }
-    .fleet-slot-fields input[readonly] { opacity:.85; }
+    .fleet-slot-title { display:block; color:var(--gold-lt); font-family:'Cinzel',serif; font-size:.61rem; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fleet-slot-meta { display:block; color:var(--silver-dim); font-size:.64rem; line-height:1.18; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+    .fleet-slot-fields { display:grid; grid-template-columns:minmax(0,1fr); gap:5px; align-items:center; min-width:0; }
+    .fleet-slot-fields.with-house { grid-template-columns:minmax(0,1fr) 116px; }
+    .fleet-slot-fields input, .fleet-slot-fields select { width:100%; min-width:0; padding:7px 8px; font-size:.72rem; background:var(--bg-card2); border:1px solid var(--b-dim); color:var(--text); border-radius:3px; }
+    .fleet-slot-fields select { color:var(--gold-lt); }
+    .fleet-slot-fields input[readonly] { opacity:.78; color:var(--silver-dim); }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
-    @media (max-width: 1000px) { .fleet-command-board { grid-template-columns:1fr; } .fleet-command-column { display:grid; gap:8px; } }
+    @media (max-width: 1240px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
+    @media (max-width: 760px) { .fleet-structure-toolbar { grid-template-columns:1fr; } .fleet-structure-slot, .fleet-structure-slot.commander-slot { grid-template-columns:1fr; } .fleet-slot-fields.with-house { grid-template-columns:1fr; } }
     .fleet-missing-layout { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
     .fleet-lookup-card { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(420px, 1.1fr); gap: 14px; align-items: start; }
     .fleet-missing-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
@@ -3138,20 +3155,39 @@ function renderFleetStructure(){
 }
 function fleetStructureBoard(rows){
   function bySection(name){ return rows.filter(function(r){return (r.section||'')===name;}); }
+  function houseLeader(house){ return rows.filter(function(r){return (r.section||'')==='House Leadership' && (r.house||'')===house;}); }
+  var name=(document.getElementById('fleet-structure-name')&&document.getElementById('fleet-structure-name').value)||FLEET_DEFAULT_NAME;
   var html='<div class="fleet-command-board">';
-  html+=fleetStructureGroup('Lord Commanders','3 Seats',bySection('Senior Command'));
-  html+=fleetStructureGroup('House Lords','3 Houses',bySection('House Leadership'));
-  html+=fleetStructureGroup('Custodes','2 Seats',bySection('Custodes'));
-  html+=fleetStructureGroup('Dominion','4 Commanders',bySection('Dominion Commanders'));
-  html+=fleetStructureGroup('Provision','4 Commanders',bySection('Provision Commanders'));
-  html+=fleetStructureGroup('Arcanum','4 Commanders',bySection('Arcanum Commanders'));
+  html+='<section class="fleet-tier fleet-fleet-crown"><div class="fleet-fleet-name">'+fleetEsc(name)+'</div><div class="fleet-fleet-sub">Fleet Command Structure</div></section>';
+  html+=fleetTier('Tier I — Senior Command','3 Lord Commander seats','three',[
+    fleetStructureGroup('Lord Commanders','Fleet command',bySection('Senior Command'))
+  ]);
+  html+=fleetTier('Tier II — Command Support','Custodes assigned below Fleet Command','two',[
+    fleetStructureGroup('Custodes','2 Seats',bySection('Custodes'))
+  ]);
+  html+='<section class="fleet-tier"><div class="fleet-tier-head"><div class="fleet-tier-title">Tier III — Houses & Banner Command</div><div class="fleet-tier-meta">3 Houses / 12 Commander Slots</div></div><div class="fleet-tier-row houses">'
+    +fleetHouseCard('Dominion','Combat, security, fleet warfare, and military operations',houseLeader('Dominion'),bySection('Dominion Commanders'))
+    +fleetHouseCard('Provision','Mining, cargo, salvage, logistics, industry, and supply',houseLeader('Provision'),bySection('Provision Commanders'))
+    +fleetHouseCard('Arcanum','Medical, science, exploration, and specialist support',houseLeader('Arcanum'),bySection('Arcanum Commanders'))
+    +'</div></section>';
   html+='</div>';
   return html;
 }
-function fleetStructureGroup(title, meta, rows){
+function fleetTier(title, meta, rowClass, groups){
+  return '<section class="fleet-tier"><div class="fleet-tier-head"><div class="fleet-tier-title">'+fleetEsc(title)+'</div><div class="fleet-tier-meta">'+fleetEsc(meta||'')+'</div></div><div class="fleet-tier-row '+fleetEsc(rowClass||'')+'">'+groups.join('')+'</div></section>';
+}
+function fleetStructureGroup(title, meta, rows, extraClass){
   var ids=rows.map(function(r){return FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);}).filter(function(i){return i>=0;});
-  return '<section class="fleet-structure-group"><h4><span>'+fleetEsc(title)+'</span><span class="fleet-structure-section">'+fleetEsc(meta||'')+'</span></h4>'
+  return '<section class="fleet-structure-group '+fleetEsc(extraClass||'')+'"><h4><span>'+fleetEsc(title)+'</span><span class="fleet-structure-section">'+fleetEsc(meta||'')+'</span></h4>'
     +ids.map(function(i){return fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i);}).join('')+'</section>';
+}
+function fleetHouseCard(house, desc, leaderRows, commanderRows){
+  var leaderIds=leaderRows.map(function(r){return FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);}).filter(function(i){return i>=0;});
+  var commanderIds=commanderRows.map(function(r){return FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);}).filter(function(i){return i>=0;});
+  return '<section class="fleet-structure-group house-card"><h4><span>House of '+fleetEsc(house)+'</span><span class="fleet-structure-section">4 Commanders</span></h4><div class="fleet-house-desc">'+fleetEsc(desc)+'</div>'
+    +leaderIds.map(function(i){return fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i, 'house-lord-slot');}).join('')
+    +commanderIds.map(function(i){return fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i, 'commander-slot');}).join('')
+    +'</section>';
 }
 function fleetHouseControl(row,i){
   var isHouseLord=(row.section||'')==='House Leadership';
@@ -3160,15 +3196,17 @@ function fleetHouseControl(row,i){
   }
   return '<input id="fs-house-'+i+'" value="'+fleetEsc(row.house||'')+'" readonly>';
 }
-function fleetStructureSlot(row,i){
+function fleetStructureSlot(row,i,extraClass){
   var empty=!row.banner && /empty|open/i.test(row.slotLabel+' '+row.title);
+  var isHouseLord=(row.section||'')==='House Leadership';
   var meta=[row.title,row.banner||row.house].filter(Boolean).join(' · ');
-  return '<div class="fleet-structure-slot '+(empty?'empty':'')+'">'
+  return '<div class="fleet-structure-slot '+(extraClass||'')+' '+(empty?'empty':'')+'">'
     +'<div class="fleet-slot-label"><span class="fleet-slot-title" title="'+fleetEsc(row.slotLabel||'')+'">'+fleetEsc(row.slotLabel||'Structure Slot')+'</span><span class="fleet-slot-meta" title="'+fleetEsc(meta)+'">'+fleetEsc(meta||row.section||'')+'</span></div>'
-    +'<div class="fleet-slot-fields">'
-    +'<input id="fs-username-'+i+'" list="fleet-structure-member-options" value="'+fleetEsc(row.username||'')+'" placeholder="Member…" oninput="fleetStructureMemberChanged('+i+')">'
-    +fleetHouseControl(row,i)
+    +'<div class="fleet-slot-fields '+(isHouseLord?'with-house':'')+'">'
+    +'<input id="fs-username-'+i+'" list="fleet-structure-member-options" value="'+fleetEsc(row.username||'')+'" placeholder="Assign member…" oninput="fleetStructureMemberChanged('+i+')">'
+    +(isHouseLord ? fleetHouseControl(row,i) : '')
     +'</div>'
+    +(isHouseLord ? '' : '<input id="fs-house-'+i+'" type="hidden" value="'+fleetEsc(row.house||'')+'">')
     +'<input id="fs-fleet-'+i+'" type="hidden" value="'+fleetEsc(row.fleetName||'')+'"><input id="fs-section-'+i+'" type="hidden" value="'+fleetEsc(row.section||'')+'"><input id="fs-user-'+i+'" type="hidden" value="'+fleetEsc(row.userId||'')+'"><input id="fs-title-'+i+'" type="hidden" value="'+fleetEsc(row.title||'')+'"><input id="fs-banner-'+i+'" type="hidden" value="'+fleetEsc(row.banner||'')+'"><input id="fs-sort-'+i+'" type="hidden" value="'+fleetEsc(row.sortOrder||0)+'"><input id="fs-active-'+i+'" type="hidden" value="'+(row.active!==false?'TRUE':'FALSE')+'"><input id="fs-notes-'+i+'" type="hidden" value="'+fleetEsc(row.notes||'')+'">'
     +'</div>';
 }
