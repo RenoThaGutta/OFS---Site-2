@@ -2404,9 +2404,11 @@ function getShipEntry(shipName) {
 }
 
 const SCWIKI_API_BASE = 'https://api.star-citizen.wiki/api';
+const SCTOOLS_API_BASE = 'https://starcitizen.tools/api.php';
 const SCWIKI_CACHE_PREFIX = 'ofs_scwiki_cache:';
 const SCWIKI_SEARCH_TTL = 10 * 60 * 1000;
 const SCWIKI_VEHICLE_TTL = 12 * 60 * 60 * 1000;
+const SCWIKI_IMAGE_TTL = 12 * 60 * 60 * 1000;
 const SCWIKI_FETCH_TIMEOUT = 9000;
 let _shipEnrichmentToken = 0;
 
@@ -2644,6 +2646,57 @@ async function scWikiFetch(path, params, ttl) {
   }
 }
 
+async function scToolsFetchPageImage(title) {
+  const cleanTitle = String(title || '').trim();
+  if (!cleanTitle) return '';
+  const cacheKey = 'tools-pageimage:' + cleanTitle.toLowerCase();
+  const cached = scWikiCacheGet(cacheKey, SCWIKI_IMAGE_TTL);
+  if (cached != null) return cached;
+  const query = new URLSearchParams({
+    action: 'query',
+    titles: cleanTitle,
+    prop: 'pageimages',
+    piprop: 'original|thumbnail',
+    pithumbsize: '1200',
+    format: 'json',
+    origin: '*'
+  });
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timeout = controller ? setTimeout(function () { controller.abort(); }, SCWIKI_FETCH_TIMEOUT) : null;
+  try {
+    const res = await fetch(SCTOOLS_API_BASE + '?' + query.toString(), { headers: { 'Accept': 'application/json' }, signal: controller && controller.signal });
+    if (!res.ok) throw new Error('Star Citizen Tools API returned ' + res.status);
+    const data = await res.json();
+    const pages = data && data.query && data.query.pages ? Object.values(data.query.pages) : [];
+    const page = pages.find(function (p) { return p && p.pageid && p.pageid !== -1; });
+    const imageUrl = String(page && ((page.thumbnail && page.thumbnail.source) || (page.original && page.original.source)) || '').trim();
+    scWikiCacheSet(cacheKey, imageUrl);
+    return imageUrl;
+  } catch (e) {
+    scWikiCacheSet(cacheKey, '');
+    return '';
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+async function fillShipApiImageFallback(data, shipEntry) {
+  if (!data || data.imageUrl) return data;
+  const titles = [];
+  [data.name, shipEntry && shipEntry.model, shipDisplayName(shipEntry)].forEach(function (title) {
+    title = String(title || '').trim();
+    if (title && titles.indexOf(title) === -1) titles.push(title);
+  });
+  for (const title of titles) {
+    const imageUrl = await scToolsFetchPageImage(title);
+    if (imageUrl) {
+      data.imageUrl = imageUrl;
+      break;
+    }
+  }
+  return data;
+}
+
 function vehicleSlugFromApiUrl(apiUrl) {
   const raw = String(apiUrl || '').trim();
   const m = raw.match(/\/api\/vehicles\/([^/?#]+)/);
@@ -2871,7 +2924,9 @@ function compactShipApiData(vehicle, playerShip, shipEntry) {
 async function getShipApiDataForPicker(shipEntry) {
   if (!shipEntry) return null;
   const detail = await fetchVehicleDetailForShip(shipDisplayName(shipEntry), shipEntry);
-  return detail && detail.data ? compactShipApiData(detail.data, shipDisplayName(shipEntry), shipEntry) : null;
+  if (!detail || !detail.data) return null;
+  const data = compactShipApiData(detail.data, shipDisplayName(shipEntry), shipEntry);
+  return fillShipApiImageFallback(data, shipEntry);
 }
 
 function shipApiMetaLine(data) {
@@ -2915,7 +2970,7 @@ async function enhanceProfileShip(player, shipEntry, token) {
     const detail = await fetchVehicleDetailForShip(player.ship, shipEntry);
     if (token !== _shipEnrichmentToken) return;
     if (!detail || !detail.data) throw new Error('No matching vehicle record for ' + queries.join(' / '));
-    const data = compactShipApiData(detail.data, player.ship, shipEntry);
+    const data = await fillShipApiImageFallback(compactShipApiData(detail.data, player.ship, shipEntry), shipEntry);
     renderShipEnrichment(data);
 
     const imgEl = document.getElementById('js-profile-ship-api-img');
