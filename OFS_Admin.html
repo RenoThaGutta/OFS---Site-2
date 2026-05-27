@@ -293,6 +293,7 @@
     .fleet-tier-row.three { grid-template-columns:repeat(3,minmax(0,1fr)); }
     .fleet-tier-row.two { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .fleet-tier-row.houses { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .fleet-seat-card .fleet-structure-slot { margin-bottom:0; }
     .fleet-structure-group { background:rgba(7,7,15,.62); border:1px solid rgba(176,184,200,.16); border-radius:4px; padding:9px; min-width:0; }
     .fleet-structure-group.house-card { background:linear-gradient(180deg, rgba(201,168,76,.065), rgba(7,7,15,.62)); border-color:rgba(201,168,76,.24); }
     .fleet-structure-group h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
@@ -313,7 +314,7 @@
     .fleet-slot-fields input[readonly] { opacity:.78; color:var(--silver-dim); }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
-    @media (max-width: 1240px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
+    @media (max-width: 900px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
     @media (max-width: 760px) { .fleet-structure-toolbar { grid-template-columns:1fr; } .fleet-structure-slot, .fleet-structure-slot.commander-slot { grid-template-columns:1fr; } .fleet-slot-fields.with-house { grid-template-columns:1fr; } }
     .fleet-missing-layout { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
     .fleet-lookup-card { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(420px, 1.1fr); gap: 14px; align-items: start; }
@@ -3159,12 +3160,8 @@ function fleetStructureBoard(rows){
   var name=(document.getElementById('fleet-structure-name')&&document.getElementById('fleet-structure-name').value)||FLEET_DEFAULT_NAME;
   var html='<div class="fleet-command-board">';
   html+='<section class="fleet-tier fleet-fleet-crown"><div class="fleet-fleet-name">'+fleetEsc(name)+'</div><div class="fleet-fleet-sub">Fleet Command Structure</div></section>';
-  html+=fleetTier('Tier I — Senior Command','3 Lord Commander seats','three',[
-    fleetStructureGroup('Lord Commanders','Fleet command',bySection('Senior Command'))
-  ]);
-  html+=fleetTier('Tier II — Command Support','Custodes assigned below Fleet Command','two',[
-    fleetStructureGroup('Custodes','2 Seats',bySection('Custodes'))
-  ]);
+  html+=fleetTier('Tier I — Senior Command','3 Lord Commander seats','three',fleetStructureSeatGroups(bySection('Senior Command')));
+  html+=fleetTier('Tier II — Command Support','2 Custodes seats','two',fleetStructureSeatGroups(bySection('Custodes')));
   html+='<section class="fleet-tier"><div class="fleet-tier-head"><div class="fleet-tier-title">Tier III — Houses & Banner Command</div><div class="fleet-tier-meta">3 Houses / 12 Commander Slots</div></div><div class="fleet-tier-row houses">'
     +fleetHouseCard('Dominion','Combat, security, fleet warfare, and military operations',houseLeader('Dominion'),bySection('Dominion Commanders'))
     +fleetHouseCard('Provision','Mining, cargo, salvage, logistics, industry, and supply',houseLeader('Provision'),bySection('Provision Commanders'))
@@ -3175,6 +3172,13 @@ function fleetStructureBoard(rows){
 }
 function fleetTier(title, meta, rowClass, groups){
   return '<section class="fleet-tier"><div class="fleet-tier-head"><div class="fleet-tier-title">'+fleetEsc(title)+'</div><div class="fleet-tier-meta">'+fleetEsc(meta||'')+'</div></div><div class="fleet-tier-row '+fleetEsc(rowClass||'')+'">'+groups.join('')+'</div></section>';
+}
+function fleetStructureSeatGroups(rows){
+  return rows.map(function(r){
+    var i=FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);
+    if(i<0) return '';
+    return '<section class="fleet-structure-group fleet-seat-card">'+fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i)+'</section>';
+  }).filter(Boolean);
 }
 function fleetStructureGroup(title, meta, rows, extraClass){
   var ids=rows.map(function(r){return FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);}).filter(function(i){return i>=0;});
@@ -3198,15 +3202,13 @@ function fleetHouseControl(row,i){
 }
 function fleetStructureSlot(row,i,extraClass){
   var empty=!row.banner && /empty|open/i.test(row.slotLabel+' '+row.title);
-  var isHouseLord=(row.section||'')==='House Leadership';
   var meta=[row.title,row.banner||row.house].filter(Boolean).join(' · ');
   return '<div class="fleet-structure-slot '+(extraClass||'')+' '+(empty?'empty':'')+'">'
     +'<div class="fleet-slot-label"><span class="fleet-slot-title" title="'+fleetEsc(row.slotLabel||'')+'">'+fleetEsc(row.slotLabel||'Structure Slot')+'</span><span class="fleet-slot-meta" title="'+fleetEsc(meta)+'">'+fleetEsc(meta||row.section||'')+'</span></div>'
-    +'<div class="fleet-slot-fields '+(isHouseLord?'with-house':'')+'">'
+    +'<div class="fleet-slot-fields">'
     +'<input id="fs-username-'+i+'" list="fleet-structure-member-options" value="'+fleetEsc(row.username||'')+'" placeholder="Assign member…" oninput="fleetStructureMemberChanged('+i+')">'
-    +(isHouseLord ? fleetHouseControl(row,i) : '')
     +'</div>'
-    +(isHouseLord ? '' : '<input id="fs-house-'+i+'" type="hidden" value="'+fleetEsc(row.house||'')+'">')
+    +'<input id="fs-house-'+i+'" type="hidden" value="'+fleetEsc(row.house||'')+'">'
     +'<input id="fs-fleet-'+i+'" type="hidden" value="'+fleetEsc(row.fleetName||'')+'"><input id="fs-section-'+i+'" type="hidden" value="'+fleetEsc(row.section||'')+'"><input id="fs-user-'+i+'" type="hidden" value="'+fleetEsc(row.userId||'')+'"><input id="fs-title-'+i+'" type="hidden" value="'+fleetEsc(row.title||'')+'"><input id="fs-banner-'+i+'" type="hidden" value="'+fleetEsc(row.banner||'')+'"><input id="fs-sort-'+i+'" type="hidden" value="'+fleetEsc(row.sortOrder||0)+'"><input id="fs-active-'+i+'" type="hidden" value="'+(row.active!==false?'TRUE':'FALSE')+'"><input id="fs-notes-'+i+'" type="hidden" value="'+fleetEsc(row.notes||'')+'">'
     +'</div>';
 }
