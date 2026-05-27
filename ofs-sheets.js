@@ -510,13 +510,40 @@
 
   function parseShipRegistry(rows) {
     if (!rows || rows.length < 2) return [];
+    const header = (rows[0] || []).map(function (h) { return String(h || '').trim().toLowerCase(); });
+    function idx(names, fallback) {
+      for (let i = 0; i < names.length; i++) {
+        const found = header.indexOf(names[i]);
+        if (found >= 0) return found;
+      }
+      return fallback;
+    }
+    const col = {
+      model: idx(['ship model', 'model', 'name'], 0),
+      make: idx(['make', 'manufacturer'], 1),
+      imageUrl: idx(['image url', 'image', 'ship image url'], 2),
+      wikiUrl: idx(['wiki url', 'wiki link', 'source url'], 3),
+      role: idx(['role', 'focus'], 4),
+      category: idx(['category', 'type'], 5),
+      size: idx(['size'], 6),
+      crew: idx(['crew'], 7),
+      status: idx(['status', 'production status'], 8),
+      description: idx(['description', 'details', 'notes'], 9)
+    };
     return rows.slice(1).map(function (row) {
       return {
-        model: String(row[0] || '').trim(),
-        make:  String(row[1] || '').trim(),
-        imageUrl: String(row[2] || '').trim()
+        model: String(row[col.model] || '').trim(),
+        make:  String(row[col.make] || '').trim(),
+        imageUrl: String(row[col.imageUrl] || '').trim(),
+        wikiUrl: String(row[col.wikiUrl] || '').trim(),
+        role: String(row[col.role] || '').trim(),
+        category: String(row[col.category] || '').trim(),
+        size: String(row[col.size] || '').trim(),
+        crew: String(row[col.crew] || '').trim(),
+        status: String(row[col.status] || '').trim(),
+        description: String(row[col.description] || '').trim()
       };
-    }).filter(function (s) { return s.model; });
+    }).filter(function (s) { return s.model || s.make || s.imageUrl; });
   }
 
   function parseFleets(rows) {
@@ -994,7 +1021,18 @@
   }
 
   function shipRegistryRow(ship) {
-    return [ship.model || '', ship.make || '', ship.imageUrl || ''];
+    return [
+      ship.model || '',
+      ship.make || '',
+      ship.imageUrl || '',
+      ship.wikiUrl || '',
+      ship.role || '',
+      ship.category || '',
+      ship.size || '',
+      ship.crew || '',
+      ship.status || '',
+      ship.description || ''
+    ];
   }
 
   function saveShipRegistryShip(ship, oldModel) {
