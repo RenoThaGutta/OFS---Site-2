@@ -3070,8 +3070,8 @@ function fleetRegistryIssues(ship, detail){
   var issues=[];
   if(!String(ship&&ship.model||'').trim()) issues.push('missing model');
   if(!String(ship&&ship.make||'').trim()) issues.push('missing make');
-  if(detail && detail.error) issues.push('wiki lookup failed');
-  if(detail && detail.loaded){
+  if(detail && detail.error && detail.manual) issues.push('wiki lookup failed');
+  if(detail && detail.loaded && !detail.imageOnly){
     if(detail.model && ship.model && fleetNorm(detail.model)!==fleetNorm(ship.model)) issues.push('wiki model mismatch');
   }
   return issues;
@@ -3079,7 +3079,9 @@ function fleetRegistryIssues(ship, detail){
 function fleetRegistryWarnings(ship, detail){
   var warnings=[];
   if(!fleetRegistryImageUrl(ship, detail)) warnings.push('no image');
-  if(detail && detail.loaded){
+  if(detail && detail.imageOnly) warnings.push('image found');
+  if(detail && detail.error && !detail.manual && !detail.imageOnly) warnings.push('wiki not matched');
+  if(detail && detail.loaded && !detail.imageOnly){
     if(!detail.role) warnings.push('missing role');
     if(!detail.category) warnings.push('missing category');
     if(!detail.size) warnings.push('missing size');
@@ -3136,6 +3138,19 @@ async function fleetUpdateDuplicateFromMissing(){
   catch(e){ console.error(e); alert('Update failed: '+e.message); }
 }
 function fleetRegistryImageBroken(img){ var row=img&&img.closest&&img.closest('.fleet-ship-row'); if(row && img && img.getAttribute('src')){ row.classList.add('needs-review'); var st=row.querySelector('.fleet-ship-status'); if(st) st.textContent='Image broken'; } if(img) img.style.display='none'; }
+async function fleetLookupRegistryCardDetail(ship){
+  var fallbackImage='';
+  try{ fallbackImage=await fleetToolsPageImage(ship&&ship.model); }catch(e){}
+  try{
+    var detail=await fleetLookupVehicleForShip(ship, '');
+    detail.loaded=true;
+    if(!detail.imageUrl && fallbackImage) detail.imageUrl=fallbackImage;
+    return detail;
+  }catch(e){
+    if(fallbackImage) return { loaded:true, imageOnly:true, model:ship&&ship.model, make:ship&&ship.make, imageUrl:fallbackImage, error:e.message };
+    return { error:e.message };
+  }
+}
 function fleetScheduleRegistryHydrate(){
   if(FLEET_REGISTRY_HYDRATING) return;
   clearTimeout(FLEET_REGISTRY_HYDRATE_TIMER);
@@ -3152,7 +3167,7 @@ async function fleetHydrateRegistryVisible(){
   await Promise.all(candidates.map(async function(s){
     var key=fleetShipKey(s);
     FLEET_REGISTRY_ENRICHING[key]=true;
-    try{ var detail=await fleetLookupVehicleForShip(s, ''); detail.loaded=true; FLEET_REGISTRY_DETAILS[key]=detail; }
+    try{ FLEET_REGISTRY_DETAILS[key]=await fleetLookupRegistryCardDetail(s); }
     catch(e){ FLEET_REGISTRY_DETAILS[key]={error:e.message}; }
     finally{ delete FLEET_REGISTRY_ENRICHING[key]; }
   }));
@@ -3172,7 +3187,7 @@ function renderFleetShipRegistryList(){
     var issues=fleetRegistryIssues(s, detail);
     var warnings=fleetRegistryWarnings(s, detail);
     var selected=FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===fleetShipKey(s);
-    var status=FLEET_REGISTRY_ENRICHING[fleetShipKey(s)] ? 'Checking' : (issues.length ? 'Needs review' : (warnings.length ? 'Incomplete' : (detail&&detail.loaded?'Verified':'Registry')));
+    var status=FLEET_REGISTRY_ENRICHING[fleetShipKey(s)] ? 'Checking' : (issues.length ? 'Needs review' : (detail&&detail.loaded&&!warnings.length?'Verified':(detail&&detail.imageOnly?'Image found':(warnings.length ? 'Incomplete' : 'Registry'))));
     return '<button type="button" class="fleet-ship-row '+(issues.length?'needs-review ':'')+(selected?'active':'')+'" onclick="fleetSelectRegistryShip('+i+')">'+
       '<div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(s.make||'Unknown make')+(warnings.length?' · '+fleetEsc(warnings[0]):'')+'</div>'+(issues.length?'<div class="fleet-build-meta">'+fleetEsc(issues.slice(0,2).join(', '))+'</div>':'')+'</div>'+
       '<span class="fleet-ship-status">'+fleetEsc(status)+'</span></button>';
