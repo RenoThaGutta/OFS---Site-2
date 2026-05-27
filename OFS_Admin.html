@@ -277,7 +277,25 @@
     .fleet-admin-tier { margin-bottom: 14px; }
     .fleet-admin-tier h5 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; border-bottom: 1px solid var(--b-dim); padding-bottom: 7px; margin-bottom: 8px; }
     .fleet-over-cap { border-color: rgba(192,57,43,.55) !important; background: rgba(192,57,43,.08) !important; }
-    @media (max-width: 980px) { .fleet-admin-layout { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid { grid-template-columns: 1fr; } }
+    .fleet-missing-panel { display: none; }
+    .fleet-missing-panel.active { display: block; }
+    .fleet-missing-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(360px, 1.05fr); gap: 18px; align-items: start; }
+    .fleet-missing-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
+    .fleet-missing-card h4 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 14px; }
+    .fleet-missing-preview { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 14px; align-items: start; padding: 12px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; }
+    .fleet-missing-preview img { width: 220px; max-height: 150px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
+    .fleet-missing-title { color: var(--gold-lt); font-weight: 700; font-size: .95rem; margin-bottom: 4px; }
+    .fleet-missing-meta { color: var(--silver-dim); font-size: .76rem; line-height: 1.45; margin-top: 4px; }
+    .fleet-missing-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 14px; }
+    .fleet-missing-status { margin-top: 12px; color: var(--text-dim); font-size: .8rem; line-height: 1.45; }
+    .fleet-missing-status.warn { color: var(--gold-lt); }
+    .fleet-missing-status.ok { color: #75d18f; }
+    .fleet-missing-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 14px; }
+    .fleet-ship-list { display: grid; gap: 8px; max-height: 460px; overflow: auto; }
+    .fleet-ship-row { display: grid; grid-template-columns: 74px 1fr; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; }
+    .fleet-ship-row img { width: 74px; height: 44px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
+    .fleet-ship-row strong { color: var(--gold-lt); font-size: .86rem; }
+    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields { grid-template-columns: 1fr; } .fleet-missing-preview img { width: 100%; } }
 
 
     /* ── Banner population cards ── */
@@ -1121,14 +1139,20 @@
     <!-- ── Fleet ── -->
     <div class="tab-panel" id="tab-fleet">
       <div class="sec-head"><h2>Fleet</h2><div class="sec-line"></div></div>
-      <div class="controls">
-        <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, member, ship, role…" oninput="renderFleetAdmin()">
-        <button class="add-btn" onclick="fleetNew()">+ New Build</button>
-        <button class="ctrl-btn" onclick="renderFleetAdmin()">Refresh</button>
+      <div class="tav-subtabs" id="fleet-subtabs">
+        <button class="shop-stab active" data-fleettab="builder">Fleet Builder</button>
+        <button class="shop-stab"        data-fleettab="missing">Add Missing Ship</button>
       </div>
-      <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleets</strong> sheet. Ship choices come from <strong>Ship Registry</strong>. Use the builder below to add multiple members, set role caps, then save the built roster.</div>
 
-      <div class="fleet-admin-layout">
+      <div id="fleet-builder-panel" class="fleet-missing-panel active">
+        <div class="controls">
+          <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, member, ship, role…" oninput="renderFleetAdmin()">
+          <button class="add-btn" onclick="fleetNew()">+ New Build</button>
+          <button class="ctrl-btn" onclick="renderFleetAdmin()">Refresh</button>
+        </div>
+        <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleets</strong> sheet. Ship choices come from <strong>Ship Registry</strong>. Use the builder below to add multiple members, set role caps, then save the built roster.</div>
+
+        <div class="fleet-admin-layout">
         <section class="fleet-builder-card">
           <h4 id="fleet-form-title">Fleet Builder</h4>
           <div class="field-group fleet-field-grid">
@@ -1171,9 +1195,34 @@
         </section>
       </div>
 
-      <div class="field-discord-note" style="margin-top:18px;">
-        <strong>Fleets tab header row for A1:Q1:</strong><br>
-        Fleet ID | Fleet Name | User ID | Username | House | Banner | Ship Model | Ship Make | Ship Image URL | Role | Sort Order | Notes | Active | Fighter Cap | Med Evac Cap | Command Cap | Support Cap
+        <div class="field-discord-note" style="margin-top:18px;">
+          <strong>Fleets tab header row for A1:Q1:</strong><br>
+          Fleet ID | Fleet Name | User ID | Username | House | Banner | Ship Model | Ship Make | Ship Image URL | Role | Sort Order | Notes | Active | Fighter Cap | Med Evac Cap | Command Cap | Support Cap
+        </div>
+      </div>
+
+      <div id="fleet-missing-panel" class="fleet-missing-panel">
+        <div class="field-discord-note" style="margin-bottom:14px;">Paste a Star Citizen Tools link, Wiki API vehicle link, or plain ship name. The tool previews a compact <strong>Ship Registry</strong> row before saving: Ship Model | Make | Image URL.</div>
+        <div class="fleet-missing-layout">
+          <section class="fleet-missing-card">
+            <h4>Lookup Missing Ship</h4>
+            <div class="controls" style="margin-bottom:12px">
+              <input class="ctrl-input" id="fleet-missing-query" style="min-width:320px;flex:1" placeholder="https://starcitizen.tools/Odin or Odin" onkeydown="if(event.key==='Enter')fleetLookupMissingShip()">
+              <button class="ctrl-btn" onclick="fleetLookupMissingShip()">Lookup Ship</button>
+            </div>
+            <div id="fleet-missing-status" class="fleet-missing-status">Waiting for a Wiki link or ship name.</div>
+            <div id="fleet-missing-preview" style="margin-top:14px"><div class="tav-list-empty">No ship selected yet.</div></div>
+          </section>
+
+          <section class="fleet-missing-card">
+            <h4>Current Ship Registry</h4>
+            <div class="controls" style="margin-bottom:12px">
+              <input class="ctrl-input" id="fleet-ship-registry-filter" placeholder="Filter registry…" oninput="renderFleetShipRegistryList()">
+              <button class="ctrl-btn" onclick="renderFleetShipRegistryList()">Refresh</button>
+            </div>
+            <div id="fleet-ship-registry-list" class="fleet-ship-list"><div class="tav-list-empty">Loading Ship Registry…</div></div>
+          </section>
+        </div>
       </div>
     </div>
 
@@ -2871,6 +2920,7 @@ function renderFleetAdmin(){
   seedFleetForm();
   renderFleetBuild();
   renderFleetRosterPreview();
+  renderFleetShipRegistryList();
 }
 function fleetNew(){ FLEET_BUILD=[]; fleetClearForm(); document.getElementById('fleet-form-title').textContent='Fleet Builder'; renderFleetBuild(); renderFleetRosterPreview(); }
 function fleetEdit(id){
@@ -2913,6 +2963,129 @@ async function fleetSaveBuild(){
   } catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
 }
 async function fleetSave(){ return fleetSaveBuild(); }
+
+var FLEET_MISSING_SHIP=null;
+function fleetNorm(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,' '); }
+function fleetTitleFromSlug(s){ return String(s||'').replace(/_/g,' ').replace(/-/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g,function(c){return c.toUpperCase();}); }
+function fleetExtractShipInput(raw){
+  raw=String(raw||'').trim();
+  if(!raw) return { raw:'', title:'', slug:'' };
+  try{
+    var u=new URL(raw);
+    var parts=u.pathname.split('/').filter(Boolean);
+    var last=decodeURIComponent(parts[parts.length-1]||'');
+    if(parts.indexOf('vehicles')!==-1) last=decodeURIComponent(parts[parts.indexOf('vehicles')+1]||last);
+    return { raw:raw, title:fleetTitleFromSlug(last), slug:fleetSlug(last), sourceUrl:raw };
+  }catch(e){ return { raw:raw, title:raw, slug:fleetSlug(raw), sourceUrl:'' }; }
+}
+async function fleetFetchJson(url){ var res=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}}); if(!res.ok) throw new Error('Lookup returned '+res.status); return res.json(); }
+function fleetLocalText(v){ if(Array.isArray(v)) return fleetLocalText(v[0]); if(v&&typeof v==='object') return v.en_EN||v.en||v.name||v.label||Object.values(v).find(function(x){return typeof x==='string';})||''; return v==null?'':String(v); }
+function fleetVehicleMake(v){ return fleetLocalText(v&&v.manufacturer&&(v.manufacturer.name||v.manufacturer)); }
+function fleetTitleValue(s){ return String(s||'').replace(/[_-]+/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g,function(c){return c.toUpperCase();}); }
+function fleetVehicleRole(v){ return fleetTitleValue(fleetLocalText((v&&Array.isArray(v.foci)&&v.foci[0]) || (v&&v.role) || (v&&v.career))); }
+function fleetVehicleCrew(v){ var c=v&&v.crew; if(c&&typeof c==='object'){ var min=c.min||c.minimum, max=c.max||c.maximum; if(min&&max&&String(min)!==String(max)) return min+'–'+max; return String(min||max||''); } return fleetLocalText(c); }
+function fleetVehicleImage(v){ if(!v) return ''; var imgs=v.images||v.media||[]; if(Array.isArray(imgs)&&imgs.length){ return imgs[0].original_url||imgs[0].thumbnail_url||imgs[0].url||imgs[0].source||''; } return v.image_url||v.imageUrl||v.thumbnail_url||v.thumbnail||''; }
+async function fleetToolsPageImage(title){
+  title=String(title||'').trim(); if(!title) return '';
+  try{
+    var qs=new URLSearchParams({action:'query',titles:title,prop:'pageimages',piprop:'original|thumbnail',pithumbsize:'1200',format:'json',origin:'*'});
+    var data=await fleetFetchJson('https://starcitizen.tools/api.php?'+qs.toString());
+    var pages=data&&data.query&&data.query.pages?Object.values(data.query.pages):[];
+    var page=pages.find(function(p){return p&&p.pageid&&p.pageid!==-1;});
+    return String(page&&((page.thumbnail&&page.thumbnail.source)||(page.original&&page.original.source))||'').trim();
+  }catch(e){ return ''; }
+}
+function fleetNormalizeVehicle(raw, source){
+  var v=raw&&raw.data?raw.data:raw;
+  var model=fleetLocalText(v&&v.name);
+  var make=fleetVehicleMake(v);
+  var imageUrl=fleetVehicleImage(v);
+  var role=fleetVehicleRole(v);
+  return { model:model, make:make, imageUrl:imageUrl, sourceUrl:source||'', role:role, category:fleetTitleValue(fleetLocalText(v&&v.type)), size:fleetTitleValue(fleetLocalText(v&&v.size)), crew:fleetVehicleCrew(v), status:fleetTitleValue(fleetLocalText(v&&v.production_status)), slug:(v&&v.slug)||fleetSlug(model), description:fleetLocalText(v&&v.description) };
+}
+async function fleetFetchVehicleBySlug(slug){
+  if(!slug) return null;
+  try{ return await fleetFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/vehicles/'+encodeURIComponent(slug)); }
+  catch(e){ return fleetFetchJson('https://api.star-citizen.wiki/api/vehicles/'+encodeURIComponent(slug)); }
+}
+async function fleetSearchVehicle(q){
+  var data;
+  try{ data=await fleetFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/search?q='+encodeURIComponent(q)); }
+  catch(e){ data=await fleetFetchJson('https://api.star-citizen.wiki/api/search?filter%5Bquery%5D='+encodeURIComponent(q)); }
+  var groups=(data.data&&data.data.data)||data.data||[];
+  var results=[];
+  groups.forEach(function(g){ if((g.type==='vehicles'||g.label==='Vehicles')&&Array.isArray(g.results)) results=results.concat(g.results); });
+  return results[0]||null;
+}
+function fleetShipDuplicate(ship){
+  var m=fleetNorm(ship&&ship.model), make=fleetNorm(ship&&ship.make);
+  return shipRegistry().find(function(s){ return fleetNorm(s.model)===m && (!make || !s.make || fleetNorm(s.make)===make); });
+}
+function fleetSetMissingStatus(msg, cls){ var el=document.getElementById('fleet-missing-status'); if(el){ el.className='fleet-missing-status '+(cls||''); el.textContent=msg||''; } }
+function renderFleetMissingPreview(ship){
+  var box=document.getElementById('fleet-missing-preview'); if(!box) return;
+  if(!ship){ box.innerHTML='<div class="tav-list-empty">No ship selected yet.</div>'; return; }
+  var dup=fleetShipDuplicate(ship);
+  var meta=[ship.role, ship.category, ship.size, ship.crew?('Crew '+ship.crew):'', ship.status].filter(Boolean).join(' · ');
+  box.innerHTML='<div class="fleet-missing-preview">'+
+    '<img src="'+fleetEsc(ship.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'">'+
+    '<div><div class="fleet-missing-title">'+fleetEsc(ship.model||'Unknown Ship')+'</div>'+
+    '<div class="fleet-missing-meta">Make: '+fleetEsc(ship.make||'Unknown')+'</div>'+
+    '<div class="fleet-missing-meta">'+fleetEsc(meta||'Vehicle reference found')+'</div>'+
+    (ship.description?'<div class="fleet-missing-meta">'+fleetEsc(ship.description.slice(0,260))+'</div>':'')+
+    '<div class="fleet-missing-fields"><div class="field-row"><label>Ship Model</label><input id="fleet-missing-model" value="'+fleetEsc(ship.model||'')+'"></div><div class="field-row"><label>Make</label><input id="fleet-missing-make" value="'+fleetEsc(ship.make||'')+'"></div><div class="field-row" style="grid-column:1/-1"><label>Image URL</label><input id="fleet-missing-image" value="'+fleetEsc(ship.imageUrl||'')+'"></div></div>'+
+    '<div class="fleet-missing-status '+(dup?'warn':'ok')+'">'+(dup?'This appears to already exist in Ship Registry as '+fleetEsc(dup.model)+' — '+fleetEsc(dup.make)+'.':'Ready to add to Ship Registry after admin review.')+'</div>'+
+    '<div class="fleet-missing-actions"><button class="cancel-btn" onclick="fleetClearMissingShip()">Clear</button><button class="save-btn" onclick="fleetSaveMissingShip()" '+(dup?'disabled title="Duplicate found"':'')+'>Add to Ship Registry</button></div></div></div>';
+}
+async function fleetLookupMissingShip(){
+  var input=document.getElementById('fleet-missing-query'); var parsed=fleetExtractShipInput(input&&input.value);
+  if(!parsed.raw){ fleetSetMissingStatus('Paste a Star Citizen Tools link, Wiki API vehicle link, or ship name first.','warn'); return; }
+  fleetSetMissingStatus('Looking up '+(parsed.title||parsed.slug)+'…','');
+  FLEET_MISSING_SHIP=null; renderFleetMissingPreview(null);
+  try{
+    var raw=null, source=parsed.sourceUrl||parsed.raw;
+    var candidates=[parsed.slug, fleetSlug(parsed.title), fleetSlug(parsed.raw)].filter(Boolean).filter(function(v,i,a){return a.indexOf(v)===i;});
+    for(var i=0;i<candidates.length&&!raw;i++){ try{ raw=await fleetFetchVehicleBySlug(candidates[i]); }catch(e){} }
+    if(!raw){
+      var hit=await fleetSearchVehicle(parsed.title||parsed.raw);
+      if(hit){ var slug=(hit.api_url||hit.link||'').split('/').pop()||hit.slug||fleetSlug(hit.name); raw=await fleetFetchVehicleBySlug(slug); }
+    }
+    if(!raw) throw new Error('No vehicle result found. Try the exact starcitizen.tools ship page URL.');
+    var ship=fleetNormalizeVehicle(raw, source);
+    if(!ship.imageUrl) ship.imageUrl=await fleetToolsPageImage(ship.model||parsed.title);
+    FLEET_MISSING_SHIP=ship;
+    fleetSetMissingStatus('Vehicle found. Review the compact Ship Registry row before saving.', fleetShipDuplicate(ship)?'warn':'ok');
+    renderFleetMissingPreview(ship);
+  }catch(e){ console.error(e); fleetSetMissingStatus('Ship lookup failed: '+e.message,'warn'); }
+}
+function fleetClearMissingShip(){ FLEET_MISSING_SHIP=null; ['fleet-missing-query'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); fleetSetMissingStatus('Waiting for a Wiki link or ship name.',''); renderFleetMissingPreview(null); }
+async function fleetSaveMissingShip(){
+  if(!window.OFSSheets || !OFSSheets.saveShipRegistryShip){ alert('Ship Registry write helper unavailable.'); return; }
+  var ship={ model:(document.getElementById('fleet-missing-model')||{}).value||'', make:(document.getElementById('fleet-missing-make')||{}).value||'', imageUrl:(document.getElementById('fleet-missing-image')||{}).value||'' };
+  ship.model=ship.model.trim(); ship.make=ship.make.trim(); ship.imageUrl=ship.imageUrl.trim();
+  if(!ship.model || !ship.make){ alert('Ship Model and Make are required.'); return; }
+  var dup=fleetShipDuplicate(ship); if(dup){ alert('This ship already exists in Ship Registry: '+dup.model+' — '+dup.make); return; }
+  try{ await OFSSheets.saveShipRegistryShip(ship); alert('Ship added to Ship Registry. Refreshing site data…'); if(OFSSheets.load) await OFSSheets.load({force:true}); seedFleetForm(); renderFleetShipRegistryList(); fleetClearMissingShip(); }
+  catch(e){ console.error(e); alert('Ship Registry save failed: '+e.message); }
+}
+function renderFleetShipRegistryList(){
+  var box=document.getElementById('fleet-ship-registry-list'); if(!box) return;
+  var q=(document.getElementById('fleet-ship-registry-filter')&&document.getElementById('fleet-ship-registry-filter').value||'').toLowerCase();
+  var ships=shipRegistry().slice().sort(function(a,b){return (a.model||'').localeCompare(b.model||'');}).filter(function(s){ return !q || [s.model,s.make].join(' ').toLowerCase().indexOf(q)!==-1; });
+  if(!ships.length){ box.innerHTML='<div class="tav-list-empty">No Ship Registry rows match this filter.</div>'; return; }
+  box.innerHTML=ships.slice(0,120).map(function(s){ return '<div class="fleet-ship-row"><img src="'+fleetEsc(s.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'"><div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(s.make||'Unknown make')+'</div></div></div>'; }).join('')+(ships.length>120?'<div class="tav-list-empty">Showing first 120 matches. Use the filter to narrow the list.</div>':'');
+}
+
+document.addEventListener('click', function(e){
+  var btn=e.target.closest && e.target.closest('#fleet-subtabs .shop-stab');
+  if(!btn) return;
+  document.querySelectorAll('#fleet-subtabs .shop-stab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  var tab=btn.getAttribute('data-fleettab');
+  document.getElementById('fleet-builder-panel').classList.toggle('active', tab==='builder');
+  document.getElementById('fleet-missing-panel').classList.toggle('active', tab==='missing');
+  if(tab==='builder') renderFleetAdmin(); else renderFleetShipRegistryList();
+});
 
 /* ══════════════════════════════════════════════════════════
    SHOP ADMIN

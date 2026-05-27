@@ -993,6 +993,14 @@
     return _apiPost('/write', { op: 'overwrite', sheet: 'Fleets', keyCol: 0, keyVal: item.id, row: fleetAssignmentRow(item) });
   }
 
+  function shipRegistryRow(ship) {
+    return [ship.model || '', ship.make || '', ship.imageUrl || ''];
+  }
+
+  function saveShipRegistryShip(ship) {
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Ship Registry', keyCol: 0, keyVal: ship.model, row: shipRegistryRow(ship) });
+  }
+
   async function saveFleetAssignments(items) {
     for (const item of (items || [])) await saveFleetAssignment(item);
     return { ok: true };
@@ -1088,6 +1096,7 @@
     appendBannerRenameRequest,
     saveBannerRenameAlias,
     saveFleetAssignment,
+    saveShipRegistryShip,
     saveFleetAssignments,
     deleteFleetAssignment,
     saveShopItem,
