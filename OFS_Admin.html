@@ -282,18 +282,30 @@
     .fleet-missing-layout { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
     .fleet-lookup-card { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(420px, 1.1fr); gap: 14px; align-items: start; }
     .fleet-missing-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
-    .fleet-missing-card h4 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 12px; }
-    .fleet-missing-preview { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; }
-    .fleet-missing-preview img { width: 180px; max-height: 118px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
+    .fleet-missing-card h4 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 8px; }
+    .fleet-registry-card-tight { padding: 12px; }
+    .fleet-registry-title-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(220px,.6fr); gap:10px; align-items:start; margin-bottom:8px; }
+    .fleet-registry-title-row .field-discord-note { margin:0; }
+    .fleet-registry-toolbar { display:grid; grid-template-columns:minmax(160px,1fr) 142px auto minmax(220px,1.2fr) auto; gap:8px; align-items:center; margin-bottom:4px; }
+    .fleet-registry-toolbar .ctrl-input { min-width:0; width:100%; }
+    .fleet-quick-lookup { border-color:rgba(201,168,76,.38) !important; }
+    .fleet-registry-tight-grid { display:grid; grid-template-columns:minmax(250px,.7fr) minmax(420px,1.3fr); gap:10px; align-items:start; }
+    .fleet-registry-left, .fleet-registry-right { min-width:0; }
+    .fleet-registry-right { display:grid; gap:8px; }
+    .fleet-missing-preview-slot:empty { display:none; }
+    .fleet-missing-preview-slot > .tav-list-empty { padding:8px 10px; font-size:.72rem; }
+    .fleet-missing-preview { display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 10px; align-items: start; padding: 10px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; }
+    .fleet-missing-preview img { width: 132px; max-height: 82px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
     .fleet-missing-title { color: var(--gold-lt); font-weight: 700; font-size: .92rem; margin-bottom: 3px; }
     .fleet-missing-meta { color: var(--silver-dim); font-size: .74rem; line-height: 1.32; margin-top: 3px; }
     .fleet-missing-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 10px; }
     .fleet-missing-status { margin-top: 10px; color: var(--text-dim); font-size: .78rem; line-height: 1.35; }
+    .fleet-missing-status.compact { margin: 2px 0 8px; min-height: 1em; font-size: .72rem; }
     .fleet-missing-status.warn { color: var(--gold-lt); }
     .fleet-missing-status.ok { color: #75d18f; }
     .fleet-missing-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 10px; }
     .fleet-registry-workspace { display: grid; grid-template-columns: minmax(220px, .82fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
-    .fleet-ship-list { display: grid; gap: 5px; max-height: min(58vh, 520px); overflow: auto; padding-right: 4px; }
+    .fleet-ship-list { display: grid; gap: 5px; max-height: min(66vh, 640px); overflow: auto; padding-right: 4px; }
     .fleet-ship-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 6px 9px; min-height: 42px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; cursor: pointer; text-align: left; width: 100%; color: inherit; }
     .fleet-ship-row:hover, .fleet-ship-row.active { border-color: rgba(201,168,76,.55); background: rgba(201,168,76,.07); }
     .fleet-ship-row.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.12); }
@@ -303,7 +315,7 @@
     .fleet-ship-row.needs-review .fleet-ship-status { color: #ff8b7f; }
     .fleet-ship-row.unverified .fleet-ship-status { color: #e0c46a; }
     .fleet-ship-row.verified .fleet-ship-status { color: #7fdc9a; }
-    .fleet-registry-detail { margin-top: 0; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; padding: 10px; max-height: min(58vh, 520px); overflow: auto; }
+    .fleet-registry-detail { margin-top: 0; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; padding: 10px; max-height: min(66vh, 640px); overflow: auto; }
     .fleet-registry-detail.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.10); }
     .fleet-registry-head { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 10px; align-items: start; margin-bottom: 8px; }
     .fleet-registry-head img, .fleet-registry-empty-img { width: 124px; max-height: 78px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
@@ -311,8 +323,10 @@
     .fleet-registry-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
     .fleet-registry-badge { border: 1px solid rgba(201,168,76,.28); color: var(--silver); background: rgba(0,0,0,.18); border-radius: 999px; padding: 3px 7px; font-size: .64rem; }
     .fleet-registry-badge.warn { border-color: rgba(192,57,43,.62); color: #ffb1a8; background: rgba(192,57,43,.14); }
-    @media (max-width: 1200px) { .fleet-registry-workspace { grid-template-columns: 1fr; } .fleet-registry-detail { margin-top: 10px; max-height: none; } }
-    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout, .fleet-lookup-card { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields, .fleet-registry-head { grid-template-columns: 1fr; } .fleet-missing-preview img, .fleet-registry-head img { width: 100%; max-height: 180px; } }
+    .fleet-recommended-links { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px; color:var(--silver-dim); font-size:.68rem; }
+    .ctrl-btn.mini { padding:5px 8px; font-size:.58rem; letter-spacing:.10em; }
+    @media (max-width: 1200px) { .fleet-registry-workspace, .fleet-registry-tight-grid, .fleet-registry-title-row { grid-template-columns: 1fr; } .fleet-registry-detail { margin-top: 0; max-height: none; } .fleet-registry-toolbar { grid-template-columns: minmax(160px,1fr) 140px auto; } .fleet-quick-lookup { grid-column:1 / span 2; } }
+    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout, .fleet-lookup-card, .fleet-registry-toolbar { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields, .fleet-registry-head { grid-template-columns: 1fr; } .fleet-missing-preview img, .fleet-registry-head img { width: 100%; max-height: 180px; } .fleet-quick-lookup { grid-column:auto; } }
 
 
     /* ── Banner population cards ── */
@@ -1219,41 +1233,39 @@
       </div>
 
       <div id="fleet-missing-panel" class="fleet-missing-panel">
-        <div class="field-discord-note" style="margin-bottom:14px;">Paste a Star Citizen Tools link, Wiki API vehicle link, or plain ship name. The tool previews a compact <strong>Ship Registry</strong> row before saving: Ship Model | Make | Image URL.</div>
-        <div class="fleet-missing-layout">
-          <section class="fleet-missing-card">
-            <h4>Lookup Missing Ship</h4>
-            <div class="fleet-lookup-card">
-              <div>
-                <div class="controls" style="margin-bottom:12px">
-                  <input class="ctrl-input" id="fleet-missing-query" style="min-width:320px;flex:1" placeholder="https://starcitizen.tools/Odin or Odin" onkeydown="if(event.key==='Enter')fleetLookupMissingShip()">
-                  <button class="ctrl-btn" onclick="fleetLookupMissingShip()">Lookup Ship</button>
-                </div>
-                <div id="fleet-missing-status" class="fleet-missing-status">Waiting for a Wiki link or ship name.</div>
-              </div>
-              <div id="fleet-missing-preview"><div class="tav-list-empty">No ship selected yet.</div></div>
+        <section class="fleet-missing-card fleet-registry-card-tight">
+          <div class="fleet-registry-title-row">
+            <div>
+              <h4>Ship Registry</h4>
+              <div class="field-discord-note">One-screen repair flow. Sheet headers: Ship Model | Make | Image URL | Verified | Wiki URL | Role | Category | Size | Crew | Status | Description</div>
             </div>
-          </section>
+            <div id="fleet-registry-repair-status" class="field-discord-note">Sheet rows load first. Select a ship to pull Wiki data or edit manually.</div>
+          </div>
 
-          <section class="fleet-missing-card">
-            <h4>Current Ship Registry</h4>
-            <div class="controls" style="margin-bottom:12px">
-              <input class="ctrl-input" id="fleet-ship-registry-filter" placeholder="Filter registry…" oninput="renderFleetShipRegistryList()">
-              <select class="ctrl-input" id="fleet-ship-registry-status-filter" onchange="renderFleetShipRegistryList()" style="max-width:170px">
-                <option value="all">All ships</option>
-                <option value="needs">Needs info</option>
-                <option value="unverified">Not verified</option>
-                <option value="verified">Verified</option>
-              </select>
-              <button class="ctrl-btn" onclick="renderFleetShipRegistryList()">Refresh</button>
-              <span id="fleet-registry-repair-status" class="field-discord-note">Sheet rows load first. Select a ship to pull Wiki data or edit manually.</span>
-            </div>
-            <div class="fleet-registry-workspace">
+          <div class="fleet-registry-toolbar">
+            <input class="ctrl-input" id="fleet-ship-registry-filter" placeholder="Filter registry…" oninput="renderFleetShipRegistryList()">
+            <select class="ctrl-input" id="fleet-ship-registry-status-filter" onchange="renderFleetShipRegistryList()">
+              <option value="all">All ships</option>
+              <option value="needs">Needs info</option>
+              <option value="unverified">Not verified</option>
+              <option value="verified">Verified</option>
+            </select>
+            <button class="ctrl-btn" onclick="renderFleetShipRegistryList()">Refresh</button>
+            <input class="ctrl-input fleet-quick-lookup" id="fleet-missing-query" placeholder="Add / repair by Wiki link or ship name…" onkeydown="if(event.key==='Enter')fleetLookupMissingShip()">
+            <button class="ctrl-btn" onclick="fleetLookupMissingShip()">Lookup</button>
+          </div>
+          <div id="fleet-missing-status" class="fleet-missing-status compact">Waiting for a Wiki link or ship name.</div>
+
+          <div class="fleet-registry-tight-grid">
+            <div class="fleet-registry-left">
               <div id="fleet-ship-registry-list" class="fleet-ship-list"><div class="tav-list-empty">Loading Ship Registry…</div></div>
+            </div>
+            <div class="fleet-registry-right">
+              <div id="fleet-missing-preview" class="fleet-missing-preview-slot"><div class="tav-list-empty">Lookup preview appears here only when adding or updating a ship.</div></div>
               <div id="fleet-ship-registry-detail" class="fleet-registry-detail"><div class="tav-list-empty">Select a ship card to inspect, repair, update, or remove it.</div></div>
             </div>
-          </section>
-        </div>
+          </div>
+        </section>
       </div>
     </div>
 
@@ -3025,6 +3037,28 @@ function fleetExtractShipInput(raw){
     return { raw:raw, title:fleetTitleFromSlug(last), slug:fleetSlug(last), sourceUrl:raw };
   }catch(e){ return { raw:raw, title:raw, slug:fleetSlug(raw), sourceUrl:'' }; }
 }
+function fleetToolsTitle(title){ return String(title||'').trim().replace(/\s+/g,'_'); }
+function fleetRecommendedWikiLinks(ship){
+  var model=String(ship&&ship.model||'').trim();
+  var make=String(ship&&ship.make||'').trim();
+  var links=[];
+  function add(label, title){
+    title=String(title||'').trim();
+    if(!title) return;
+    var url='https://starcitizen.tools/'+encodeURIComponent(fleetToolsTitle(title)).replace(/%20/g,'_');
+    if(!links.some(function(x){return x.url===url;})) links.push({label:label, title:title, url:url});
+  }
+  add('Model page', model);
+  var parts=model.split(/\s+/).filter(Boolean);
+  if(parts.length>1) add('Variant order', parts.slice(1).concat(parts[0]).join(' '));
+  if(make && model && model.toLowerCase().indexOf(make.toLowerCase())===-1) add('Make + model', make+' '+model);
+  return links.slice(0,3);
+}
+function fleetUseRecommendedWikiLink(url){
+  var el=document.getElementById('fleet-reg-wiki');
+  if(el) el.value=url||'';
+  fleetRefreshRegistryDetail(true);
+}
 async function fleetFetchJson(url){ var res=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}}); if(!res.ok) throw new Error('Lookup returned '+res.status); return res.json(); }
 function fleetLocalText(v){ if(Array.isArray(v)) return fleetLocalText(v[0]); if(v&&typeof v==='object') return v.en_EN||v.en||v.name||v.label||Object.values(v).find(function(x){return typeof x==='string';})||''; return v==null?'':String(v); }
 function fleetVehicleMake(v){ return fleetLocalText(v&&v.manufacturer&&(v.manufacturer.name||v.manufacturer)); }
@@ -3357,6 +3391,8 @@ function renderFleetShipRegistryDetail(){
   box.className='fleet-registry-detail '+(issues.length?'needs-review':'');
   var meta=[ship.role, ship.category, ship.size, ship.crew?('Crew '+ship.crew):'', ship.status].filter(Boolean).join(' · ') || 'Sheet-first registry row. Pull from Wiki only when you want to repair/fill this ship.';
   var imageUrl=fleetRegistryImageUrl(ship, detail);
+  var recommended=fleetRecommendedWikiLinks(ship);
+  var recommendedHtml=recommended.length ? '<div class="fleet-recommended-links"><span>Recommended:</span>'+recommended.map(function(link){ return '<button type="button" class="ctrl-btn mini" onclick="fleetUseRecommendedWikiLink(\''+fleetEsc(link.url)+'\')">'+fleetEsc(link.label)+'</button>'; }).join('')+'</div>' : '';
   box.innerHTML='<div class="fleet-registry-head">'+(imageUrl?'<img src="'+fleetEsc(imageUrl)+'" alt="" onerror="this.style.display=\'none\'">':'<div class="fleet-registry-empty-img">No image</div>')+'<div>'+
     '<div class="fleet-missing-title">'+fleetEsc(ship.model||'Unnamed Ship')+'</div><div class="fleet-missing-meta">Make: '+fleetEsc(ship.make||'Unknown')+'</div><div class="fleet-missing-meta">'+fleetEsc(meta)+'</div>'+
     (ship.description?'<div class="fleet-missing-meta">'+fleetEsc(ship.description.slice(0,260))+'</div>':'')+
@@ -3367,7 +3403,7 @@ function renderFleetShipRegistryDetail(){
       '<div class="field-row" style="grid-column:1/-1"><label>Image URL *</label><input id="fleet-reg-image" value="'+fleetEsc(imageUrl)+'"><button type="button" class="tf-upload-btn" style="margin-top:8px" onclick="ofsFileUpload(\'fleet-reg-image\',\'ships\',document.getElementById(\'fleet-reg-model\').value||\'ship\')">Upload Custom Image</button></div>'+
       '<div class="field-row"><label>Verified</label><select id="fleet-reg-verified"><option value="" '+(!ship.verified?'selected':'')+'>Not verified</option><option value="Wiki" '+(fleetRegistryIsWikiVerified(ship)?'selected':'')+'>Pulled from Wiki</option><option value="Manual" '+(/^manual$/i.test(fleetRegistryVerifiedValue(ship))?'selected':'')+'>Manual / custom</option></select></div>'+
       '<div class="field-row"><label>Source</label><input value="'+fleetEsc(fleetRegistryIsWikiVerified(ship)?'Wiki/API':'Sheet/Admin')+'" disabled></div>'+
-      '<div class="field-row" style="grid-column:1/-1"><label>Wiki / Tools Link For This Ship</label><input id="fleet-reg-wiki" value="'+fleetEsc(ship.wikiUrl||'')+'" placeholder="https://starcitizen.tools/Odin or Odin"></div>'+
+      '<div class="field-row" style="grid-column:1/-1"><label>Wiki / Tools Link For This Ship</label><input id="fleet-reg-wiki" value="'+fleetEsc(ship.wikiUrl||'')+'" placeholder="https://starcitizen.tools/Odin or Odin">'+recommendedHtml+'</div>'+
       '<div class="field-row"><label>Role</label><input id="fleet-reg-role" value="'+fleetEsc(ship.role||'')+'" placeholder="Battlecruiser"></div>'+
       '<div class="field-row"><label>Category</label><input id="fleet-reg-category" value="'+fleetEsc(ship.category||'')+'" placeholder="Combat"></div>'+
       '<div class="field-row"><label>Size</label><input id="fleet-reg-size" value="'+fleetEsc(ship.size||'')+'" placeholder="Capital"></div>'+
