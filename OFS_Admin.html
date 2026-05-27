@@ -279,7 +279,8 @@
     .fleet-over-cap { border-color: rgba(192,57,43,.55) !important; background: rgba(192,57,43,.08) !important; }
     .fleet-missing-panel { display: none; }
     .fleet-missing-panel.active { display: block; }
-    .fleet-missing-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(520px, 1.25fr); gap: 18px; align-items: start; }
+    .fleet-missing-layout { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
+    .fleet-lookup-card { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(420px, 1.1fr); gap: 14px; align-items: start; }
     .fleet-missing-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
     .fleet-missing-card h4 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 12px; }
     .fleet-missing-preview { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; }
@@ -308,7 +309,7 @@
     .fleet-registry-badge { border: 1px solid rgba(201,168,76,.28); color: var(--silver); background: rgba(0,0,0,.18); border-radius: 999px; padding: 3px 7px; font-size: .64rem; }
     .fleet-registry-badge.warn { border-color: rgba(192,57,43,.62); color: #ffb1a8; background: rgba(192,57,43,.14); }
     @media (max-width: 1200px) { .fleet-registry-workspace { grid-template-columns: 1fr; } .fleet-registry-detail { margin-top: 10px; max-height: none; } }
-    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields, .fleet-registry-head { grid-template-columns: 1fr; } .fleet-missing-preview img, .fleet-registry-head img { width: 100%; max-height: 180px; } }
+    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout, .fleet-lookup-card { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields, .fleet-registry-head { grid-template-columns: 1fr; } .fleet-missing-preview img, .fleet-registry-head img { width: 100%; max-height: 180px; } }
 
 
     /* ── Banner population cards ── */
@@ -1219,12 +1220,16 @@
         <div class="fleet-missing-layout">
           <section class="fleet-missing-card">
             <h4>Lookup Missing Ship</h4>
-            <div class="controls" style="margin-bottom:12px">
-              <input class="ctrl-input" id="fleet-missing-query" style="min-width:320px;flex:1" placeholder="https://starcitizen.tools/Odin or Odin" onkeydown="if(event.key==='Enter')fleetLookupMissingShip()">
-              <button class="ctrl-btn" onclick="fleetLookupMissingShip()">Lookup Ship</button>
+            <div class="fleet-lookup-card">
+              <div>
+                <div class="controls" style="margin-bottom:12px">
+                  <input class="ctrl-input" id="fleet-missing-query" style="min-width:320px;flex:1" placeholder="https://starcitizen.tools/Odin or Odin" onkeydown="if(event.key==='Enter')fleetLookupMissingShip()">
+                  <button class="ctrl-btn" onclick="fleetLookupMissingShip()">Lookup Ship</button>
+                </div>
+                <div id="fleet-missing-status" class="fleet-missing-status">Waiting for a Wiki link or ship name.</div>
+              </div>
+              <div id="fleet-missing-preview"><div class="tav-list-empty">No ship selected yet.</div></div>
             </div>
-            <div id="fleet-missing-status" class="fleet-missing-status">Waiting for a Wiki link or ship name.</div>
-            <div id="fleet-missing-preview" style="margin-top:14px"><div class="tav-list-empty">No ship selected yet.</div></div>
           </section>
 
           <section class="fleet-missing-card">
@@ -2984,6 +2989,9 @@ var FLEET_MISSING_SHIP=null;
 var FLEET_REGISTRY_VIEW=[];
 var FLEET_REGISTRY_SELECTED=null;
 var FLEET_REGISTRY_DETAILS={};
+var FLEET_REGISTRY_ENRICHING={};
+var FLEET_REGISTRY_HYDRATE_TIMER=null;
+var FLEET_REGISTRY_HYDRATING=false;
 function fleetNorm(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,' '); }
 function fleetShipKey(ship){ return fleetNorm((ship&&ship.model)||'')+'|'+fleetNorm((ship&&ship.make)||''); }
 function fleetTitleFromSlug(s){ return String(s||'').replace(/_/g,' ').replace(/-/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g,function(c){return c.toUpperCase();}); }
@@ -3128,6 +3136,31 @@ async function fleetUpdateDuplicateFromMissing(){
   catch(e){ console.error(e); alert('Update failed: '+e.message); }
 }
 function fleetRegistryImageBroken(img){ var row=img&&img.closest&&img.closest('.fleet-ship-row'); if(row && img && img.getAttribute('src')){ row.classList.add('needs-review'); var st=row.querySelector('.fleet-ship-status'); if(st) st.textContent='Image broken'; } if(img) img.style.display='none'; }
+function fleetScheduleRegistryHydrate(){
+  if(FLEET_REGISTRY_HYDRATING) return;
+  clearTimeout(FLEET_REGISTRY_HYDRATE_TIMER);
+  FLEET_REGISTRY_HYDRATE_TIMER=setTimeout(fleetHydrateRegistryVisible, 120);
+}
+async function fleetHydrateRegistryVisible(){
+  if(FLEET_REGISTRY_HYDRATING) return;
+  var candidates=FLEET_REGISTRY_VIEW.slice(0,24).filter(function(s){
+    var key=fleetShipKey(s);
+    return key && s && s.model && !FLEET_REGISTRY_DETAILS[key] && !FLEET_REGISTRY_ENRICHING[key];
+  }).slice(0,8);
+  if(!candidates.length) return;
+  FLEET_REGISTRY_HYDRATING=true;
+  await Promise.all(candidates.map(async function(s){
+    var key=fleetShipKey(s);
+    FLEET_REGISTRY_ENRICHING[key]=true;
+    try{ var detail=await fleetLookupVehicleForShip(s, ''); detail.loaded=true; FLEET_REGISTRY_DETAILS[key]=detail; }
+    catch(e){ FLEET_REGISTRY_DETAILS[key]={error:e.message}; }
+    finally{ delete FLEET_REGISTRY_ENRICHING[key]; }
+  }));
+  FLEET_REGISTRY_HYDRATING=false;
+  renderFleetShipRegistryList();
+  if(FLEET_REGISTRY_SELECTED) renderFleetShipRegistryDetail();
+  if(FLEET_REGISTRY_VIEW.slice(0,24).some(function(s){ var key=fleetShipKey(s); return key && s.model && !FLEET_REGISTRY_DETAILS[key] && !FLEET_REGISTRY_ENRICHING[key]; })) fleetScheduleRegistryHydrate();
+}
 function renderFleetShipRegistryList(){
   var box=document.getElementById('fleet-ship-registry-list'); if(!box) return;
   var q=(document.getElementById('fleet-ship-registry-filter')&&document.getElementById('fleet-ship-registry-filter').value||'').toLowerCase();
@@ -3139,11 +3172,12 @@ function renderFleetShipRegistryList(){
     var issues=fleetRegistryIssues(s, detail);
     var warnings=fleetRegistryWarnings(s, detail);
     var selected=FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===fleetShipKey(s);
-    var status=issues.length ? 'Needs review' : (warnings.length ? 'Incomplete' : (detail&&detail.loaded?'Verified':'Registry'));
+    var status=FLEET_REGISTRY_ENRICHING[fleetShipKey(s)] ? 'Checking' : (issues.length ? 'Needs review' : (warnings.length ? 'Incomplete' : (detail&&detail.loaded?'Verified':'Registry')));
     return '<button type="button" class="fleet-ship-row '+(issues.length?'needs-review ':'')+(selected?'active':'')+'" onclick="fleetSelectRegistryShip('+i+')">'+
       '<div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(s.make||'Unknown make')+(warnings.length?' · '+fleetEsc(warnings[0]):'')+'</div>'+(issues.length?'<div class="fleet-build-meta">'+fleetEsc(issues.slice(0,2).join(', '))+'</div>':'')+'</div>'+
       '<span class="fleet-ship-status">'+fleetEsc(status)+'</span></button>';
   }).join('')+(ships.length>120?'<div class="tav-list-empty">Showing first 120 matches. Use the filter to narrow the list.</div>':'');
+  fleetScheduleRegistryHydrate();
 }
 function fleetSelectRegistryShipByModel(model, make){
   var ships=shipRegistry().slice().sort(function(a,b){return (a.model||'').localeCompare(b.model||'');});
