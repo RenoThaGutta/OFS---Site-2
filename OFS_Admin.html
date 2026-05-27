@@ -2992,6 +2992,10 @@ var FLEET_REGISTRY_DETAILS={};
 var FLEET_REGISTRY_ENRICHING={};
 var FLEET_REGISTRY_HYDRATE_TIMER=null;
 var FLEET_REGISTRY_HYDRATING=false;
+var FLEET_REGISTRY_RENDER_LIMIT=220;
+var FLEET_REGISTRY_HYDRATE_BATCH=4;
+var FLEET_REGISTRY_HYDRATE_MAX_RETRIES=3;
+var FLEET_REGISTRY_FAILURES={};
 function fleetNorm(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,' '); }
 function fleetShipKey(ship){ return fleetNorm((ship&&ship.model)||'')+'|'+fleetNorm((ship&&ship.make)||''); }
 function fleetTitleFromSlug(s){ return String(s||'').replace(/_/g,' ').replace(/-/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g,function(c){return c.toUpperCase();}); }
@@ -3066,6 +3070,13 @@ function fleetShipDuplicate(ship){
   return shipRegistry().find(function(s){ return fleetNorm(s.model)===m && (!make || !s.make || fleetNorm(s.make)===make); });
 }
 function fleetRegistryImageUrl(ship, detail){ return String((ship&&ship.imageUrl) || (detail&&detail.imageUrl) || '').trim(); }
+function fleetRegistryTransientError(detail){ return !!(detail && detail.error && !detail.manual && !detail.imageOnly && !detail.loaded); }
+function fleetRegistryHydratePending(ship, detail){
+  var key=fleetShipKey(ship);
+  if(!key || !ship || !ship.model) return false;
+  if(!detail) return true;
+  return fleetRegistryTransientError(detail) && (FLEET_REGISTRY_FAILURES[key]||0)<FLEET_REGISTRY_HYDRATE_MAX_RETRIES;
+}
 function fleetRegistryIssues(ship, detail){
   var issues=[];
   if(!String(ship&&ship.model||'').trim()) issues.push('missing model');
@@ -3078,6 +3089,7 @@ function fleetRegistryIssues(ship, detail){
 }
 function fleetRegistryWarnings(ship, detail){
   var warnings=[];
+  if(fleetRegistryTransientError(detail)) warnings.push('lookup pending');
   if(!fleetRegistryImageUrl(ship, detail)) warnings.push('no image');
   if(detail && detail.imageOnly) warnings.push('image found');
   if(detail && detail.error && !detail.manual && !detail.imageOnly) warnings.push('wiki not matched');
@@ -3152,29 +3164,32 @@ async function fleetLookupRegistryCardDetail(ship){
   }
 }
 function fleetScheduleRegistryHydrate(){
-  if(FLEET_REGISTRY_HYDRATING) return;
   clearTimeout(FLEET_REGISTRY_HYDRATE_TIMER);
-  FLEET_REGISTRY_HYDRATE_TIMER=setTimeout(fleetHydrateRegistryVisible, 120);
+  FLEET_REGISTRY_HYDRATE_TIMER=setTimeout(fleetHydrateRegistryVisible, FLEET_REGISTRY_HYDRATING ? 350 : 120);
+}
+function fleetRegistryHydrateCandidates(){
+  var limit=Math.min(FLEET_REGISTRY_VIEW.length, FLEET_REGISTRY_RENDER_LIMIT);
+  return FLEET_REGISTRY_VIEW.slice(0,limit).filter(function(s){
+    var key=fleetShipKey(s);
+    return key && s && s.model && fleetRegistryHydratePending(s, FLEET_REGISTRY_DETAILS[key]) && !FLEET_REGISTRY_ENRICHING[key];
+  });
 }
 async function fleetHydrateRegistryVisible(){
-  if(FLEET_REGISTRY_HYDRATING) return;
-  var candidates=FLEET_REGISTRY_VIEW.slice(0,24).filter(function(s){
-    var key=fleetShipKey(s);
-    return key && s && s.model && !FLEET_REGISTRY_DETAILS[key] && !FLEET_REGISTRY_ENRICHING[key];
-  }).slice(0,8);
+  if(FLEET_REGISTRY_HYDRATING){ fleetScheduleRegistryHydrate(); return; }
+  var candidates=fleetRegistryHydrateCandidates().slice(0,FLEET_REGISTRY_HYDRATE_BATCH);
   if(!candidates.length) return;
   FLEET_REGISTRY_HYDRATING=true;
   await Promise.all(candidates.map(async function(s){
     var key=fleetShipKey(s);
     FLEET_REGISTRY_ENRICHING[key]=true;
-    try{ FLEET_REGISTRY_DETAILS[key]=await fleetLookupRegistryCardDetail(s); }
-    catch(e){ FLEET_REGISTRY_DETAILS[key]={error:e.message}; }
+    try{ FLEET_REGISTRY_DETAILS[key]=await fleetLookupRegistryCardDetail(s); delete FLEET_REGISTRY_FAILURES[key]; }
+    catch(e){ FLEET_REGISTRY_FAILURES[key]=(FLEET_REGISTRY_FAILURES[key]||0)+1; FLEET_REGISTRY_DETAILS[key]={error:e.message, transient:true}; }
     finally{ delete FLEET_REGISTRY_ENRICHING[key]; }
   }));
   FLEET_REGISTRY_HYDRATING=false;
   renderFleetShipRegistryList();
   if(FLEET_REGISTRY_SELECTED) renderFleetShipRegistryDetail();
-  if(FLEET_REGISTRY_VIEW.slice(0,24).some(function(s){ var key=fleetShipKey(s); return key && s.model && !FLEET_REGISTRY_DETAILS[key] && !FLEET_REGISTRY_ENRICHING[key]; })) fleetScheduleRegistryHydrate();
+  if(fleetRegistryHydrateCandidates().length) fleetScheduleRegistryHydrate();
 }
 function renderFleetShipRegistryList(){
   var box=document.getElementById('fleet-ship-registry-list'); if(!box) return;
@@ -3182,16 +3197,19 @@ function renderFleetShipRegistryList(){
   var ships=shipRegistry().slice().sort(function(a,b){return (a.model||'').localeCompare(b.model||'');}).filter(function(s){ return !q || [s.model,s.make].join(' ').toLowerCase().indexOf(q)!==-1; });
   FLEET_REGISTRY_VIEW=ships;
   if(!ships.length){ box.innerHTML='<div class="tav-list-empty">No Ship Registry rows match this filter.</div>'; return; }
-  box.innerHTML=ships.slice(0,120).map(function(s,i){
-    var detail=FLEET_REGISTRY_DETAILS[fleetShipKey(s)];
+  box.innerHTML=ships.slice(0,FLEET_REGISTRY_RENDER_LIMIT).map(function(s,i){
+    var key=fleetShipKey(s);
+    var detail=FLEET_REGISTRY_DETAILS[key];
+    var pendingHydrate=fleetRegistryHydratePending(s, detail);
+    var transientError=fleetRegistryTransientError(detail);
     var issues=fleetRegistryIssues(s, detail);
-    var warnings=fleetRegistryWarnings(s, detail);
-    var selected=FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===fleetShipKey(s);
-    var status=FLEET_REGISTRY_ENRICHING[fleetShipKey(s)] ? 'Checking' : (issues.length ? 'Needs review' : (detail&&detail.loaded&&!warnings.length?'Verified':(detail&&detail.imageOnly?'Image found':(warnings.length ? 'Incomplete' : 'Registry'))));
+    var warnings=(pendingHydrate || transientError) ? [] : fleetRegistryWarnings(s, detail);
+    var selected=FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===key;
+    var status=(FLEET_REGISTRY_ENRICHING[key]||pendingHydrate) ? 'Checking' : (issues.length ? 'Needs review' : (transientError?'Retry needed':(detail&&detail.loaded&&!warnings.length?'Verified':(detail&&detail.imageOnly?'Image found':(warnings.length ? 'Incomplete' : 'Registry')))));
     return '<button type="button" class="fleet-ship-row '+(issues.length?'needs-review ':'')+(selected?'active':'')+'" onclick="fleetSelectRegistryShip('+i+')">'+
       '<div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(s.make||'Unknown make')+(warnings.length?' · '+fleetEsc(warnings[0]):'')+'</div>'+(issues.length?'<div class="fleet-build-meta">'+fleetEsc(issues.slice(0,2).join(', '))+'</div>':'')+'</div>'+
       '<span class="fleet-ship-status">'+fleetEsc(status)+'</span></button>';
-  }).join('')+(ships.length>120?'<div class="tav-list-empty">Showing first 120 matches. Use the filter to narrow the list.</div>':'');
+  }).join('')+(ships.length>FLEET_REGISTRY_RENDER_LIMIT?'<div class="tav-list-empty">Showing first '+FLEET_REGISTRY_RENDER_LIMIT+' matches. Use the filter to narrow the list.</div>':'');
   fleetScheduleRegistryHydrate();
 }
 function fleetSelectRegistryShipByModel(model, make){
@@ -3199,7 +3217,7 @@ function fleetSelectRegistryShipByModel(model, make){
   var s=ships.find(function(x){return fleetNorm(x.model)===fleetNorm(model) && (!make || fleetNorm(x.make)===fleetNorm(make));});
   if(s){ FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, originalModel:s.model, originalMake:s.make}; renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
 }
-function fleetSelectRegistryShip(i){ var s=FLEET_REGISTRY_VIEW[i]; if(!s) return; FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, originalModel:s.model, originalMake:s.make}; renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); fleetRefreshRegistryDetail(false); }
+function fleetSelectRegistryShip(i){ var s=FLEET_REGISTRY_VIEW[i]; if(!s) return; var key=fleetShipKey(s); if(fleetRegistryTransientError(FLEET_REGISTRY_DETAILS[key])) delete FLEET_REGISTRY_DETAILS[key]; FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, originalModel:s.model, originalMake:s.make}; renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); fleetRefreshRegistryDetail(false); }
 function fleetRegistryBadges(ship, detail){
   var issues=fleetRegistryIssues(ship, detail);
   var warnings=fleetRegistryWarnings(ship, detail);
