@@ -2998,6 +2998,11 @@ var FLEET_REGISTRY_RENDER_LIMIT=220;
 var FLEET_REGISTRY_HYDRATE_BATCH=4;
 var FLEET_REGISTRY_HYDRATE_MAX_RETRIES=3;
 var FLEET_REGISTRY_FAILURES={};
+var FLEET_REGISTRY_AUTOSAVE_QUEUE=[];
+var FLEET_REGISTRY_AUTOSAVE_KEYS={};
+var FLEET_REGISTRY_AUTOSAVE_RUNNING=false;
+var FLEET_REGISTRY_AUTOSAVED={};
+var FLEET_REGISTRY_AUTOSAVE_FAILED={};
 function fleetNorm(s){ return String(s||'').trim().toLowerCase().replace(/\s+/g,' '); }
 function fleetShipKey(ship){ return fleetNorm((ship&&ship.model)||'')+'|'+fleetNorm((ship&&ship.make)||''); }
 function fleetTitleFromSlug(s){ return String(s||'').replace(/_/g,' ').replace(/-/g,' ').replace(/\s+/g,' ').trim().replace(/\b\w/g,function(c){return c.toUpperCase();}); }
@@ -3074,6 +3079,7 @@ function fleetShipDuplicate(ship){
 function fleetRegistryImageUrl(ship, detail){ return String((ship&&ship.imageUrl) || (detail&&detail.imageUrl) || '').trim(); }
 function fleetRegistryFoundImageUrl(ship, detail){ return String((!ship || !ship.imageUrl) && detail && detail.imageUrl ? detail.imageUrl : '').trim(); }
 function fleetRegistryRepairStatus(msg, cls){ var el=document.getElementById('fleet-registry-repair-status'); if(el){ el.className='field-discord-note '+(cls||''); el.textContent=msg||''; } }
+function fleetRegistrySameShip(a,b){ return fleetShipKey(a)===fleetShipKey(b); }
 function fleetRegistryTransientError(detail){ return !!(detail && detail.error && !detail.manual && !detail.imageOnly && !detail.loaded); }
 function fleetRegistryHydratePending(ship, detail){
   var key=fleetShipKey(ship);
@@ -3105,6 +3111,42 @@ function fleetRegistryWarnings(ship, detail){
     if(!detail.status) warnings.push('missing status');
   }
   return warnings;
+}
+function fleetQueueRegistryImageAutosave(ship, detail){
+  var imageUrl=fleetRegistryFoundImageUrl(ship, detail);
+  var key=fleetShipKey(ship);
+  if(!imageUrl || !key || !window.OFSSheets || !OFSSheets.saveShipRegistryShip) return;
+  if(fleetRegistryIssues(ship, detail).length) return;
+  if(FLEET_REGISTRY_AUTOSAVED[key] || FLEET_REGISTRY_AUTOSAVE_KEYS[key]) return;
+  FLEET_REGISTRY_AUTOSAVE_KEYS[key]=true;
+  FLEET_REGISTRY_AUTOSAVE_QUEUE.push({key:key, model:ship.model, make:ship.make, imageUrl:imageUrl});
+  fleetRegistryRepairStatus('Auto-saving '+FLEET_REGISTRY_AUTOSAVE_QUEUE.length+' found image'+(FLEET_REGISTRY_AUTOSAVE_QUEUE.length===1?'':'s')+'…', '');
+  fleetProcessRegistryImageAutosaveQueue();
+}
+async function fleetProcessRegistryImageAutosaveQueue(){
+  if(FLEET_REGISTRY_AUTOSAVE_RUNNING) return;
+  FLEET_REGISTRY_AUTOSAVE_RUNNING=true;
+  while(FLEET_REGISTRY_AUTOSAVE_QUEUE.length){
+    var item=FLEET_REGISTRY_AUTOSAVE_QUEUE.shift();
+    try{
+      await OFSSheets.saveShipRegistryShip({model:item.model, make:item.make, imageUrl:item.imageUrl}, item.model);
+      FLEET_REGISTRY_AUTOSAVED[item.key]=true;
+      delete FLEET_REGISTRY_AUTOSAVE_FAILED[item.key];
+      shipRegistry().forEach(function(s){ if(fleetShipKey(s)===item.key && !String(s.imageUrl||'').trim()) s.imageUrl=item.imageUrl; });
+      if(FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===item.key && !String(FLEET_REGISTRY_SELECTED.imageUrl||'').trim()) FLEET_REGISTRY_SELECTED.imageUrl=item.imageUrl;
+      renderFleetShipRegistryList();
+      if(FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===item.key) renderFleetShipRegistryDetail();
+      fleetRegistryRepairStatus('Saved found image for '+(item.model||'ship')+' to Ship Registry.', 'ok');
+    }catch(e){
+      console.error(e);
+      FLEET_REGISTRY_AUTOSAVE_FAILED[item.key]=e.message;
+      fleetRegistryRepairStatus('Auto-save failed for '+(item.model||'ship')+'. Use Save Registry Row or try Repair again.', 'warn');
+    }finally{
+      delete FLEET_REGISTRY_AUTOSAVE_KEYS[item.key];
+    }
+    await new Promise(function(resolve){ setTimeout(resolve, 250); });
+  }
+  FLEET_REGISTRY_AUTOSAVE_RUNNING=false;
 }
 function fleetSetMissingStatus(msg, cls){ var el=document.getElementById('fleet-missing-status'); if(el){ el.className='fleet-missing-status '+(cls||''); el.textContent=msg||''; } }
 function renderFleetMissingPreview(ship){
@@ -3183,16 +3225,24 @@ async function fleetHydrateRegistryVisible(){
   var candidates=fleetRegistryHydrateCandidates().slice(0,FLEET_REGISTRY_HYDRATE_BATCH);
   if(!candidates.length) return;
   FLEET_REGISTRY_HYDRATING=true;
+  var selectedKey=FLEET_REGISTRY_SELECTED ? fleetShipKey(FLEET_REGISTRY_SELECTED) : '';
+  var selectedUpdated=false;
   await Promise.all(candidates.map(async function(s){
     var key=fleetShipKey(s);
     FLEET_REGISTRY_ENRICHING[key]=true;
-    try{ FLEET_REGISTRY_DETAILS[key]=await fleetLookupRegistryCardDetail(s); delete FLEET_REGISTRY_FAILURES[key]; }
+    try{
+      var detail=await fleetLookupRegistryCardDetail(s);
+      FLEET_REGISTRY_DETAILS[key]=detail;
+      delete FLEET_REGISTRY_FAILURES[key];
+      fleetQueueRegistryImageAutosave(s, detail);
+      if(selectedKey && key===selectedKey) selectedUpdated=true;
+    }
     catch(e){ FLEET_REGISTRY_FAILURES[key]=(FLEET_REGISTRY_FAILURES[key]||0)+1; FLEET_REGISTRY_DETAILS[key]={error:e.message, transient:true}; }
     finally{ delete FLEET_REGISTRY_ENRICHING[key]; }
   }));
   FLEET_REGISTRY_HYDRATING=false;
   renderFleetShipRegistryList();
-  if(FLEET_REGISTRY_SELECTED) renderFleetShipRegistryDetail();
+  if(selectedUpdated && FLEET_REGISTRY_SELECTED) renderFleetShipRegistryDetail();
   if(fleetRegistryHydrateCandidates().length) fleetScheduleRegistryHydrate();
 }
 function fleetRegistryFoundImageRows(){
@@ -3293,6 +3343,7 @@ async function fleetRefreshRegistryDetail(forceLink){
     var detail=await fleetLookupVehicleForShip(FLEET_REGISTRY_SELECTED, source);
     detail.loaded=true;
     FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=detail;
+    fleetQueueRegistryImageAutosave(FLEET_REGISTRY_SELECTED, detail);
     if(detail.imageUrl && (!FLEET_REGISTRY_SELECTED.imageUrl || forceLink)) FLEET_REGISTRY_SELECTED.imageUrl=detail.imageUrl;
     if(detail.make && (!FLEET_REGISTRY_SELECTED.make || forceLink)) FLEET_REGISTRY_SELECTED.make=detail.make;
     if(detail.model && forceLink) FLEET_REGISTRY_SELECTED.model=detail.model;
