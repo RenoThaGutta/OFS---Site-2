@@ -3242,9 +3242,24 @@ function fleetStructureIsLordCommanderSlot(row){
   return /lord commander/i.test(String(row&&row.title||'')+' '+String(row&&row.slotLabel||'')) || String(row&&row.section||'')==='Senior Command';
 }
 function fleetPlayerRankText(p){ return String((p&&p.rank)||'Unranked').trim() || 'Unranked'; }
+function fleetStructureRequiredRank(row){
+  var title=String(row&&row.title||'').trim().toLowerCase();
+  var slot=String(row&&row.slotLabel||'').trim().toLowerCase();
+  var section=String(row&&row.section||'').trim().toLowerCase();
+  if(/lord commander/.test(title+' '+slot) || section==='senior command') return 'lord commander';
+  if(title==='house lord' || section==='house leadership' || /^lord of /.test(slot)) return 'lord';
+  if(title==='house commander' || title==='open commander' || / commanders$/.test(section) || / commander$/.test(slot)) return 'commander';
+  return '';
+}
+function fleetRankNorm(rank){ return String(rank||'').trim().toLowerCase().replace(/\s+/g,' '); }
 function fleetPlayerRankMatchesSlot(p,row){
-  if(!fleetStructureIsLordCommanderSlot(row)) return true;
-  return /lord commander/i.test(fleetPlayerRankText(p));
+  var required=fleetStructureRequiredRank(row);
+  if(!required) return true;
+  return fleetRankNorm(fleetPlayerRankText(p))===required;
+}
+function fleetStructureRankEmptyText(row){
+  var required=fleetStructureRequiredRank(row);
+  return required ? ('No '+required.replace(/\b\w/g,function(c){return c.toUpperCase();})+' ranked members found.') : 'No matching members found.';
 }
 function fleetPlayerRep(p){
   try{ if(typeof calcRep==='function'){ var rep=calcRep(Number(p&&p.reputationXP)||0); return rep&&rep.lvl ? rep.lvl : 1; } }catch(e){}
@@ -3282,7 +3297,7 @@ function fleetStructureRenderMemberResults(i){
   if(!input || !box) return;
   var pool=fleetStructureMemberPool(row,input.value);
   fleetStructureCloseMemberPickers(box.id);
-  if(!pool.length){ box.innerHTML='<div class="fleet-member-empty">'+(fleetStructureIsLordCommanderSlot(row)?'No Lord Commander ranked members found.':'No matching members found.')+'</div>'; }
+  if(!pool.length){ box.innerHTML='<div class="fleet-member-empty">'+fleetStructureRankEmptyText(row)+'</div>'; }
   else { box.innerHTML=pool.map(function(p){ return fleetPlayerOptionHtml(p,i); }).join(''); }
   box.classList.add('open');
 }
@@ -3336,7 +3351,7 @@ function fleetReadStructureSlot(i, slotLabel){
   var userId=(document.getElementById('fs-user-'+i)||{}).value||'';
   var p=fleetFindPlayer(username)||fleetFindPlayer(userId);
   if(p && fleetPlayerRankMatchesSlot(p,FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ username=p.username||username; userId=p.id||userId; }
-  else if(fleetStructureIsLordCommanderSlot(FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ userId=''; }
+  else if(fleetStructureRequiredRank(FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ userId=''; }
   return { fleetName:(document.getElementById('fs-fleet-'+i)||{}).value||FLEET_DEFAULT_NAME, section:(document.getElementById('fs-section-'+i)||{}).value||'', slotLabel:slotLabel, userId:String(userId||'').trim(), username:String(username||'').trim(), title:((document.getElementById('fs-title-'+i)||{}).value||'').trim(), house:((document.getElementById('fs-house-'+i)||{}).value||'').trim(), banner:((document.getElementById('fs-banner-'+i)||{}).value||'').trim(), sortOrder:Number((document.getElementById('fs-sort-'+i)||{}).value)||0, active:((document.getElementById('fs-active-'+i)||{}).value||'TRUE')!=='FALSE', notes:((document.getElementById('fs-notes-'+i)||{}).value||'').trim() };
 }
 async function fleetSaveStructureSlot(i, slotLabel){
