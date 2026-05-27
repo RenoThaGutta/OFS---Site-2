@@ -291,13 +291,13 @@
     .fleet-missing-status.warn { color: var(--gold-lt); }
     .fleet-missing-status.ok { color: #75d18f; }
     .fleet-missing-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 14px; }
-    .fleet-ship-list { display: grid; gap: 8px; max-height: 460px; overflow: auto; }
-    .fleet-ship-row { display: grid; grid-template-columns: 74px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; cursor: pointer; text-align: left; width: 100%; color: inherit; }
+    .fleet-ship-list { display: grid; gap: 6px; max-height: 460px; overflow: auto; }
+    .fleet-ship-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; min-height: 46px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; cursor: pointer; text-align: left; width: 100%; color: inherit; }
     .fleet-ship-row:hover, .fleet-ship-row.active { border-color: rgba(201,168,76,.55); background: rgba(201,168,76,.07); }
     .fleet-ship-row.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.12); }
-    .fleet-ship-row img { width: 74px; height: 44px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
-    .fleet-ship-row strong { color: var(--gold-lt); font-size: .86rem; }
-    .fleet-ship-status { font-size: .62rem; text-transform: uppercase; letter-spacing: .12em; color: var(--text-dim); white-space: nowrap; }
+    .fleet-ship-row strong { color: var(--gold-lt); font-size: .82rem; line-height: 1.1; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fleet-ship-row .fleet-build-meta { font-size: .72rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fleet-ship-status { font-size: .58rem; text-transform: uppercase; letter-spacing: .10em; color: var(--text-dim); white-space: nowrap; }
     .fleet-ship-row.needs-review .fleet-ship-status { color: #ff8b7f; }
     .fleet-registry-detail { margin-top: 14px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; padding: 12px; }
     .fleet-registry-detail.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.10); }
@@ -3057,17 +3057,23 @@ function fleetRegistryIssues(ship, detail){
   var issues=[];
   if(!String(ship&&ship.model||'').trim()) issues.push('missing model');
   if(!String(ship&&ship.make||'').trim()) issues.push('missing make');
-  if(!String(ship&&ship.imageUrl||'').trim()) issues.push('missing image');
   if(detail && detail.error) issues.push('wiki lookup failed');
   if(detail && detail.loaded){
-    if(!detail.role) issues.push('missing role');
-    if(!detail.category) issues.push('missing category');
-    if(!detail.size) issues.push('missing size');
-    if(!detail.crew) issues.push('missing crew');
-    if(!detail.status) issues.push('missing status');
     if(detail.model && ship.model && fleetNorm(detail.model)!==fleetNorm(ship.model)) issues.push('wiki model mismatch');
   }
   return issues;
+}
+function fleetRegistryWarnings(ship, detail){
+  var warnings=[];
+  if(!String(ship&&ship.imageUrl||'').trim()) warnings.push('no image');
+  if(detail && detail.loaded){
+    if(!detail.role) warnings.push('missing role');
+    if(!detail.category) warnings.push('missing category');
+    if(!detail.size) warnings.push('missing size');
+    if(!detail.crew) warnings.push('missing crew');
+    if(!detail.status) warnings.push('missing status');
+  }
+  return warnings;
 }
 function fleetSetMissingStatus(msg, cls){ var el=document.getElementById('fleet-missing-status'); if(el){ el.className='fleet-missing-status '+(cls||''); el.textContent=msg||''; } }
 function renderFleetMissingPreview(ship){
@@ -3116,7 +3122,7 @@ async function fleetUpdateDuplicateFromMissing(){
   try{ await OFSSheets.saveShipRegistryShip({model:FLEET_MISSING_SHIP.model||dup.model, make:FLEET_MISSING_SHIP.make||dup.make, imageUrl:FLEET_MISSING_SHIP.imageUrl||dup.imageUrl}, dup.model); if(OFSSheets.load) await OFSSheets.load({force:true}); fleetSelectRegistryShipByModel(FLEET_MISSING_SHIP.model||dup.model, FLEET_MISSING_SHIP.make||dup.make); renderFleetShipRegistryList(); alert('Existing Ship Registry row updated.'); }
   catch(e){ console.error(e); alert('Update failed: '+e.message); }
 }
-function fleetRegistryImageBroken(img){ var row=img&&img.closest&&img.closest('.fleet-ship-row'); if(row){ row.classList.add('needs-review'); var st=row.querySelector('.fleet-ship-status'); if(st) st.textContent='Image broken'; } if(img) img.style.display='none'; }
+function fleetRegistryImageBroken(img){ var row=img&&img.closest&&img.closest('.fleet-ship-row'); if(row && img && img.getAttribute('src')){ row.classList.add('needs-review'); var st=row.querySelector('.fleet-ship-status'); if(st) st.textContent='Image broken'; } if(img) img.style.display='none'; }
 function renderFleetShipRegistryList(){
   var box=document.getElementById('fleet-ship-registry-list'); if(!box) return;
   var q=(document.getElementById('fleet-ship-registry-filter')&&document.getElementById('fleet-ship-registry-filter').value||'').toLowerCase();
@@ -3126,11 +3132,11 @@ function renderFleetShipRegistryList(){
   box.innerHTML=ships.slice(0,120).map(function(s,i){
     var detail=FLEET_REGISTRY_DETAILS[fleetShipKey(s)];
     var issues=fleetRegistryIssues(s, detail);
+    var warnings=fleetRegistryWarnings(s, detail);
     var selected=FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===fleetShipKey(s);
-    var status=issues.length ? 'Needs review' : (detail&&detail.loaded?'Verified':'Registry');
+    var status=issues.length ? 'Needs review' : (warnings.length ? 'Incomplete' : (detail&&detail.loaded?'Verified':'Registry'));
     return '<button type="button" class="fleet-ship-row '+(issues.length?'needs-review ':'')+(selected?'active':'')+'" onclick="fleetSelectRegistryShip('+i+')">'+
-      '<img src="'+fleetEsc(s.imageUrl||'')+'" alt="" onerror="fleetRegistryImageBroken(this)">'+
-      '<div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(s.make||'Unknown make')+'</div>'+(issues.length?'<div class="fleet-build-meta">'+fleetEsc(issues.slice(0,3).join(', '))+'</div>':'')+'</div>'+
+      '<div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(s.make||'Unknown make')+(warnings.length?' · '+fleetEsc(warnings[0]):'')+'</div>'+(issues.length?'<div class="fleet-build-meta">'+fleetEsc(issues.slice(0,2).join(', '))+'</div>':'')+'</div>'+
       '<span class="fleet-ship-status">'+fleetEsc(status)+'</span></button>';
   }).join('')+(ships.length>120?'<div class="tav-list-empty">Showing first 120 matches. Use the filter to narrow the list.</div>':'');
 }
@@ -3142,9 +3148,11 @@ function fleetSelectRegistryShipByModel(model, make){
 function fleetSelectRegistryShip(i){ var s=FLEET_REGISTRY_VIEW[i]; if(!s) return; FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, originalModel:s.model, originalMake:s.make}; renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); fleetRefreshRegistryDetail(false); }
 function fleetRegistryBadges(ship, detail){
   var issues=fleetRegistryIssues(ship, detail);
+  var warnings=fleetRegistryWarnings(ship, detail);
   var badges=[];
-  if(!issues.length) badges.push('<span class="fleet-registry-badge">Registry row complete</span>');
+  if(!issues.length && !warnings.length) badges.push('<span class="fleet-registry-badge">Registry row complete</span>');
   issues.forEach(function(x){ badges.push('<span class="fleet-registry-badge warn">'+fleetEsc(x)+'</span>'); });
+  warnings.forEach(function(x){ badges.push('<span class="fleet-registry-badge">'+fleetEsc(x)+'</span>'); });
   if(detail&&detail.loaded){ ['role','category','size','crew','status'].forEach(function(k){ if(detail[k]) badges.push('<span class="fleet-registry-badge">'+fleetEsc(k)+': '+fleetEsc(detail[k])+'</span>'); }); }
   return badges.join('');
 }
@@ -3154,6 +3162,7 @@ function renderFleetShipRegistryDetail(){
   if(!ship){ box.innerHTML='<div class="tav-list-empty">Select a ship card to inspect, repair, update, or remove it.</div>'; return; }
   var detail=FLEET_REGISTRY_DETAILS[fleetShipKey(ship)];
   var issues=fleetRegistryIssues(ship, detail);
+  var warnings=fleetRegistryWarnings(ship, detail);
   box.className='fleet-registry-detail '+(issues.length?'needs-review':'');
   var meta=detail&&detail.loaded ? [detail.role, detail.category, detail.size, detail.crew?('Crew '+detail.crew):'', detail.status].filter(Boolean).join(' · ') : 'Click Refresh From Wiki to verify details.';
   box.innerHTML='<div class="fleet-registry-head"><img src="'+fleetEsc(ship.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'"><div>'+ 
