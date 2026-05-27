@@ -428,6 +428,29 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
     }
+    .profile-ship-verify {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin: 0 0 10px;
+      font-family: 'Cinzel', serif;
+      font-size: .58rem;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+    .profile-ship-verify::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      margin-right: 7px;
+      border-radius: 50%;
+      background: rgba(201,168,76,.75);
+      box-shadow: 0 0 10px rgba(201,168,76,.26);
+    }
+    .profile-ship-verify.needs-review { color: #d8b27d; }
+    .profile-ship-verify.needs-review::before { background: #d8b27d; }
     .profile-ship-meta {
       min-height: 52px;
       padding: 9px 10px;
@@ -2649,6 +2672,80 @@ function pickVehicleSearchResult(searchResponse, query) {
   })[0];
 }
 
+function shipApiSlugCandidate(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function shipDirectSlugCandidates(playerShip, shipEntry) {
+  const candidates = [];
+  const model = String(shipEntry && shipEntry.model || '').trim();
+  const make = String(shipEntry && shipEntry.make || '').trim();
+  const display = shipDisplayName(shipEntry);
+  const rawShip = String(playerShip || display || model || '').trim();
+  [model, display, rawShip].forEach(function (value) {
+    const slug = shipApiSlugCandidate(value);
+    if (slug && candidates.indexOf(slug) === -1) candidates.push(slug);
+  });
+  if (make && model) {
+    const shortMake = make.replace(/\b(Dynamics|Aerospace|Intergalactic|Consolidated|Incorporated|Industries|Manufacturing|Corporation|Systems|Industrial|Concern|Jumpworks|Interplanetary)\b/gi, '').replace(/\s+/g, ' ').trim();
+    [shortMake + ' ' + model, make + ' ' + model].forEach(function (value) {
+      const slug = shipApiSlugCandidate(value);
+      if (slug && candidates.indexOf(slug) === -1) candidates.push(slug);
+    });
+  }
+  return candidates;
+}
+
+function scoreVehicleMatch(vehicle, playerShip, shipEntry) {
+  if (!vehicle) return { verified: false, status: 'Wiki match unavailable', score: 0 };
+  const apiName = normalizeShipName(vehicle.name || vehicle.game_name);
+  const apiMake = normalizeShipName(vehicle.manufacturer && (vehicle.manufacturer.name || vehicle.manufacturer.display_name || vehicle.manufacturer.code) || vehicle.manufacturer);
+  const model = normalizeShipName(shipEntry && shipEntry.model || playerShip);
+  const make = normalizeShipName(shipEntry && shipEntry.make);
+  const rawShip = normalizeShipName(playerShip);
+  let score = 0;
+  if (model && apiName === model) score += 60;
+  else if (model && (apiName.endsWith(' ' + model) || apiName.indexOf(model) !== -1)) score += 35;
+  else if (rawShip && (apiName === rawShip || rawShip.endsWith(apiName) || apiName.endsWith(rawShip))) score += 25;
+  if (make && apiMake) {
+    if (apiMake === make) score += 40;
+    else if (apiMake.indexOf(make) !== -1 || make.indexOf(apiMake) !== -1) score += 28;
+  }
+  return {
+    verified: score >= 60,
+    status: score >= 60 ? 'Wiki verified' : 'Wiki match needs review',
+    score: score
+  };
+}
+
+async function fetchVehicleDetailForShip(playerShip, shipEntry) {
+  const directSlugs = shipDirectSlugCandidates(playerShip, shipEntry);
+  for (const slug of directSlugs) {
+    try {
+      const detail = await scWikiFetch('/vehicles/' + encodeURIComponent(slug), {}, SCWIKI_VEHICLE_TTL);
+      if (detail && detail.data) return detail;
+    } catch (e) { /* try the next slug/search candidate */ }
+  }
+
+  const queries = shipApiQueries(playerShip, shipEntry);
+  for (const query of queries) {
+    const search = await scWikiFetch('/search', { 'filter[query]': query }, SCWIKI_SEARCH_TTL);
+    const picked = pickVehicleSearchResult(search, query);
+    const slug = vehicleSlugFromApiUrl(picked && picked.api_url);
+    if (!slug) continue;
+    try {
+      const detail = await scWikiFetch('/vehicles/' + encodeURIComponent(slug), {}, SCWIKI_VEHICLE_TTL);
+      if (detail && detail.data) return detail;
+    } catch (e) { /* keep searching */ }
+  }
+  return null;
+}
+
 function formatMeters(value) {
   const n = Number(value);
   return Number.isFinite(n) && n > 0 ? (n + 'm') : '';
@@ -2720,61 +2817,66 @@ function handleProfileShipImageError(img) {
 function localizedApiText(value) {
   if (!value) return '';
   if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return localizedApiText(value[0]);
   if (typeof value === 'object') {
     return String(value.en_EN || value.en_US || value.en || value.label || value.name || value.code || '').trim();
   }
   return '';
 }
 
-function compactShipApiData(vehicle) {
+function titleCaseApiText(value) {
+  const raw = localizedApiText(value).trim();
+  if (!raw) return '';
+  return raw.replace(/[\-_]+/g, ' ').replace(/\s+/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+}
+
+function compactShipApiData(vehicle, playerShip, shipEntry) {
   const dims = vehicle && (vehicle.sizes || vehicle.dimension || {});
   const crew = vehicle && vehicle.crew;
   let crewValue = '';
   if (crew && typeof crew === 'object') {
     const min = crew.min || crew.minimum || crew.min_crew;
     const max = crew.max || crew.maximum || crew.max_crew;
-    crewValue = min && max ? (min === max ? String(min) : (min + '–' + max)) : (min || max || '');
+    crewValue = min && max ? (String(min) === String(max) ? String(min) : (min + '–' + max)) : (min || max || '');
   } else if (crew) crewValue = String(crew);
-  const sizeLabel = localizedApiText(vehicle && vehicle.size);
+  const sizeLabel = titleCaseApiText(vehicle && vehicle.size);
   const sizeClass = vehicle && vehicle.size_class ? ('Size ' + vehicle.size_class) : '';
+  const foci = Array.isArray(vehicle && vehicle.foci) ? vehicle.foci : [];
+  const role = titleCaseApiText(foci[0]) || titleCaseApiText(vehicle && (vehicle.role || vehicle.career));
+  const category = titleCaseApiText(vehicle && vehicle.type);
+  const match = scoreVehicleMatch(vehicle, playerShip, shipEntry);
   return {
     name: vehicle && (vehicle.game_name || vehicle.name),
     manufacturer: vehicle && (typeof vehicle.manufacturer === 'string'
       ? vehicle.manufacturer
       : vehicle.manufacturer && (vehicle.manufacturer.name || vehicle.manufacturer.display_name || vehicle.manufacturer.code)),
-    role: localizedApiText(vehicle && (vehicle.role || vehicle.career)),
-    career: localizedApiText(vehicle && vehicle.career),
+    role: role,
+    career: titleCaseApiText(vehicle && vehicle.career),
+    category: category,
     size: [sizeLabel, sizeClass].filter(Boolean).join(' · '),
     dimensions: [formatMeters(dims.length), formatMeters(dims.beam || dims.width), formatMeters(dims.height)].filter(Boolean).join(' × '),
     cargo: vehicle && Number(vehicle.cargo_capacity) > 0 ? (Number(vehicle.cargo_capacity).toLocaleString() + ' SCU') : '',
     crew: crewValue,
     mass: formatMass(vehicle && (vehicle.mass_total || vehicle.mass)),
-    status: localizedApiText(vehicle && vehicle.production_status),
+    status: titleCaseApiText(vehicle && vehicle.production_status),
     description: localizedApiText(vehicle && vehicle.description),
     webUrl: vehicle && (vehicle.web_url || vehicle.link),
-    imageUrl: shipApiImage(vehicle)
+    imageUrl: shipApiImage(vehicle),
+    verified: match.verified,
+    verification: match.status,
+    verificationScore: match.score
   };
 }
 
 async function getShipApiDataForPicker(shipEntry) {
   if (!shipEntry) return null;
-  const queries = shipApiQueries(shipDisplayName(shipEntry), shipEntry);
-  if (!queries.length) return null;
-  let picked = null;
-  for (const query of queries) {
-    const search = await scWikiFetch('/search', { 'filter[query]': query }, SCWIKI_SEARCH_TTL);
-    picked = pickVehicleSearchResult(search, query);
-    if (picked) break;
-  }
-  const slug = vehicleSlugFromApiUrl(picked && picked.api_url);
-  if (!slug) return null;
-  const detail = await scWikiFetch('/vehicles/' + encodeURIComponent(slug), {}, SCWIKI_VEHICLE_TTL);
-  return compactShipApiData(detail && detail.data);
+  const detail = await fetchVehicleDetailForShip(shipDisplayName(shipEntry), shipEntry);
+  return detail && detail.data ? compactShipApiData(detail.data, shipDisplayName(shipEntry), shipEntry) : null;
 }
 
 function shipApiMetaLine(data) {
   if (!data) return '';
-  return [data.role || data.career, data.crew ? ('Crew ' + data.crew) : ''].filter(Boolean).join(' · ');
+  return [data.role || data.career, data.category, data.crew ? ('Crew ' + data.crew) : ''].filter(Boolean).join(' · ');
 }
 
 function renderShipEnrichment(data) {
@@ -2782,7 +2884,11 @@ function renderShipEnrichment(data) {
   if (!el || !data) return;
   const rows = [
     ['Role', data.role || data.career],
-    ['Crew', data.crew]
+    ['Category', data.category],
+    ['Size', data.size],
+    ['Crew', data.crew],
+    ['Cargo', data.cargo],
+    ['Status', data.status]
   ].filter(function (row) { return !!String(row[1] || '').trim(); });
   if (!rows.length && !data.description) {
     el.className = 'profile-ship-enrichment empty';
@@ -2790,9 +2896,10 @@ function renderShipEnrichment(data) {
     return;
   }
   el.className = 'profile-ship-enrichment';
-  el.innerHTML = (rows.length ? '<div class="profile-ship-meta-grid">' + rows.map(function (row) {
-    return '<div class="profile-ship-meta"><span class="profile-ship-meta-label">' + _esc(row[0]) + '</span><span class="profile-ship-meta-value">' + _esc(row[1]) + '</span></div>';
-  }).join('') + '</div>' : '') +
+  el.innerHTML = '<div class="profile-ship-verify ' + (data.verified ? 'is-verified' : 'needs-review') + '">' + _esc(data.verification || 'Star Citizen Wiki reference') + '</div>' +
+    (rows.length ? '<div class="profile-ship-meta-grid">' + rows.map(function (row) {
+      return '<div class="profile-ship-meta"><span class="profile-ship-meta-label">' + _esc(row[0]) + '</span><span class="profile-ship-meta-value">' + _esc(row[1]) + '</span></div>';
+    }).join('') + '</div>' : '') +
     (data.description ? '<div class="profile-ship-desc">' + _esc(data.description).slice(0, 260) + (data.description.length > 260 ? '…' : '') + '</div>' : '');
   syncProfileRecordHeight();
 }
@@ -2801,21 +2908,14 @@ async function enhanceProfileShip(player, shipEntry, token) {
   const el = document.getElementById('js-ship-enrichment');
   if (!el || !player || !String(player.ship || '').trim()) return;
   const queries = shipApiQueries(player.ship, shipEntry);
-  if (!queries.length) return;
+  if (!queries.length && !shipEntry) return;
   el.className = 'profile-ship-enrichment loading';
   el.textContent = 'Enriching ship record from Star Citizen Wiki…';
   try {
-    let picked = null;
-    for (const query of queries) {
-      const search = await scWikiFetch('/search', { 'filter[query]': query }, SCWIKI_SEARCH_TTL);
-      picked = pickVehicleSearchResult(search, query);
-      if (picked) break;
-    }
-    const slug = vehicleSlugFromApiUrl(picked && picked.api_url);
-    if (!slug) throw new Error('No matching vehicle record for ' + queries.join(' / '));
-    const detail = await scWikiFetch('/vehicles/' + encodeURIComponent(slug), {}, SCWIKI_VEHICLE_TTL);
+    const detail = await fetchVehicleDetailForShip(player.ship, shipEntry);
     if (token !== _shipEnrichmentToken) return;
-    const data = compactShipApiData(detail && detail.data);
+    if (!detail || !detail.data) throw new Error('No matching vehicle record for ' + queries.join(' / '));
+    const data = compactShipApiData(detail.data, player.ship, shipEntry);
     renderShipEnrichment(data);
 
     const imgEl = document.getElementById('js-profile-ship-api-img');
