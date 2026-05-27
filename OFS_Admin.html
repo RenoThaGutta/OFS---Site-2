@@ -279,34 +279,36 @@
     .fleet-over-cap { border-color: rgba(192,57,43,.55) !important; background: rgba(192,57,43,.08) !important; }
     .fleet-missing-panel { display: none; }
     .fleet-missing-panel.active { display: block; }
-    .fleet-missing-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(360px, 1.05fr); gap: 18px; align-items: start; }
+    .fleet-missing-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(520px, 1.25fr); gap: 18px; align-items: start; }
     .fleet-missing-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
-    .fleet-missing-card h4 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 14px; }
-    .fleet-missing-preview { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 14px; align-items: start; padding: 12px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; }
-    .fleet-missing-preview img { width: 220px; max-height: 150px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
-    .fleet-missing-title { color: var(--gold-lt); font-weight: 700; font-size: .95rem; margin-bottom: 4px; }
-    .fleet-missing-meta { color: var(--silver-dim); font-size: .76rem; line-height: 1.45; margin-top: 4px; }
-    .fleet-missing-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin-top: 14px; }
-    .fleet-missing-status { margin-top: 12px; color: var(--text-dim); font-size: .8rem; line-height: 1.45; }
+    .fleet-missing-card h4 { font-family: 'Cinzel', serif; color: var(--gold); font-size: .74rem; letter-spacing: .16em; text-transform: uppercase; margin-bottom: 12px; }
+    .fleet-missing-preview { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 12px; align-items: start; padding: 12px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; }
+    .fleet-missing-preview img { width: 180px; max-height: 118px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
+    .fleet-missing-title { color: var(--gold-lt); font-weight: 700; font-size: .92rem; margin-bottom: 3px; }
+    .fleet-missing-meta { color: var(--silver-dim); font-size: .74rem; line-height: 1.32; margin-top: 3px; }
+    .fleet-missing-fields { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 8px; margin-top: 10px; }
+    .fleet-missing-status { margin-top: 10px; color: var(--text-dim); font-size: .78rem; line-height: 1.35; }
     .fleet-missing-status.warn { color: var(--gold-lt); }
     .fleet-missing-status.ok { color: #75d18f; }
-    .fleet-missing-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 14px; }
-    .fleet-ship-list { display: grid; gap: 6px; max-height: 460px; overflow: auto; }
-    .fleet-ship-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; min-height: 46px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; cursor: pointer; text-align: left; width: 100%; color: inherit; }
+    .fleet-missing-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+    .fleet-registry-workspace { display: grid; grid-template-columns: minmax(220px, .82fr) minmax(280px, 1fr); gap: 12px; align-items: start; }
+    .fleet-ship-list { display: grid; gap: 5px; max-height: min(58vh, 520px); overflow: auto; padding-right: 4px; }
+    .fleet-ship-row { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; align-items: center; padding: 6px 9px; min-height: 42px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); border-radius: 3px; cursor: pointer; text-align: left; width: 100%; color: inherit; }
     .fleet-ship-row:hover, .fleet-ship-row.active { border-color: rgba(201,168,76,.55); background: rgba(201,168,76,.07); }
     .fleet-ship-row.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.12); }
     .fleet-ship-row strong { color: var(--gold-lt); font-size: .82rem; line-height: 1.1; display:block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fleet-ship-row .fleet-build-meta { font-size: .72rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fleet-ship-status { font-size: .58rem; text-transform: uppercase; letter-spacing: .10em; color: var(--text-dim); white-space: nowrap; }
     .fleet-ship-row.needs-review .fleet-ship-status { color: #ff8b7f; }
-    .fleet-registry-detail { margin-top: 14px; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; padding: 12px; }
+    .fleet-registry-detail { margin-top: 0; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; padding: 10px; max-height: min(58vh, 520px); overflow: auto; }
     .fleet-registry-detail.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.10); }
-    .fleet-registry-head { display: grid; grid-template-columns: 160px minmax(0,1fr); gap: 12px; align-items: start; margin-bottom: 12px; }
-    .fleet-registry-head img { width: 160px; max-height: 100px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
-    .fleet-registry-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .fleet-registry-badge { border: 1px solid rgba(201,168,76,.28); color: var(--silver); background: rgba(0,0,0,.18); border-radius: 999px; padding: 4px 8px; font-size: .68rem; }
+    .fleet-registry-head { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 10px; align-items: start; margin-bottom: 8px; }
+    .fleet-registry-head img { width: 124px; max-height: 78px; object-fit: cover; border: 1px solid var(--b-dim); border-radius: 3px; background: #05050a; }
+    .fleet-registry-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .fleet-registry-badge { border: 1px solid rgba(201,168,76,.28); color: var(--silver); background: rgba(0,0,0,.18); border-radius: 999px; padding: 3px 7px; font-size: .64rem; }
     .fleet-registry-badge.warn { border-color: rgba(192,57,43,.62); color: #ffb1a8; background: rgba(192,57,43,.14); }
-    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields, .fleet-registry-head { grid-template-columns: 1fr; } .fleet-missing-preview img, .fleet-registry-head img { width: 100%; } }
+    @media (max-width: 1200px) { .fleet-registry-workspace { grid-template-columns: 1fr; } .fleet-registry-detail { margin-top: 10px; max-height: none; } }
+    @media (max-width: 980px) { .fleet-admin-layout, .fleet-missing-layout { grid-template-columns: 1fr; } .fleet-field-grid, .fleet-rule-grid, .fleet-missing-preview, .fleet-missing-fields, .fleet-registry-head { grid-template-columns: 1fr; } .fleet-missing-preview img, .fleet-registry-head img { width: 100%; max-height: 180px; } }
 
 
     /* ── Banner population cards ── */
@@ -1231,8 +1233,10 @@
               <input class="ctrl-input" id="fleet-ship-registry-filter" placeholder="Filter registry…" oninput="renderFleetShipRegistryList()">
               <button class="ctrl-btn" onclick="renderFleetShipRegistryList()">Refresh</button>
             </div>
-            <div id="fleet-ship-registry-list" class="fleet-ship-list"><div class="tav-list-empty">Loading Ship Registry…</div></div>
-            <div id="fleet-ship-registry-detail" class="fleet-registry-detail"><div class="tav-list-empty">Select a ship card to inspect, repair, update, or remove it.</div></div>
+            <div class="fleet-registry-workspace">
+              <div id="fleet-ship-registry-list" class="fleet-ship-list"><div class="tav-list-empty">Loading Ship Registry…</div></div>
+              <div id="fleet-ship-registry-detail" class="fleet-registry-detail"><div class="tav-list-empty">Select a ship card to inspect, repair, update, or remove it.</div></div>
+            </div>
           </section>
         </div>
       </div>
@@ -3053,6 +3057,7 @@ function fleetShipDuplicate(ship){
   var m=fleetNorm(ship&&ship.model), make=fleetNorm(ship&&ship.make);
   return shipRegistry().find(function(s){ return fleetNorm(s.model)===m && (!make || !s.make || fleetNorm(s.make)===make); });
 }
+function fleetRegistryImageUrl(ship, detail){ return String((ship&&ship.imageUrl) || (detail&&detail.imageUrl) || '').trim(); }
 function fleetRegistryIssues(ship, detail){
   var issues=[];
   if(!String(ship&&ship.model||'').trim()) issues.push('missing model');
@@ -3065,7 +3070,7 @@ function fleetRegistryIssues(ship, detail){
 }
 function fleetRegistryWarnings(ship, detail){
   var warnings=[];
-  if(!String(ship&&ship.imageUrl||'').trim()) warnings.push('no image');
+  if(!fleetRegistryImageUrl(ship, detail)) warnings.push('no image');
   if(detail && detail.loaded){
     if(!detail.role) warnings.push('missing role');
     if(!detail.category) warnings.push('missing category');
@@ -3165,11 +3170,12 @@ function renderFleetShipRegistryDetail(){
   var warnings=fleetRegistryWarnings(ship, detail);
   box.className='fleet-registry-detail '+(issues.length?'needs-review':'');
   var meta=detail&&detail.loaded ? [detail.role, detail.category, detail.size, detail.crew?('Crew '+detail.crew):'', detail.status].filter(Boolean).join(' · ') : 'Click Refresh From Wiki to verify details.';
-  box.innerHTML='<div class="fleet-registry-head"><img src="'+fleetEsc(ship.imageUrl||'')+'" alt="" onerror="this.style.display=\'none\'"><div>'+ 
+  var imageUrl=fleetRegistryImageUrl(ship, detail);
+  box.innerHTML='<div class="fleet-registry-head"><img src="'+fleetEsc(imageUrl)+'" alt="" onerror="this.style.display=\'none\'"><div>'+ 
     '<div class="fleet-missing-title">'+fleetEsc(ship.model||'Unnamed Ship')+'</div><div class="fleet-missing-meta">Make: '+fleetEsc(ship.make||'Unknown')+'</div><div class="fleet-missing-meta">'+fleetEsc(meta)+'</div>'+
     (detail&&detail.description?'<div class="fleet-missing-meta">'+fleetEsc(detail.description.slice(0,220))+'</div>':'')+
     '<div class="fleet-registry-badges">'+fleetRegistryBadges(ship, detail)+'</div></div></div>'+ 
-    '<div class="fleet-missing-fields"><div class="field-row"><label>Ship Model</label><input id="fleet-reg-model" value="'+fleetEsc(ship.model||'')+'"></div><div class="field-row"><label>Make</label><input id="fleet-reg-make" value="'+fleetEsc(ship.make||'')+'"></div><div class="field-row" style="grid-column:1/-1"><label>Image URL</label><input id="fleet-reg-image" value="'+fleetEsc(ship.imageUrl||'')+'"></div><div class="field-row" style="grid-column:1/-1"><label>Wiki / Tools Link To Repair This Ship</label><input id="fleet-reg-wiki" placeholder="https://starcitizen.tools/Odin or Odin"></div></div>'+ 
+    '<div class="fleet-missing-fields"><div class="field-row"><label>Ship Model</label><input id="fleet-reg-model" value="'+fleetEsc(ship.model||'')+'"></div><div class="field-row"><label>Make</label><input id="fleet-reg-make" value="'+fleetEsc(ship.make||'')+'"></div><div class="field-row" style="grid-column:1/-1"><label>Image URL</label><input id="fleet-reg-image" value="'+fleetEsc(imageUrl)+'"></div><div class="field-row" style="grid-column:1/-1"><label>Wiki / Tools Link To Repair This Ship</label><input id="fleet-reg-wiki" placeholder="https://starcitizen.tools/Odin or Odin"></div></div>'+ 
     '<div class="fleet-missing-actions"><button class="ctrl-btn" onclick="fleetRefreshRegistryDetail(true)">Refresh From Wiki Link</button><button class="save-btn" onclick="fleetSaveRegistryDetail()">Save Registry Row</button><button class="cancel-btn" onclick="fleetDeleteRegistryDetail()">Remove From Registry</button></div>';
 }
 async function fleetRefreshRegistryDetail(forceLink){
