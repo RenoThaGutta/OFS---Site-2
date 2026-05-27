@@ -518,23 +518,28 @@
       }
       return fallback;
     }
+    const verifiedHeader = idx(['verified', 'wiki verified', 'source verified', 'pulled from wiki'], -1);
+    const wikiHeader = idx(['wiki url', 'wiki link', 'source url'], -1);
+    const verifiedOffset = verifiedHeader >= 0 ? 1 : 0;
     const col = {
       model: idx(['ship model', 'model', 'name'], 0),
       make: idx(['make', 'manufacturer'], 1),
       imageUrl: idx(['image url', 'image', 'ship image url'], 2),
-      wikiUrl: idx(['wiki url', 'wiki link', 'source url'], 3),
-      role: idx(['role', 'focus'], 4),
-      category: idx(['category', 'type'], 5),
-      size: idx(['size'], 6),
-      crew: idx(['crew'], 7),
-      status: idx(['status', 'production status'], 8),
-      description: idx(['description', 'details', 'notes'], 9)
+      verified: verifiedHeader,
+      wikiUrl: wikiHeader >= 0 ? wikiHeader : 3 + verifiedOffset,
+      role: idx(['role', 'focus'], 4 + verifiedOffset),
+      category: idx(['category', 'type'], 5 + verifiedOffset),
+      size: idx(['size'], 6 + verifiedOffset),
+      crew: idx(['crew'], 7 + verifiedOffset),
+      status: idx(['status', 'production status'], 8 + verifiedOffset),
+      description: idx(['description', 'details', 'notes'], 9 + verifiedOffset)
     };
     return rows.slice(1).map(function (row) {
       return {
         model: String(row[col.model] || '').trim(),
         make:  String(row[col.make] || '').trim(),
         imageUrl: String(row[col.imageUrl] || '').trim(),
+        verified: col.verified >= 0 ? String(row[col.verified] || '').trim() : '',
         wikiUrl: String(row[col.wikiUrl] || '').trim(),
         role: String(row[col.role] || '').trim(),
         category: String(row[col.category] || '').trim(),
@@ -1025,6 +1030,7 @@
       ship.model || '',
       ship.make || '',
       ship.imageUrl || '',
+      ship.verified || '',
       ship.wikiUrl || '',
       ship.role || '',
       ship.category || '',

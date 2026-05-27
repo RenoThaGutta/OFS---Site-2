@@ -301,6 +301,8 @@
     .fleet-ship-row .fleet-build-meta { font-size: .72rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fleet-ship-status { font-size: .58rem; text-transform: uppercase; letter-spacing: .10em; color: var(--text-dim); white-space: nowrap; }
     .fleet-ship-row.needs-review .fleet-ship-status { color: #ff8b7f; }
+    .fleet-ship-row.unverified .fleet-ship-status { color: #e0c46a; }
+    .fleet-ship-row.verified .fleet-ship-status { color: #7fdc9a; }
     .fleet-registry-detail { margin-top: 0; border: 1px solid var(--b-dim); background: rgba(201,168,76,.035); border-radius: 4px; padding: 10px; max-height: min(58vh, 520px); overflow: auto; }
     .fleet-registry-detail.needs-review { border-color: rgba(192,57,43,.62); background: rgba(192,57,43,.10); }
     .fleet-registry-head { display: grid; grid-template-columns: 124px minmax(0,1fr); gap: 10px; align-items: start; margin-bottom: 8px; }
@@ -1237,9 +1239,14 @@
             <h4>Current Ship Registry</h4>
             <div class="controls" style="margin-bottom:12px">
               <input class="ctrl-input" id="fleet-ship-registry-filter" placeholder="Filter registry…" oninput="renderFleetShipRegistryList()">
+              <select class="ctrl-input" id="fleet-ship-registry-status-filter" onchange="renderFleetShipRegistryList()" style="max-width:170px">
+                <option value="all">All ships</option>
+                <option value="needs">Needs info</option>
+                <option value="unverified">Not verified</option>
+                <option value="verified">Verified</option>
+              </select>
               <button class="ctrl-btn" onclick="renderFleetShipRegistryList()">Refresh</button>
-              <button class="save-btn" onclick="fleetSaveFoundRegistryImages()">Repair / Save Found Images</button>
-              <span id="fleet-registry-repair-status" class="field-discord-note"></span>
+              <span id="fleet-registry-repair-status" class="field-discord-note">Sheet rows load first. Select a ship to pull Wiki data or edit manually.</span>
             </div>
             <div class="fleet-registry-workspace">
               <div id="fleet-ship-registry-list" class="fleet-ship-list"><div class="tav-list-empty">Loading Ship Registry…</div></div>
@@ -3079,6 +3086,15 @@ function fleetShipDuplicate(ship){
 }
 function fleetRegistryImageUrl(ship, detail){ return String((ship&&ship.imageUrl) || (detail&&detail.imageUrl) || '').trim(); }
 function fleetRegistryFoundImageUrl(ship, detail){ return String((!ship || !ship.imageUrl) && detail && detail.imageUrl ? detail.imageUrl : '').trim(); }
+function fleetRegistryVerifiedValue(ship){ return String((ship&&ship.verified)||'').trim(); }
+function fleetRegistryIsWikiVerified(ship){ return /^(wiki|yes|true|verified|pulled)$/i.test(fleetRegistryVerifiedValue(ship)); }
+function fleetRegistryStatus(ship, detail){
+  var issues=fleetRegistryIssues(ship, detail);
+  if(issues.length) return {key:'needs', label:'Needs info', cls:'needs-review'};
+  if(fleetRegistryIsWikiVerified(ship)) return {key:'verified', label:'Wiki verified', cls:'verified'};
+  if(/^manual$/i.test(fleetRegistryVerifiedValue(ship))) return {key:'verified', label:'Manual verified', cls:'verified'};
+  return {key:'unverified', label:'Not verified', cls:'unverified'};
+}
 function fleetRegistryRepairStatus(msg, cls){ var el=document.getElementById('fleet-registry-repair-status'); if(el){ el.className='field-discord-note '+(cls||''); el.textContent=msg||''; } }
 function fleetRegistrySameShip(a,b){ return fleetShipKey(a)===fleetShipKey(b); }
 function fleetRegistryTransientError(detail){ return !!(detail && detail.error && !detail.manual && !detail.imageOnly && !detail.loaded); }
@@ -3097,7 +3113,9 @@ function fleetRegistryIssues(ship, detail){
 }
 function fleetRegistryWarnings(ship, detail){
   var warnings=[];
-  if(detail && detail.loaded) warnings.push('wiki pulled');
+  if(fleetRegistryIsWikiVerified(ship)) warnings.push('pulled from Wiki');
+  else if(/^manual$/i.test(fleetRegistryVerifiedValue(ship))) warnings.push('manual verified');
+  else warnings.push('not verified yet');
   if(detail && detail.error) warnings.push('wiki lookup failed');
   ['role','category','size','crew','status'].forEach(function(k){ if(ship && ship[k]) warnings.push(k+': '+ship[k]); });
   return warnings;
@@ -3110,6 +3128,7 @@ function fleetRegistryDetailFromShip(ship){
     model:ship.model,
     make:ship.make,
     imageUrl:ship.imageUrl,
+    verified:ship.verified,
     wikiUrl:ship.wikiUrl,
     role:ship.role,
     category:ship.category,
@@ -3188,7 +3207,7 @@ async function fleetLookupMissingShip(){
 function fleetClearMissingShip(){ FLEET_MISSING_SHIP=null; ['fleet-missing-query'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); fleetSetMissingStatus('Waiting for a Wiki link or ship name.',''); renderFleetMissingPreview(null); }
 async function fleetSaveMissingShip(){
   if(!window.OFSSheets || !OFSSheets.saveShipRegistryShip){ alert('Ship Registry write helper unavailable.'); return; }
-  var ship={ model:(document.getElementById('fleet-missing-model')||{}).value||'', make:(document.getElementById('fleet-missing-make')||{}).value||'', imageUrl:(document.getElementById('fleet-missing-image')||{}).value||'', wikiUrl:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.sourceUrl)||'', role:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.role)||'', category:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.category)||'', size:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.size)||'', crew:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.crew)||'', status:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.status)||'', description:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.description)||'' };
+  var ship={ model:(document.getElementById('fleet-missing-model')||{}).value||'', make:(document.getElementById('fleet-missing-make')||{}).value||'', imageUrl:(document.getElementById('fleet-missing-image')||{}).value||'', verified:'Wiki', wikiUrl:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.sourceUrl)||'', role:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.role)||'', category:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.category)||'', size:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.size)||'', crew:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.crew)||'', status:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.status)||'', description:(FLEET_MISSING_SHIP&&FLEET_MISSING_SHIP.description)||'' };
   ship.model=ship.model.trim(); ship.make=ship.make.trim(); ship.imageUrl=ship.imageUrl.trim();
   if(!ship.model || !ship.make){ alert('Ship Model and Make are required.'); return; }
   var dup=fleetShipDuplicate(ship); if(dup){ alert('This ship already exists in Ship Registry: '+dup.model+' — '+dup.make+'. Open the existing row to update it.'); fleetSelectRegistryShipByModel(dup.model, dup.make); return; }
@@ -3199,7 +3218,7 @@ function fleetOpenDuplicateFromMissing(){ var dup=fleetShipDuplicate(FLEET_MISSI
 async function fleetUpdateDuplicateFromMissing(){
   var dup=fleetShipDuplicate(FLEET_MISSING_SHIP); if(!dup || !FLEET_MISSING_SHIP) return;
   if(!confirm('Update existing Ship Registry row for '+dup.model+' with the Wiki image/make/model now?')) return;
-  try{ await OFSSheets.saveShipRegistryShip({model:FLEET_MISSING_SHIP.model||dup.model, make:FLEET_MISSING_SHIP.make||dup.make, imageUrl:FLEET_MISSING_SHIP.imageUrl||dup.imageUrl, wikiUrl:FLEET_MISSING_SHIP.sourceUrl||dup.wikiUrl||'', role:FLEET_MISSING_SHIP.role||dup.role||'', category:FLEET_MISSING_SHIP.category||dup.category||'', size:FLEET_MISSING_SHIP.size||dup.size||'', crew:FLEET_MISSING_SHIP.crew||dup.crew||'', status:FLEET_MISSING_SHIP.status||dup.status||'', description:FLEET_MISSING_SHIP.description||dup.description||''}, dup.model); if(OFSSheets.load) await OFSSheets.load({force:true}); fleetSelectRegistryShipByModel(FLEET_MISSING_SHIP.model||dup.model, FLEET_MISSING_SHIP.make||dup.make); renderFleetShipRegistryList(); alert('Existing Ship Registry row updated.'); }
+  try{ await OFSSheets.saveShipRegistryShip({model:FLEET_MISSING_SHIP.model||dup.model, make:FLEET_MISSING_SHIP.make||dup.make, imageUrl:FLEET_MISSING_SHIP.imageUrl||dup.imageUrl, verified:'Wiki', wikiUrl:FLEET_MISSING_SHIP.sourceUrl||dup.wikiUrl||'', role:FLEET_MISSING_SHIP.role||dup.role||'', category:FLEET_MISSING_SHIP.category||dup.category||'', size:FLEET_MISSING_SHIP.size||dup.size||'', crew:FLEET_MISSING_SHIP.crew||dup.crew||'', status:FLEET_MISSING_SHIP.status||dup.status||'', description:FLEET_MISSING_SHIP.description||dup.description||''}, dup.model); if(OFSSheets.load) await OFSSheets.load({force:true}); fleetSelectRegistryShipByModel(FLEET_MISSING_SHIP.model||dup.model, FLEET_MISSING_SHIP.make||dup.make); renderFleetShipRegistryList(); alert('Existing Ship Registry row updated.'); }
   catch(e){ console.error(e); alert('Update failed: '+e.message); }
 }
 function fleetRegistryImageBroken(img){ var row=img&&img.closest&&img.closest('.fleet-ship-row'); if(row && img && img.getAttribute('src')){ row.classList.add('needs-review'); var st=row.querySelector('.fleet-ship-status'); if(st) st.textContent='Image broken'; } if(img) img.style.display='none'; }
@@ -3260,12 +3279,18 @@ function fleetRegistryFoundImageRows(){
 }
 function fleetUpdateFoundImageStatus(){
   var rows=fleetRegistryFoundImageRows();
-  fleetRegistryRepairStatus(rows.length ? (rows.length+' found image'+(rows.length===1?'':'s')+' ready to save') : '', rows.length?'ok':'');
+  if(rows.length) fleetRegistryRepairStatus(rows.length+' found image'+(rows.length===1?'':'s')+' ready to save', 'ok');
 }
 function renderFleetShipRegistryList(){
   var box=document.getElementById('fleet-ship-registry-list'); if(!box) return;
   var q=(document.getElementById('fleet-ship-registry-filter')&&document.getElementById('fleet-ship-registry-filter').value||'').toLowerCase();
-  var ships=shipRegistry().slice().sort(function(a,b){return (a.model||'').localeCompare(b.model||'');}).filter(function(s){ return !q || [s.model,s.make,s.role,s.category,s.crew,s.status].join(' ').toLowerCase().indexOf(q)!==-1; });
+  var sf=(document.getElementById('fleet-ship-registry-status-filter')&&document.getElementById('fleet-ship-registry-status-filter').value)||'all';
+  var ships=shipRegistry().slice().sort(function(a,b){return (a.model||'').localeCompare(b.model||'');}).filter(function(s){
+    var detail=FLEET_REGISTRY_DETAILS[fleetShipKey(s)] || fleetRegistryDetailFromShip(s);
+    var st=fleetRegistryStatus(s, detail);
+    var text=[s.model,s.make,s.verified,s.wikiUrl,s.role,s.category,s.crew,s.status].join(' ').toLowerCase();
+    return (!q || text.indexOf(q)!==-1) && (sf==='all' || st.key===sf);
+  });
   FLEET_REGISTRY_VIEW=ships;
   if(!ships.length){ box.innerHTML='<div class="tav-list-empty">No Ship Registry rows match this filter.</div>'; fleetUpdateFoundImageStatus(); return; }
   box.innerHTML=ships.slice(0,FLEET_REGISTRY_RENDER_LIMIT).map(function(s,i){
@@ -3274,11 +3299,11 @@ function renderFleetShipRegistryList(){
     var detail=FLEET_REGISTRY_DETAILS[key];
     var issues=fleetRegistryIssues(s, detail);
     var selected=FLEET_REGISTRY_SELECTED && fleetShipKey(FLEET_REGISTRY_SELECTED)===key;
-    var status=issues.length ? 'Needs info' : 'Ready';
+    var status=fleetRegistryStatus(s, detail);
     var meta=[s.make||'Unknown make', s.role, s.category, s.crew?('Crew '+s.crew):'', s.status].filter(Boolean).join(' · ');
-    return '<button type="button" class="fleet-ship-row '+(issues.length?'needs-review ':'')+(selected?'active':'')+'" onclick="fleetSelectRegistryShip('+i+')">'+
+    return '<button type="button" class="fleet-ship-row '+status.cls+' '+(selected?'active':'')+'" onclick="fleetSelectRegistryShip('+i+')">'+
       '<div><strong>'+fleetEsc(s.model||'Unnamed')+'</strong><div class="fleet-build-meta">'+fleetEsc(meta||'No registry details')+'</div>'+(issues.length?'<div class="fleet-build-meta">'+fleetEsc(issues.slice(0,3).join(', '))+'</div>':'')+'</div>'+
-      '<span class="fleet-ship-status">'+fleetEsc(status)+'</span></button>';
+      '<span class="fleet-ship-status">'+fleetEsc(status.label)+'</span></button>';
   }).join('')+(ships.length>FLEET_REGISTRY_RENDER_LIMIT?'<div class="tav-list-empty">Showing first '+FLEET_REGISTRY_RENDER_LIMIT+' matches. Use the filter to narrow the list.</div>':'');
   fleetUpdateFoundImageStatus();
 }
@@ -3310,9 +3335,9 @@ async function fleetSaveFoundRegistryImages(){
 function fleetSelectRegistryShipByModel(model, make){
   var ships=shipRegistry().slice().sort(function(a,b){return (a.model||'').localeCompare(b.model||'');});
   var s=ships.find(function(x){return fleetNorm(x.model)===fleetNorm(model) && (!make || fleetNorm(x.make)===fleetNorm(make));});
-  if(s){ FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, wikiUrl:s.wikiUrl, role:s.role, category:s.category, size:s.size, crew:s.crew, status:s.status, description:s.description, originalModel:s.model, originalMake:s.make}; FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=fleetRegistryDetailFromShip(FLEET_REGISTRY_SELECTED); renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
+  if(s){ FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, verified:s.verified, wikiUrl:s.wikiUrl, role:s.role, category:s.category, size:s.size, crew:s.crew, status:s.status, description:s.description, originalModel:s.model, originalMake:s.make}; FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=fleetRegistryDetailFromShip(FLEET_REGISTRY_SELECTED); renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
 }
-function fleetSelectRegistryShip(i){ var s=FLEET_REGISTRY_VIEW[i]; if(!s) return; FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, wikiUrl:s.wikiUrl, role:s.role, category:s.category, size:s.size, crew:s.crew, status:s.status, description:s.description, originalModel:s.model, originalMake:s.make}; FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=fleetRegistryDetailFromShip(FLEET_REGISTRY_SELECTED); renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
+function fleetSelectRegistryShip(i){ var s=FLEET_REGISTRY_VIEW[i]; if(!s) return; FLEET_REGISTRY_SELECTED={model:s.model, make:s.make, imageUrl:s.imageUrl, verified:s.verified, wikiUrl:s.wikiUrl, role:s.role, category:s.category, size:s.size, crew:s.crew, status:s.status, description:s.description, originalModel:s.model, originalMake:s.make}; FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=fleetRegistryDetailFromShip(FLEET_REGISTRY_SELECTED); renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
 function fleetRegistryBadges(ship, detail){
   var issues=fleetRegistryIssues(ship, detail);
   var warnings=fleetRegistryWarnings(ship, detail);
@@ -3332,22 +3357,24 @@ function renderFleetShipRegistryDetail(){
   box.className='fleet-registry-detail '+(issues.length?'needs-review':'');
   var meta=[ship.role, ship.category, ship.size, ship.crew?('Crew '+ship.crew):'', ship.status].filter(Boolean).join(' · ') || 'Sheet-first registry row. Pull from Wiki only when you want to repair/fill this ship.';
   var imageUrl=fleetRegistryImageUrl(ship, detail);
-  box.innerHTML='<div class="fleet-registry-head">'+(imageUrl?'<img src="'+fleetEsc(imageUrl)+'" alt="" onerror="this.style.display=\'none\'">':'<div class="fleet-registry-empty-img">No image</div>')+'<div>'+ 
+  box.innerHTML='<div class="fleet-registry-head">'+(imageUrl?'<img src="'+fleetEsc(imageUrl)+'" alt="" onerror="this.style.display=\'none\'">':'<div class="fleet-registry-empty-img">No image</div>')+'<div>'+
     '<div class="fleet-missing-title">'+fleetEsc(ship.model||'Unnamed Ship')+'</div><div class="fleet-missing-meta">Make: '+fleetEsc(ship.make||'Unknown')+'</div><div class="fleet-missing-meta">'+fleetEsc(meta)+'</div>'+
     (ship.description?'<div class="fleet-missing-meta">'+fleetEsc(ship.description.slice(0,260))+'</div>':'')+
-    '<div class="fleet-registry-badges">'+fleetRegistryBadges(ship, detail)+'</div></div></div>'+ 
+    '<div class="fleet-registry-badges">'+fleetRegistryBadges(ship, detail)+'</div></div></div>'+
     '<div class="fleet-missing-fields">'+
-      '<div class="field-row"><label>Ship Model *</label><input id="fleet-reg-model" value="'+fleetEsc(ship.model||'')+'"></div>'+ 
-      '<div class="field-row"><label>Make *</label><input id="fleet-reg-make" value="'+fleetEsc(ship.make||'')+'"></div>'+ 
-      '<div class="field-row" style="grid-column:1/-1"><label>Image URL *</label><input id="fleet-reg-image" value="'+fleetEsc(imageUrl)+'"><button type="button" class="tf-upload-btn" style="margin-top:8px" onclick="ofsFileUpload(\'fleet-reg-image\',\'ships\',document.getElementById(\'fleet-reg-model\').value||\'ship\')">Upload Custom Image</button></div>'+ 
-      '<div class="field-row" style="grid-column:1/-1"><label>Wiki / Tools Link For This Ship</label><input id="fleet-reg-wiki" value="'+fleetEsc(ship.wikiUrl||'')+'" placeholder="https://starcitizen.tools/Odin or Odin"></div>'+ 
-      '<div class="field-row"><label>Role</label><input id="fleet-reg-role" value="'+fleetEsc(ship.role||'')+'" placeholder="Battlecruiser"></div>'+ 
-      '<div class="field-row"><label>Category</label><input id="fleet-reg-category" value="'+fleetEsc(ship.category||'')+'" placeholder="Combat"></div>'+ 
-      '<div class="field-row"><label>Size</label><input id="fleet-reg-size" value="'+fleetEsc(ship.size||'')+'" placeholder="Capital"></div>'+ 
-      '<div class="field-row"><label>Crew</label><input id="fleet-reg-crew" value="'+fleetEsc(ship.crew||'')+'" placeholder="33–65"></div>'+ 
-      '<div class="field-row"><label>Status</label><input id="fleet-reg-status" value="'+fleetEsc(ship.status||'')+'" placeholder="In Concept"></div>'+ 
-      '<div class="field-row" style="grid-column:1/-1"><label>Custom Details / Description</label><textarea id="fleet-reg-description" class="hf-textarea" rows="3" placeholder="Short ship note or fallback description if Wiki does not load.">'+fleetEsc(ship.description||'')+'</textarea></div>'+ 
-    '</div>'+ 
+      '<div class="field-row"><label>Ship Model *</label><input id="fleet-reg-model" value="'+fleetEsc(ship.model||'')+'"></div>'+
+      '<div class="field-row"><label>Make *</label><input id="fleet-reg-make" value="'+fleetEsc(ship.make||'')+'"></div>'+
+      '<div class="field-row" style="grid-column:1/-1"><label>Image URL *</label><input id="fleet-reg-image" value="'+fleetEsc(imageUrl)+'"><button type="button" class="tf-upload-btn" style="margin-top:8px" onclick="ofsFileUpload(\'fleet-reg-image\',\'ships\',document.getElementById(\'fleet-reg-model\').value||\'ship\')">Upload Custom Image</button></div>'+
+      '<div class="field-row"><label>Verified</label><select id="fleet-reg-verified"><option value="" '+(!ship.verified?'selected':'')+'>Not verified</option><option value="Wiki" '+(fleetRegistryIsWikiVerified(ship)?'selected':'')+'>Pulled from Wiki</option><option value="Manual" '+(/^manual$/i.test(fleetRegistryVerifiedValue(ship))?'selected':'')+'>Manual / custom</option></select></div>'+
+      '<div class="field-row"><label>Source</label><input value="'+fleetEsc(fleetRegistryIsWikiVerified(ship)?'Wiki/API':'Sheet/Admin')+'" disabled></div>'+
+      '<div class="field-row" style="grid-column:1/-1"><label>Wiki / Tools Link For This Ship</label><input id="fleet-reg-wiki" value="'+fleetEsc(ship.wikiUrl||'')+'" placeholder="https://starcitizen.tools/Odin or Odin"></div>'+
+      '<div class="field-row"><label>Role</label><input id="fleet-reg-role" value="'+fleetEsc(ship.role||'')+'" placeholder="Battlecruiser"></div>'+
+      '<div class="field-row"><label>Category</label><input id="fleet-reg-category" value="'+fleetEsc(ship.category||'')+'" placeholder="Combat"></div>'+
+      '<div class="field-row"><label>Size</label><input id="fleet-reg-size" value="'+fleetEsc(ship.size||'')+'" placeholder="Capital"></div>'+
+      '<div class="field-row"><label>Crew</label><input id="fleet-reg-crew" value="'+fleetEsc(ship.crew||'')+'" placeholder="33–65"></div>'+
+      '<div class="field-row"><label>Status</label><input id="fleet-reg-status" value="'+fleetEsc(ship.status||'')+'" placeholder="In Concept"></div>'+
+      '<div class="field-row" style="grid-column:1/-1"><label>Custom Details / Description</label><textarea id="fleet-reg-description" class="hf-textarea" rows="3" placeholder="Short ship note or fallback description if Wiki does not load.">'+fleetEsc(ship.description||'')+'</textarea></div>'+
+    '</div>'+
     '<div class="fleet-missing-actions"><button class="ctrl-btn" onclick="fleetRefreshRegistryDetail(true)">Pull From Wiki Link</button><button class="save-btn" onclick="fleetSaveRegistryDetail()">Save Registry Row</button><button class="cancel-btn" onclick="fleetDeleteRegistryDetail()">Remove From Registry</button></div>';
 }
 async function fleetRefreshRegistryDetail(forceLink){
@@ -3363,6 +3390,7 @@ async function fleetRefreshRegistryDetail(forceLink){
       model: detail.model || current.model || FLEET_REGISTRY_SELECTED.model,
       make: detail.make || current.make || FLEET_REGISTRY_SELECTED.make,
       imageUrl: detail.imageUrl || current.imageUrl || FLEET_REGISTRY_SELECTED.imageUrl,
+      verified: 'Wiki',
       wikiUrl: source || current.wikiUrl || FLEET_REGISTRY_SELECTED.wikiUrl,
       role: detail.role || current.role || FLEET_REGISTRY_SELECTED.role,
       category: detail.category || current.category || FLEET_REGISTRY_SELECTED.category,
@@ -3388,6 +3416,7 @@ function fleetReadRegistryDetailForm(){
     model:((document.getElementById('fleet-reg-model')||{}).value||'').trim(),
     make:((document.getElementById('fleet-reg-make')||{}).value||'').trim(),
     imageUrl:((document.getElementById('fleet-reg-image')||{}).value||'').trim(),
+    verified:((document.getElementById('fleet-reg-verified')||{}).value||'').trim(),
     wikiUrl:((document.getElementById('fleet-reg-wiki')||{}).value||'').trim(),
     role:((document.getElementById('fleet-reg-role')||{}).value||'').trim(),
     category:((document.getElementById('fleet-reg-category')||{}).value||'').trim(),
@@ -3402,7 +3431,7 @@ async function fleetSaveRegistryDetail(){
   var ship=fleetReadRegistryDetailForm();
   if(!ship.model || !ship.make){ alert('Ship Model and Make are required.'); return; }
   if(!ship.imageUrl && !confirm('This ship has no image URL. Save anyway and keep the card marked red?')) return;
-  try{ await OFSSheets.saveShipRegistryShip(ship, FLEET_REGISTRY_SELECTED.originalModel||FLEET_REGISTRY_SELECTED.model); alert('Ship Registry row saved. Refreshing site data…'); if(OFSSheets.load) await OFSSheets.load({force:true}); FLEET_REGISTRY_SELECTED={model:ship.model, make:ship.make, imageUrl:ship.imageUrl, wikiUrl:ship.wikiUrl, role:ship.role, category:ship.category, size:ship.size, crew:ship.crew, status:ship.status, description:ship.description, originalModel:ship.model, originalMake:ship.make}; FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=fleetRegistryDetailFromShip(FLEET_REGISTRY_SELECTED); seedFleetForm(); renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
+  try{ await OFSSheets.saveShipRegistryShip(ship, FLEET_REGISTRY_SELECTED.originalModel||FLEET_REGISTRY_SELECTED.model); alert('Ship Registry row saved. Refreshing site data…'); if(OFSSheets.load) await OFSSheets.load({force:true}); FLEET_REGISTRY_SELECTED={model:ship.model, make:ship.make, imageUrl:ship.imageUrl, verified:ship.verified, wikiUrl:ship.wikiUrl, role:ship.role, category:ship.category, size:ship.size, crew:ship.crew, status:ship.status, description:ship.description, originalModel:ship.model, originalMake:ship.make}; FLEET_REGISTRY_DETAILS[fleetShipKey(FLEET_REGISTRY_SELECTED)]=fleetRegistryDetailFromShip(FLEET_REGISTRY_SELECTED); seedFleetForm(); renderFleetShipRegistryDetail(); renderFleetShipRegistryList(); }
   catch(e){ console.error(e); alert('Ship Registry save failed: '+e.message); }
 }
 async function fleetDeleteRegistryDetail(){
