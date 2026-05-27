@@ -279,7 +279,7 @@
     .fleet-over-cap { border-color: rgba(192,57,43,.55) !important; background: rgba(192,57,43,.08) !important; }
     .fleet-missing-panel { display: none; }
     .fleet-missing-panel.active { display: block; }
-    .fleet-structure-toolbar { display:grid; grid-template-columns:190px minmax(180px,1fr) auto auto; gap:8px; align-items:center; margin-bottom:10px; }
+    .fleet-structure-toolbar { display:grid; grid-template-columns:minmax(190px,260px) 1fr auto; gap:8px; align-items:center; margin-bottom:10px; }
     .fleet-structure-grid { display:grid; gap:10px; }
     .fleet-command-board { display:grid; gap:10px; }
     .fleet-tier { border:1px solid var(--b-dim); background:linear-gradient(180deg, rgba(201,168,76,.045), rgba(255,255,255,.018)); border-radius:5px; padding:10px; }
@@ -1223,13 +1223,12 @@
 
       <div id="fleet-structure-panel" class="fleet-missing-panel active">
         <div class="fleet-structure-toolbar">
-          <select class="ctrl-input" id="fleet-structure-name" onchange="renderFleetStructure()"></select>
-          <input class="ctrl-input" id="fleet-structure-filter" placeholder="Filter command slots, houses, banners…" oninput="renderFleetStructure()">
-          <button class="ctrl-btn" onclick="renderFleetStructure(true)">Refresh</button>
+          <select class="ctrl-input" id="fleet-structure-name" onchange="fleetStructureNameChanged()"></select>
+          <div></div>
           <button class="save-btn" onclick="fleetSaveStructureBoard()">Save Structure</button>
         </div>
         <datalist id="fleet-structure-member-options"></datalist>
-        <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleet Structure</strong> sheet. One-page command board: 3 Lord Commanders, 3 House Lords, 2 Custodes, and 4 commanders for each House. Arcanum keeps one open commander slot for now.</div>
+        <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleet Structure</strong> sheet. Use the fleet dropdown to switch command boards or create a new fleet, assign members directly into the structure, then save.</div>
         <div id="fleet-structure-root" class="fleet-structure-grid"><div class="tav-list-empty">Loading Fleet Structure…</div></div>
       </div>
 
@@ -3131,8 +3130,33 @@ function fleetStructureNames(){
 }
 function seedFleetStructureControls(){
   var sel=document.getElementById('fleet-structure-name'), members=document.getElementById('fleet-structure-member-options');
-  if(sel){ var current=sel.value||FLEET_DEFAULT_NAME; var names=fleetStructureNames(); sel.innerHTML=names.map(function(n){return '<option value="'+fleetEsc(n)+'" '+(n===current?'selected':'')+'>'+fleetEsc(n)+'</option>';}).join(''); if(names.indexOf(current)===-1) sel.value=FLEET_DEFAULT_NAME; }
+  if(sel){
+    var current=sel.value||FLEET_DEFAULT_NAME;
+    if(current==='__new__') current=FLEET_DEFAULT_NAME;
+    var names=fleetStructureNames();
+    if(names.indexOf(current)===-1) names.push(current);
+    names=names.filter(Boolean).sort();
+    sel.innerHTML=names.map(function(n){return '<option value="'+fleetEsc(n)+'" '+(n===current?'selected':'')+'>'+fleetEsc(n)+'</option>';}).join('')+'<option value="__new__">+ Create New Fleet…</option>';
+    sel.value=names.indexOf(current)!==-1 ? current : FLEET_DEFAULT_NAME;
+  }
   if(members){ PLAYERS=window.OFSData.getPlayers(); members.innerHTML=PLAYERS.slice().sort(function(a,b){return (a.username||'').localeCompare(b.username||'');}).map(function(p){return '<option value="'+fleetEsc(p.username)+'" label="'+fleetEsc((p.rank||'')+' '+(p.id||''))+'"></option>';}).join(''); }
+}
+function fleetStructureNameChanged(){
+  var sel=document.getElementById('fleet-structure-name'); if(!sel) return renderFleetStructure();
+  if(sel.value==='__new__'){
+    var name=prompt('New fleet name:', '2nd Fleet');
+    name=String(name||'').trim();
+    if(!name){ sel.value=FLEET_DEFAULT_NAME; return renderFleetStructure(); }
+    var exists=fleetStructureNames().some(function(n){ return String(n).toLowerCase()===name.toLowerCase(); });
+    if(exists){
+      var match=fleetStructureNames().find(function(n){ return String(n).toLowerCase()===name.toLowerCase(); });
+      sel.value=match||name;
+    } else {
+      sel.innerHTML='<option value="'+fleetEsc(name)+'" selected>'+fleetEsc(name)+'</option>'+sel.innerHTML;
+      sel.value=name;
+    }
+  }
+  renderFleetStructure();
 }
 function fleetStructureRows(name){
   name=name||FLEET_DEFAULT_NAME;
