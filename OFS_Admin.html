@@ -314,7 +314,9 @@
     .fleet-slot-fields input[readonly] { opacity:.78; color:var(--silver-dim); }
     .fleet-member-picker { position:relative; min-width:0; }
     .fleet-member-picker input { padding-right:22px; }
+    .fleet-member-picker.has-selected input { display:none; }
     .fleet-member-picker::after { content:'▾'; position:absolute; right:8px; top:50%; transform:translateY(-50%); color:var(--gold-lt); font-size:.62rem; pointer-events:none; }
+    .fleet-member-picker.has-selected::after { display:none; }
     .fleet-member-results { display:none; position:absolute; z-index:700; left:0; top:calc(100% + 5px); width:min(640px, calc(100vw - 40px)); max-height:300px; overflow:auto; border:1px solid rgba(201,168,76,.38); border-radius:4px; background:rgba(7,7,15,.98); box-shadow:0 18px 34px rgba(0,0,0,.56); padding:4px; }
     .fleet-member-results.open { display:grid; gap:4px; }
     .fleet-member-option { display:grid; grid-template-columns:34px minmax(150px,1fr) 104px 58px minmax(110px,.7fr); gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 8px; border:1px solid transparent; border-radius:3px; background:rgba(255,255,255,.018); color:var(--text); text-align:left; cursor:pointer; }
@@ -326,6 +328,13 @@
     .fleet-member-rep { min-width:42px; color:var(--gold-lt); border-color:rgba(201,168,76,.42); }
     .fleet-member-banner { color:var(--silver-dim); font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
     .fleet-member-empty { color:var(--text-dim); font-size:.68rem; padding:8px; text-align:center; }
+    .fleet-selected-member { display:none; grid-template-columns:34px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 8px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; cursor:pointer; }
+    .fleet-member-picker.has-selected .fleet-selected-member { display:grid; }
+    .fleet-selected-member:hover { border-color:rgba(201,168,76,.6); background:rgba(201,168,76,.12); }
+    .fleet-selected-main { min-width:0; display:grid; gap:3px; }
+    .fleet-selected-name { color:#f1f3f8; font-weight:700; font-size:.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fleet-selected-meta { display:flex; flex-wrap:wrap; gap:5px; align-items:center; min-width:0; }
+    .fleet-selected-change { color:var(--gold-dim); font-size:.54rem; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
     @media (max-width: 900px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
@@ -3284,6 +3293,30 @@ function fleetPlayerOptionHtml(p,i){
     +'<span class="fleet-member-banner" title="'+fleetEsc(banner)+'">'+fleetEsc(banner)+'</span>'
     +'</button>';
 }
+function fleetStructureSelectedPlayer(row){
+  return fleetFindPlayer(row&&row.userId) || fleetFindPlayer(row&&row.username);
+}
+function fleetStructureSelectedCardHtml(p,i){
+  if(!p) return '<button type="button" id="fs-member-card-'+i+'" class="fleet-selected-member" onclick="fleetStructureEditMember('+i+')"></button>';
+  var rank=fleetPlayerRankText(p), rep=fleetPlayerRep(p), banner=String((p&&p.activeBanner)||'Unassigned').trim()||'Unassigned';
+  return '<button type="button" id="fs-member-card-'+i+'" class="fleet-selected-member" onclick="fleetStructureEditMember('+i+')" title="Change assignment">'
+    +fleetPlayerAvatar(p)
+    +'<span class="fleet-selected-main">'
+    +'<span class="fleet-selected-name" title="'+fleetEsc(p.username||'')+'">'+fleetEsc(p.username||'Unnamed')+'</span>'
+    +'<span class="fleet-selected-meta"><span class="fleet-member-rank" title="'+fleetEsc(rank)+'">'+fleetEsc(rank)+'</span><span class="fleet-member-rep">Lvl '+fleetEsc(rep)+'</span><span class="fleet-member-banner" title="'+fleetEsc(banner)+'">'+fleetEsc(banner)+'</span></span>'
+    +'</span><span class="fleet-selected-change">Change</span>'
+    +'</button>';
+}
+function fleetStructureSetSelectedCard(i,p){
+  var picker=document.getElementById('fs-member-picker-'+i), card=document.getElementById('fs-member-card-'+i);
+  if(card) card.outerHTML=fleetStructureSelectedCardHtml(p,i);
+  if(picker) picker.classList.toggle('has-selected', !!p);
+}
+function fleetStructureEditMember(i){
+  var picker=document.getElementById('fs-member-picker-'+i), input=document.getElementById('fs-username-'+i);
+  if(picker) picker.classList.remove('has-selected');
+  if(input){ input.focus(); input.select(); fleetStructureRenderMemberResults(i); }
+}
 function fleetStructureMemberPool(row, query){
   query=String(query||'').toLowerCase().trim();
   var pool=PLAYERS.slice().filter(function(p){ return fleetPlayerRankMatchesSlot(p,row); });
@@ -3317,6 +3350,7 @@ function fleetStructureSelectMember(i,userId){
   var input=document.getElementById('fs-username-'+i), uid=document.getElementById('fs-user-'+i);
   if(input) input.value=p.username||'';
   if(uid) uid.value=p.id||'';
+  fleetStructureSetSelectedCard(i,p);
   fleetStructureCloseMemberPickers();
 }
 if(!window.__fleetStructurePickerCloseBound){
@@ -3326,10 +3360,12 @@ if(!window.__fleetStructurePickerCloseBound){
 function fleetStructureSlot(row,i,extraClass){
   var empty=!row.banner && /empty|open/i.test(row.slotLabel+' '+row.title);
   var meta=[row.title,row.banner||row.house].filter(Boolean).join(' · ');
+  var selected=fleetStructureSelectedPlayer(row);
   return '<div class="fleet-structure-slot '+(extraClass||'')+' '+(empty?'empty':'')+'">'
     +'<div class="fleet-slot-label"><span class="fleet-slot-title" title="'+fleetEsc(row.slotLabel||'')+'">'+fleetEsc(row.slotLabel||'Structure Slot')+'</span><span class="fleet-slot-meta" title="'+fleetEsc(meta)+'">'+fleetEsc(meta||row.section||'')+'</span></div>'
     +'<div class="fleet-slot-fields">'
-    +'<div class="fleet-member-picker">'
+    +'<div id="fs-member-picker-'+i+'" class="fleet-member-picker '+(selected?'has-selected':'')+'">'
+    +fleetStructureSelectedCardHtml(selected,i)
     +'<input id="fs-username-'+i+'" value="'+fleetEsc(row.username||'')+'" placeholder="Assign member…" autocomplete="off" onfocus="fleetStructureRenderMemberResults('+i+')" oninput="fleetStructureMemberChanged('+i+')" onkeydown="fleetStructureMemberKey(event,'+i+')">'
     +'<div id="fs-member-results-'+i+'" class="fleet-member-results"></div>'
     +'</div>'
@@ -3342,8 +3378,10 @@ function fleetStructureMemberChanged(i){
   var username=(document.getElementById('fs-username-'+i)||{}).value||'';
   var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{};
   var p=fleetFindPlayer(username);
+  var valid=(p && fleetPlayerRankMatchesSlot(p,row));
   var uid=document.getElementById('fs-user-'+i);
-  if(uid) uid.value=(p && fleetPlayerRankMatchesSlot(p,row)) ? (p.id||'') : '';
+  if(uid) uid.value=valid ? (p.id||'') : '';
+  fleetStructureSetSelectedCard(i,valid ? p : null);
   fleetStructureRenderMemberResults(i);
 }
 function fleetReadStructureSlot(i, slotLabel){
@@ -3375,6 +3413,7 @@ async function fleetSaveStructureBoard(){
 }
 async function fleetClearStructureSlot(i){
   document.getElementById('fs-username-'+i).value=''; document.getElementById('fs-user-'+i).value='';
+  fleetStructureSetSelectedCard(i,null);
 }
 
 var FLEET_MISSING_SHIP=null;
