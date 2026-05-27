@@ -312,6 +312,20 @@
     .fleet-slot-fields input, .fleet-slot-fields select { width:100%; min-width:0; padding:7px 8px; font-size:.72rem; background:var(--bg-card2); border:1px solid var(--b-dim); color:var(--text); border-radius:3px; }
     .fleet-slot-fields select { color:var(--gold-lt); }
     .fleet-slot-fields input[readonly] { opacity:.78; color:var(--silver-dim); }
+    .fleet-member-picker { position:relative; min-width:0; }
+    .fleet-member-picker input { padding-right:22px; }
+    .fleet-member-picker::after { content:'▾'; position:absolute; right:8px; top:50%; transform:translateY(-50%); color:var(--gold-lt); font-size:.62rem; pointer-events:none; }
+    .fleet-member-results { display:none; position:absolute; z-index:700; left:0; top:calc(100% + 5px); width:min(640px, calc(100vw - 40px)); max-height:300px; overflow:auto; border:1px solid rgba(201,168,76,.38); border-radius:4px; background:rgba(7,7,15,.98); box-shadow:0 18px 34px rgba(0,0,0,.56); padding:4px; }
+    .fleet-member-results.open { display:grid; gap:4px; }
+    .fleet-member-option { display:grid; grid-template-columns:34px minmax(150px,1fr) 104px 58px minmax(110px,.7fr); gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 8px; border:1px solid transparent; border-radius:3px; background:rgba(255,255,255,.018); color:var(--text); text-align:left; cursor:pointer; }
+    .fleet-member-option:hover, .fleet-member-option.active { border-color:rgba(201,168,76,.48); background:rgba(201,168,76,.075); }
+    .fleet-member-avatar { width:28px; height:28px; border-radius:50%; border:1px solid rgba(201,168,76,.5); background:rgba(201,168,76,.12); color:var(--gold-lt); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.72rem; overflow:hidden; }
+    .fleet-member-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+    .fleet-member-name { color:#f1f3f8; font-weight:700; font-size:.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fleet-member-rank, .fleet-member-rep { display:inline-flex; align-items:center; justify-content:center; min-width:52px; border:1px solid rgba(201,168,76,.25); background:rgba(201,168,76,.08); color:var(--silver); padding:3px 6px; border-radius:2px; font-size:.57rem; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; }
+    .fleet-member-rep { min-width:42px; color:var(--gold-lt); border-color:rgba(201,168,76,.42); }
+    .fleet-member-banner { color:var(--silver-dim); font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
+    .fleet-member-empty { color:var(--text-dim); font-size:.68rem; padding:8px; text-align:center; }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
     @media (max-width: 900px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
@@ -3139,7 +3153,7 @@ function seedFleetStructureControls(){
     sel.innerHTML=names.map(function(n){return '<option value="'+fleetEsc(n)+'" '+(n===current?'selected':'')+'>'+fleetEsc(n)+'</option>';}).join('')+'<option value="__new__">+ Create New Fleet…</option>';
     sel.value=names.indexOf(current)!==-1 ? current : FLEET_DEFAULT_NAME;
   }
-  if(members){ PLAYERS=window.OFSData.getPlayers(); members.innerHTML=PLAYERS.slice().sort(function(a,b){return (a.username||'').localeCompare(b.username||'');}).map(function(p){return '<option value="'+fleetEsc(p.username)+'" label="'+fleetEsc((p.rank||'')+' '+(p.id||''))+'"></option>';}).join(''); }
+  if(members){ PLAYERS=window.OFSData.getPlayers(); members.innerHTML=''; }
 }
 function fleetStructureNameChanged(){
   var sel=document.getElementById('fleet-structure-name'); if(!sel) return renderFleetStructure();
@@ -3224,13 +3238,85 @@ function fleetHouseControl(row,i){
   }
   return '<input id="fs-house-'+i+'" value="'+fleetEsc(row.house||'')+'" readonly>';
 }
+function fleetStructureIsLordCommanderSlot(row){
+  return /lord commander/i.test(String(row&&row.title||'')+' '+String(row&&row.slotLabel||'')) || String(row&&row.section||'')==='Senior Command';
+}
+function fleetPlayerRankText(p){ return String((p&&p.rank)||'Unranked').trim() || 'Unranked'; }
+function fleetPlayerRankMatchesSlot(p,row){
+  if(!fleetStructureIsLordCommanderSlot(row)) return true;
+  return /lord commander/i.test(fleetPlayerRankText(p));
+}
+function fleetPlayerRep(p){
+  try{ if(typeof calcRep==='function'){ var rep=calcRep(Number(p&&p.reputationXP)||0); return rep&&rep.lvl ? rep.lvl : 1; } }catch(e){}
+  return 1;
+}
+function fleetPlayerInitials(p){
+  var name=String((p&&p.username)||'?').trim();
+  return (name.match(/[A-Za-z0-9]/)||['?'])[0].toUpperCase();
+}
+function fleetPlayerAvatar(p){
+  var init=fleetPlayerInitials(p), url=String((p&&p.avatarUrl)||'').trim();
+  if(url) return '<span class="fleet-member-avatar"><img src="'+fleetEsc(url)+'" alt="'+fleetEsc(init)+'" onerror="this.parentNode.textContent=\''+fleetEsc(init)+'\'"></span>';
+  return '<span class="fleet-member-avatar">'+fleetEsc(init)+'</span>';
+}
+function fleetPlayerOptionHtml(p,i){
+  var rank=fleetPlayerRankText(p), rep=fleetPlayerRep(p), banner=String((p&&p.activeBanner)||'Unassigned').trim()||'Unassigned';
+  return '<button type="button" class="fleet-member-option" onclick="fleetStructureSelectMember('+i+',\''+fleetEsc(String(p.id||'')).replace(/'/g,'&#39;')+'\')">'
+    +fleetPlayerAvatar(p)
+    +'<span class="fleet-member-name" title="'+fleetEsc(p.username||'')+'">'+fleetEsc(p.username||'Unnamed')+'</span>'
+    +'<span class="fleet-member-rank" title="'+fleetEsc(rank)+'">'+fleetEsc(rank)+'</span>'
+    +'<span class="fleet-member-rep">Lvl '+fleetEsc(rep)+'</span>'
+    +'<span class="fleet-member-banner" title="'+fleetEsc(banner)+'">'+fleetEsc(banner)+'</span>'
+    +'</button>';
+}
+function fleetStructureMemberPool(row, query){
+  query=String(query||'').toLowerCase().trim();
+  var pool=PLAYERS.slice().filter(function(p){ return fleetPlayerRankMatchesSlot(p,row); });
+  if(query){
+    pool=pool.filter(function(p){ return [p.username,p.id,p.rank,p.activeBanner].join(' ').toLowerCase().indexOf(query)!==-1; });
+  }
+  return pool.sort(function(a,b){ return (a.username||'').localeCompare(b.username||''); }).slice(0,28);
+}
+function fleetStructureRenderMemberResults(i){
+  var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), box=document.getElementById('fs-member-results-'+i);
+  if(!input || !box) return;
+  var pool=fleetStructureMemberPool(row,input.value);
+  if(!pool.length){ box.innerHTML='<div class="fleet-member-empty">'+(fleetStructureIsLordCommanderSlot(row)?'No Lord Commander ranked members found.':'No matching members found.')+'</div>'; }
+  else { box.innerHTML=pool.map(function(p){ return fleetPlayerOptionHtml(p,i); }).join(''); }
+  box.classList.add('open');
+}
+function fleetStructureCloseMemberPickers(except){
+  document.querySelectorAll('.fleet-member-results.open').forEach(function(el){ if(el.id!==except) el.classList.remove('open'); });
+}
+function fleetStructureMemberKey(e,i){
+  if(e.key==='Escape'){ fleetStructureCloseMemberPickers(); return; }
+  if(e.key==='Enter'){
+    e.preventDefault();
+    var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), pool=fleetStructureMemberPool(row,input&&input.value);
+    if(pool.length) fleetStructureSelectMember(i,pool[0].id||'');
+  }
+}
+function fleetStructureSelectMember(i,userId){
+  var p=fleetFindPlayer(userId); if(!p) return;
+  var input=document.getElementById('fs-username-'+i), uid=document.getElementById('fs-user-'+i);
+  if(input) input.value=p.username||'';
+  if(uid) uid.value=p.id||'';
+  fleetStructureCloseMemberPickers();
+}
+if(!window.__fleetStructurePickerCloseBound){
+  window.__fleetStructurePickerCloseBound=true;
+  document.addEventListener('click', function(e){ if(!e.target.closest || !e.target.closest('.fleet-member-picker')) fleetStructureCloseMemberPickers(); });
+}
 function fleetStructureSlot(row,i,extraClass){
   var empty=!row.banner && /empty|open/i.test(row.slotLabel+' '+row.title);
   var meta=[row.title,row.banner||row.house].filter(Boolean).join(' · ');
   return '<div class="fleet-structure-slot '+(extraClass||'')+' '+(empty?'empty':'')+'">'
     +'<div class="fleet-slot-label"><span class="fleet-slot-title" title="'+fleetEsc(row.slotLabel||'')+'">'+fleetEsc(row.slotLabel||'Structure Slot')+'</span><span class="fleet-slot-meta" title="'+fleetEsc(meta)+'">'+fleetEsc(meta||row.section||'')+'</span></div>'
     +'<div class="fleet-slot-fields">'
-    +'<input id="fs-username-'+i+'" list="fleet-structure-member-options" value="'+fleetEsc(row.username||'')+'" placeholder="Assign member…" oninput="fleetStructureMemberChanged('+i+')">'
+    +'<div class="fleet-member-picker">'
+    +'<input id="fs-username-'+i+'" value="'+fleetEsc(row.username||'')+'" placeholder="Assign member…" autocomplete="off" onfocus="fleetStructureRenderMemberResults('+i+')" oninput="fleetStructureMemberChanged('+i+')" onkeydown="fleetStructureMemberKey(event,'+i+')">'
+    +'<div id="fs-member-results-'+i+'" class="fleet-member-results"></div>'
+    +'</div>'
     +'</div>'
     +'<input id="fs-house-'+i+'" type="hidden" value="'+fleetEsc(row.house||'')+'">'
     +'<input id="fs-fleet-'+i+'" type="hidden" value="'+fleetEsc(row.fleetName||'')+'"><input id="fs-section-'+i+'" type="hidden" value="'+fleetEsc(row.section||'')+'"><input id="fs-user-'+i+'" type="hidden" value="'+fleetEsc(row.userId||'')+'"><input id="fs-title-'+i+'" type="hidden" value="'+fleetEsc(row.title||'')+'"><input id="fs-banner-'+i+'" type="hidden" value="'+fleetEsc(row.banner||'')+'"><input id="fs-sort-'+i+'" type="hidden" value="'+fleetEsc(row.sortOrder||0)+'"><input id="fs-active-'+i+'" type="hidden" value="'+(row.active!==false?'TRUE':'FALSE')+'"><input id="fs-notes-'+i+'" type="hidden" value="'+fleetEsc(row.notes||'')+'">'
@@ -3238,15 +3324,18 @@ function fleetStructureSlot(row,i,extraClass){
 }
 function fleetStructureMemberChanged(i){
   var username=(document.getElementById('fs-username-'+i)||{}).value||'';
+  var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{};
   var p=fleetFindPlayer(username);
   var uid=document.getElementById('fs-user-'+i);
-  if(p && uid) uid.value=p.id||'';
+  if(uid) uid.value=(p && fleetPlayerRankMatchesSlot(p,row)) ? (p.id||'') : '';
+  fleetStructureRenderMemberResults(i);
 }
 function fleetReadStructureSlot(i, slotLabel){
   var username=(document.getElementById('fs-username-'+i)||{}).value||'';
   var userId=(document.getElementById('fs-user-'+i)||{}).value||'';
   var p=fleetFindPlayer(username)||fleetFindPlayer(userId);
-  if(p){ username=p.username||username; userId=p.id||userId; }
+  if(p && fleetPlayerRankMatchesSlot(p,FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ username=p.username||username; userId=p.id||userId; }
+  else if(fleetStructureIsLordCommanderSlot(FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ userId=''; }
   return { fleetName:(document.getElementById('fs-fleet-'+i)||{}).value||FLEET_DEFAULT_NAME, section:(document.getElementById('fs-section-'+i)||{}).value||'', slotLabel:slotLabel, userId:String(userId||'').trim(), username:String(username||'').trim(), title:((document.getElementById('fs-title-'+i)||{}).value||'').trim(), house:((document.getElementById('fs-house-'+i)||{}).value||'').trim(), banner:((document.getElementById('fs-banner-'+i)||{}).value||'').trim(), sortOrder:Number((document.getElementById('fs-sort-'+i)||{}).value)||0, active:((document.getElementById('fs-active-'+i)||{}).value||'TRUE')!=='FALSE', notes:((document.getElementById('fs-notes-'+i)||{}).value||'').trim() };
 }
 async function fleetSaveStructureSlot(i, slotLabel){
