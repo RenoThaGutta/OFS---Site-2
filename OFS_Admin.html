@@ -3281,6 +3281,7 @@ function fleetStructureRenderMemberResults(i){
   var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), box=document.getElementById('fs-member-results-'+i);
   if(!input || !box) return;
   var pool=fleetStructureMemberPool(row,input.value);
+  fleetStructureCloseMemberPickers(box.id);
   if(!pool.length){ box.innerHTML='<div class="fleet-member-empty">'+(fleetStructureIsLordCommanderSlot(row)?'No Lord Commander ranked members found.':'No matching members found.')+'</div>'; }
   else { box.innerHTML=pool.map(function(p){ return fleetPlayerOptionHtml(p,i); }).join(''); }
   box.classList.add('open');
