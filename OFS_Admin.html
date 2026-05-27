@@ -279,6 +279,13 @@
     .fleet-over-cap { border-color: rgba(192,57,43,.55) !important; background: rgba(192,57,43,.08) !important; }
     .fleet-missing-panel { display: none; }
     .fleet-missing-panel.active { display: block; }
+    .fleet-structure-toolbar { display:grid; grid-template-columns:190px minmax(180px,1fr) auto; gap:8px; align-items:center; margin-bottom:12px; }
+    .fleet-structure-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:12px; }
+    .fleet-structure-card { background:var(--bg-card); border:1px solid var(--b-dim); border-radius:4px; padding:14px; }
+    .fleet-structure-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; margin:0 0 10px; display:flex; justify-content:space-between; gap:8px; }
+    .fleet-structure-section { color:var(--silver-dim); font-size:.62rem; letter-spacing:.12em; text-transform:uppercase; }
+    .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
+    .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
     .fleet-missing-layout { display: grid; grid-template-columns: 1fr; gap: 14px; align-items: start; }
     .fleet-lookup-card { display: grid; grid-template-columns: minmax(320px, .9fr) minmax(420px, 1.1fr); gap: 14px; align-items: start; }
     .fleet-missing-card { background: var(--bg-card); border: 1px solid var(--b-dim); border-radius: 4px; padding: 16px; }
@@ -1179,11 +1186,23 @@
     <div class="tab-panel" id="tab-fleet">
       <div class="sec-head"><h2>Fleet</h2><div class="sec-line"></div></div>
       <div class="tav-subtabs" id="fleet-subtabs">
-        <button class="shop-stab active" data-fleettab="builder">Fleet Builder</button>
+        <button class="shop-stab active" data-fleettab="structure">Structure</button>
+        <button class="shop-stab"        data-fleettab="builder">Fleet Assignments</button>
         <button class="shop-stab"        data-fleettab="missing">Ship Registry</button>
       </div>
 
-      <div id="fleet-builder-panel" class="fleet-missing-panel active">
+      <div id="fleet-structure-panel" class="fleet-missing-panel active">
+        <div class="fleet-structure-toolbar">
+          <select class="ctrl-input" id="fleet-structure-name" onchange="renderFleetStructure()"></select>
+          <input class="ctrl-input" id="fleet-structure-filter" placeholder="Filter command slots, houses, banners…" oninput="renderFleetStructure()">
+          <button class="ctrl-btn" onclick="renderFleetStructure(true)">Refresh</button>
+        </div>
+        <datalist id="fleet-structure-member-options"></datalist>
+        <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleet Structure</strong> sheet. Manage the command chart first: senior command, House leaders, Custodes, and banner command slots. Arcanum keeps one empty banner slot for now.</div>
+        <div id="fleet-structure-root" class="fleet-structure-grid"><div class="tav-list-empty">Loading Fleet Structure…</div></div>
+      </div>
+
+      <div id="fleet-builder-panel" class="fleet-missing-panel">
         <div class="controls">
           <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, member, ship, role…" oninput="renderFleetAdmin()">
           <button class="add-btn" onclick="fleetNew()">+ New Build</button>
@@ -2999,6 +3018,7 @@ function fleetRuleStatus(items){
 function fleetRulesChanged(){ renderFleetBuild(); renderFleetRosterPreview(); }
 function renderFleetAdmin(){
   seedFleetForm();
+  renderFleetStructure();
   renderFleetBuild();
   renderFleetRosterPreview();
   renderFleetShipRegistryList();
@@ -3044,6 +3064,94 @@ async function fleetSaveBuild(){
   } catch(e){ console.error(e); alert('Fleet save failed: '+e.message); }
 }
 async function fleetSave(){ return fleetSaveBuild(); }
+
+const FLEET_DEFAULT_NAME='1st Fleet';
+const FLEET_HOUSE_BANNERS={
+  Dominion:['Guardian','Privateer','Fang','Talon'],
+  Provision:['Artificer','Engineer','Forager','Astraeus'],
+  Arcanum:['Concordat','Maester','Pioneer','']
+};
+function fleetStructureData(){ return (window.OFSSheets && OFSSheets.getFleetStructure) ? OFSSheets.getFleetStructure() : []; }
+function fleetStructureKey(row){ return [row.fleetName,row.section,row.slotLabel].join('|').toLowerCase(); }
+function fleetStructureDefaults(name){
+  name=name||FLEET_DEFAULT_NAME;
+  var rows=[], order=1;
+  function add(section, slotLabel, title, house, banner, notes){ rows.push({ fleetName:name, section:section, slotLabel:slotLabel, userId:'', username:'', title:title||'', house:house||'', banner:banner||'', sortOrder:order++, active:true, notes:notes||'' }); }
+  add('Senior Command','Lord Commander Slot 1','Lord Commander','','','Top fleet command');
+  add('Senior Command','Lord Commander Slot 2','Lord Commander','','','Top fleet command');
+  add('Senior Command','Magnus Custos','Magnus Custos','Custodes','','Lord Commander of the Custodes');
+  add('House Leadership','Dominion Leader','House Leader','Dominion','','Combat, security, fleet warfare, and military operations');
+  add('House Leadership','Provision Leader','House Leader','Provision','','Mining, cargo, salvage, logistics, industry, and supply');
+  add('House Leadership','Arcanum Leader','House Leader','Arcanum','','Medical, science, exploration, and specialist support');
+  add('Custodes','Custodes Slot 1','Custodes','Custodes','','');
+  add('Custodes','Custodes Slot 2','Custodes','Custodes','','');
+  Object.keys(FLEET_HOUSE_BANNERS).forEach(function(house){
+    FLEET_HOUSE_BANNERS[house].forEach(function(banner, idx){
+      add('Banner Slots', banner ? (banner+' Commander') : 'Empty Banner Slot', banner ? 'Banner Commander' : 'Open Slot', house, banner, banner ? '' : 'Reserved empty Arcanum banner slot');
+    });
+  });
+  return rows;
+}
+function fleetStructureNames(){
+  var names={}; names[FLEET_DEFAULT_NAME]=true;
+  fleetData().forEach(function(f){ if(f.fleetName) names[f.fleetName]=true; });
+  fleetStructureData().forEach(function(f){ if(f.fleetName) names[f.fleetName]=true; });
+  return Object.keys(names).sort();
+}
+function seedFleetStructureControls(){
+  var sel=document.getElementById('fleet-structure-name'), members=document.getElementById('fleet-structure-member-options');
+  if(sel){ var current=sel.value||FLEET_DEFAULT_NAME; var names=fleetStructureNames(); sel.innerHTML=names.map(function(n){return '<option value="'+fleetEsc(n)+'" '+(n===current?'selected':'')+'>'+fleetEsc(n)+'</option>';}).join(''); if(names.indexOf(current)===-1) sel.value=FLEET_DEFAULT_NAME; }
+  if(members){ PLAYERS=window.OFSData.getPlayers(); members.innerHTML=PLAYERS.slice().sort(function(a,b){return (a.username||'').localeCompare(b.username||'');}).map(function(p){return '<option value="'+fleetEsc(p.username)+'" label="'+fleetEsc((p.rank||'')+' '+(p.id||''))+'"></option>';}).join(''); }
+}
+function fleetStructureRows(name){
+  name=name||FLEET_DEFAULT_NAME;
+  var map={}, rows=fleetStructureDefaults(name);
+  rows.forEach(function(r){ map[fleetStructureKey(r)]=r; });
+  fleetStructureData().filter(function(r){return (r.fleetName||'')===name;}).forEach(function(r){ map[fleetStructureKey(r)]=Object.assign({}, map[fleetStructureKey(r)]||{}, r); });
+  var merged=Object.keys(map).map(function(k){return map[k];});
+  return merged.sort(function(a,b){ return (a.sortOrder||0)-(b.sortOrder||0) || (a.section||'').localeCompare(b.section||'') || (a.slotLabel||'').localeCompare(b.slotLabel||''); });
+}
+function renderFleetStructure(){
+  seedFleetStructureControls();
+  var root=document.getElementById('fleet-structure-root'); if(!root) return;
+  var name=(document.getElementById('fleet-structure-name')&&document.getElementById('fleet-structure-name').value)||FLEET_DEFAULT_NAME;
+  var q=((document.getElementById('fleet-structure-filter')&&document.getElementById('fleet-structure-filter').value)||'').toLowerCase();
+  var rows=fleetStructureRows(name).filter(function(r){ return !q || [r.section,r.slotLabel,r.username,r.title,r.house,r.banner,r.notes].join(' ').toLowerCase().indexOf(q)!==-1; });
+  if(!rows.length){ root.innerHTML='<div class="tav-list-empty">No Fleet Structure slots found.</div>'; return; }
+  root.innerHTML=rows.map(fleetStructureCard).join('');
+}
+function fleetStructureCard(row,i){
+  var empty=!row.banner && /empty|open/i.test(row.slotLabel+' '+row.title);
+  return '<section class="fleet-structure-card '+(empty?'fleet-structure-empty-slot':'')+'">'
+    +'<h4><span>'+fleetEsc(row.slotLabel||'Structure Slot')+'</span><span class="fleet-structure-section">'+fleetEsc(row.section||'Structure')+'</span></h4>'
+    +'<div class="field-group fleet-field-grid">'
+    +'<input id="fs-fleet-'+i+'" type="hidden" value="'+fleetEsc(row.fleetName||'')+'"><input id="fs-section-'+i+'" type="hidden" value="'+fleetEsc(row.section||'')+'">'
+    +'<div class="field-row"><label>Assign Member</label><input id="fs-username-'+i+'" list="fleet-structure-member-options" value="'+fleetEsc(row.username||'')+'" placeholder="Type member name…"></div>'
+    +'<div class="field-row"><label>User ID</label><input id="fs-user-'+i+'" value="'+fleetEsc(row.userId||'')+'" placeholder="Auto-filled if roster match"></div>'
+    +'<div class="field-row"><label>Title</label><input id="fs-title-'+i+'" value="'+fleetEsc(row.title||'')+'" placeholder="Lord Commander, House Leader…"></div>'
+    +'<div class="field-row"><label>House</label><input id="fs-house-'+i+'" value="'+fleetEsc(row.house||'')+'" placeholder="Dominion, Provision, Arcanum…"></div>'
+    +'<div class="field-row"><label>Banner</label><input id="fs-banner-'+i+'" value="'+fleetEsc(row.banner||'')+'" placeholder="Leave blank for empty slot"></div>'
+    +'<div class="field-row"><label>Sort Order</label><input id="fs-sort-'+i+'" type="number" value="'+fleetEsc(row.sortOrder||0)+'"></div>'
+    +'<div class="field-row"><label>Active</label><select id="fs-active-'+i+'"><option value="TRUE" '+(row.active!==false?'selected':'')+'>TRUE</option><option value="FALSE" '+(row.active===false?'selected':'')+'>FALSE</option></select></div>'
+    +'<div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="fs-notes-'+i+'" value="'+fleetEsc(row.notes||'')+'" placeholder="Operational note"></div>'
+    +'</div><div class="fleet-structure-actions"><button class="save-btn" onclick="fleetSaveStructureSlot('+i+',\''+fleetEsc(row.slotLabel||'').replace(/'/g,'&#39;')+'\')">Save Slot</button><button class="cancel-btn" onclick="fleetClearStructureSlot('+i+')">Clear Assignment</button></div></section>';
+}
+function fleetReadStructureSlot(i, slotLabel){
+  var username=(document.getElementById('fs-username-'+i)||{}).value||'';
+  var userId=(document.getElementById('fs-user-'+i)||{}).value||'';
+  var p=fleetFindPlayer(username)||fleetFindPlayer(userId);
+  if(p){ username=p.username||username; userId=p.id||userId; }
+  return { fleetName:(document.getElementById('fs-fleet-'+i)||{}).value||FLEET_DEFAULT_NAME, section:(document.getElementById('fs-section-'+i)||{}).value||'', slotLabel:slotLabel, userId:userId.trim(), username:username.trim(), title:((document.getElementById('fs-title-'+i)||{}).value||'').trim(), house:((document.getElementById('fs-house-'+i)||{}).value||'').trim(), banner:((document.getElementById('fs-banner-'+i)||{}).value||'').trim(), sortOrder:Number((document.getElementById('fs-sort-'+i)||{}).value)||0, active:((document.getElementById('fs-active-'+i)||{}).value||'TRUE')!=='FALSE', notes:((document.getElementById('fs-notes-'+i)||{}).value||'').trim() };
+}
+async function fleetSaveStructureSlot(i, slotLabel){
+  if(!window.OFSSheets || !OFSSheets.saveFleetStructureSlot){ alert('Fleet Structure write helper unavailable.'); return; }
+  var item=fleetReadStructureSlot(i, slotLabel);
+  try{ await OFSSheets.saveFleetStructureSlot(item); alert('Fleet Structure slot saved. Refresh after Worker /data updates to see live sheet values.'); if(OFSSheets.load) await OFSSheets.load({force:true}); renderFleetStructure(); }
+  catch(e){ console.error(e); alert('Fleet Structure save failed: '+e.message); }
+}
+async function fleetClearStructureSlot(i){
+  document.getElementById('fs-username-'+i).value=''; document.getElementById('fs-user-'+i).value='';
+}
 
 var FLEET_MISSING_SHIP=null;
 var FLEET_REGISTRY_VIEW=[];
@@ -3533,9 +3641,10 @@ document.addEventListener('click', function(e){
   document.querySelectorAll('#fleet-subtabs .shop-stab').forEach(function(b){b.classList.remove('active');});
   btn.classList.add('active');
   var tab=btn.getAttribute('data-fleettab');
+  document.getElementById('fleet-structure-panel').classList.toggle('active', tab==='structure');
   document.getElementById('fleet-builder-panel').classList.toggle('active', tab==='builder');
   document.getElementById('fleet-missing-panel').classList.toggle('active', tab==='missing');
-  if(tab==='builder') renderFleetAdmin(); else renderFleetShipRegistryList();
+  if(tab==='structure') renderFleetStructure(); else if(tab==='builder') renderFleetAdmin(); else renderFleetShipRegistryList();
 });
 
 /* ══════════════════════════════════════════════════════════

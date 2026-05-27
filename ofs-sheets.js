@@ -285,6 +285,7 @@
   /* ── Fleet/ship data cache (in-memory) ─ */
   let _shipRegistry = [];
   let _fleets = [];
+  let _fleetStructure = [];
   let _shopItems = [];
   let _shopPayRules = []; // Backed by existing bot sheet: currency_rules
   let _ranks = [];
@@ -448,6 +449,7 @@
     // Cache ship/fleet data for Fleet pages and admin. These keys require Worker /data support.
     _shipRegistry = parseShipRegistry(data.shipRegistry || data.ship_registry || data['Ship Registry'] || []);
     _fleets = parseFleets(data.fleets || data.Fleets || []);
+    _fleetStructure = parseFleetStructure(data.fleetStructure || data.fleet_structure || data['Fleet Structure'] || []);
     _shopItems = parseShopItems(data.itemList || data.item_list || data['Item List'] || data.shopItems || data.shop_items || data['Shop Items'] || []);
     _shopPayRules = parseShopPayRules(data.currencyRules || data.currency_rules || data['currency_rules'] || data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
     _ranks = parseRanks(data.ranks || data.Ranks || data['Ranks'] || []);
@@ -577,6 +579,48 @@
         supportCap: Number(row[16]) || 0
       };
     }).filter(function (f) { return f.id && f.fleetName && String(f.id).toLowerCase() !== 'fleet id'; });
+  }
+
+  function parseFleetStructure(rows) {
+    if (!rows || !rows.length) return [];
+    const first = rows[0] || [];
+    const norm = function (v) { return String(v || '').trim().toLowerCase().replace(/[\s-]+/g, '_'); };
+    const headers = first.map(norm);
+    const hasHeader = headers.indexOf('fleet_name') !== -1 && headers.indexOf('slot_label') !== -1;
+    const idx = function (name, fallback) { const i = headers.indexOf(name); return i >= 0 ? i : fallback; };
+    const col = {
+      fleetName: idx('fleet_name', 0),
+      section: idx('section', 1),
+      slotLabel: idx('slot_label', 2),
+      userId: idx('user_id', 3),
+      username: idx('username', 4),
+      title: idx('title', 5),
+      house: idx('house', 6),
+      banner: idx('banner', 7),
+      sortOrder: idx('sort_order', 8),
+      active: idx('active', 9),
+      notes: idx('notes', 10)
+    };
+    return rows.slice(hasHeader ? 1 : 0).map(function (row) {
+      const fleetName = String(row[col.fleetName] || '').trim();
+      const section = String(row[col.section] || '').trim();
+      const slotLabel = String(row[col.slotLabel] || '').trim();
+      const id = [fleetName, section, slotLabel].join('|').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      return {
+        id: id,
+        fleetName: fleetName,
+        section: section,
+        slotLabel: slotLabel,
+        userId: String(row[col.userId] || '').trim(),
+        username: String(row[col.username] || '').trim(),
+        title: String(row[col.title] || '').trim(),
+        house: String(row[col.house] || '').trim(),
+        banner: String(row[col.banner] || '').trim(),
+        sortOrder: Number(row[col.sortOrder]) || 0,
+        active: String(row[col.active] == null ? 'TRUE' : row[col.active]).trim().toUpperCase() !== 'FALSE',
+        notes: String(row[col.notes] || '').trim()
+      };
+    }).filter(function (f) { return f.fleetName && f.slotLabel && String(f.fleetName).toLowerCase() !== 'fleet name'; });
   }
 
   function parseBool(value, defaultValue) {
@@ -709,6 +753,7 @@
 
   function getShipRegistry() { return _shipRegistry || []; }
   function getFleets() { return _fleets || []; }
+  function getFleetStructure() { return _fleetStructure || []; }
   function getShopItems() { return _shopItems || []; }
   function getShopPayRules() { return _shopPayRules || []; }
   function getRanks() { return _ranks || []; }
@@ -1058,6 +1103,23 @@
     return _apiPost('/write', { op: 'deleteRow', sheet: 'Fleets', keyCol: 0, keyVal: id });
   }
 
+  function fleetStructureRow(item) {
+    return [
+      item.fleetName || '', item.section || '', item.slotLabel || '',
+      item.userId || '', item.username || '', item.title || '',
+      item.house || '', item.banner || '', item.sortOrder || 0,
+      item.active === false ? 'FALSE' : 'TRUE', item.notes || ''
+    ];
+  }
+
+  function saveFleetStructureSlot(item) {
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Fleet Structure', keyCol: 2, keyVal: item.slotLabel, row: fleetStructureRow(item) });
+  }
+
+  function deleteFleetStructureSlot(slotLabel) {
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'Fleet Structure', keyCol: 2, keyVal: slotLabel });
+  }
+
   function shopItemRow(item) {
     const itemId = item.itemId || item.id || '';
     const row = [
@@ -1132,6 +1194,7 @@
     getLoadInfo,
     getShipRegistry,
     getFleets,
+    getFleetStructure,
     getShopItems,
     getShopPayRules,
     getRanks,
@@ -1148,6 +1211,8 @@
     deleteShipRegistryShip,
     saveFleetAssignments,
     deleteFleetAssignment,
+    saveFleetStructureSlot,
+    deleteFleetStructureSlot,
     saveShopItem,
     deleteShopItem,
     saveShopPayRule,
