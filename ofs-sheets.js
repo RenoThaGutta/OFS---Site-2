@@ -997,8 +997,12 @@
     return [ship.model || '', ship.make || '', ship.imageUrl || ''];
   }
 
-  function saveShipRegistryShip(ship) {
-    return _apiPost('/write', { op: 'overwrite', sheet: 'Ship Registry', keyCol: 0, keyVal: ship.model, row: shipRegistryRow(ship) });
+  function saveShipRegistryShip(ship, oldModel) {
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Ship Registry', keyCol: 0, keyVal: oldModel || ship.model, row: shipRegistryRow(ship) });
+  }
+
+  function deleteShipRegistryShip(model) {
+    return _apiPost('/write', { op: 'deleteRow', sheet: 'Ship Registry', keyCol: 0, keyVal: model });
   }
 
   async function saveFleetAssignments(items) {
@@ -1097,6 +1101,7 @@
     saveBannerRenameAlias,
     saveFleetAssignment,
     saveShipRegistryShip,
+    deleteShipRegistryShip,
     saveFleetAssignments,
     deleteFleetAssignment,
     saveShopItem,
