@@ -544,6 +544,239 @@
     .nav-logo span { display: none; }
     .nav-links a { padding: 6px 9px; font-size: .66rem; }
   }
+
+  /* ── MOBILE CHRONICLES PASS ──────────────────────────────────
+     Desktop remains governed by the base rules above. These overrides only
+     reshape the public Chronicles page for phone/tablet widths. */
+  @media (max-width: 720px) {
+    html, body { overflow-x: hidden; }
+
+    header {
+      padding: 82px 16px 28px;
+      border-bottom-color: rgba(201,168,76,.18);
+    }
+    .emblem {
+      width: 96px;
+      height: 96px;
+      margin-bottom: 10px;
+    }
+    header h1 {
+      font-size: clamp(1.25rem, 7vw, 1.8rem);
+      letter-spacing: .07em;
+      line-height: 1.22;
+    }
+    header .sub {
+      max-width: 320px;
+      margin: 8px auto 0;
+      font-size: .66rem;
+      line-height: 1.5;
+      letter-spacing: .16em;
+    }
+    header .motto {
+      max-width: 330px;
+      margin: 12px auto 0;
+      font-size: .86rem;
+      line-height: 1.45;
+    }
+
+    .filter-bar {
+      position: sticky;
+      top: var(--nav-h, 56px);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px 14px;
+      z-index: 20;
+      background: rgba(8,12,20,.94);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .filter-bar span {
+      grid-column: 1 / -1;
+      margin: 0 0 2px;
+      text-align: center;
+      font-size: .62rem;
+      letter-spacing: .18em;
+    }
+    .filter-btn {
+      min-height: 38px;
+      padding: 9px 8px;
+      font-size: .62rem;
+      letter-spacing: .08em;
+      white-space: normal;
+      line-height: 1.25;
+    }
+
+    .timeline-wrap {
+      max-width: none;
+      padding: 30px 14px 56px;
+    }
+    .spine { left: 18px; }
+    .event {
+      flex-direction: column !important;
+      padding-left: 38px;
+      margin-bottom: 24px;
+    }
+    .dot {
+      left: 18px;
+      top: 18px;
+      width: 11px;
+      height: 11px;
+    }
+    .card {
+      width: 100%;
+      padding: 14px 14px 15px;
+      border-color: rgba(201,168,76,.22);
+      box-shadow: 0 10px 26px rgba(0,0,0,.2);
+    }
+    .card::after { display: none; }
+    .card-title {
+      font-size: .93rem;
+      letter-spacing: .02em;
+      overflow-wrap: anywhere;
+    }
+    .card-body {
+      font-size: .92rem;
+      line-height: 1.58;
+    }
+    .card-tag, .card-tl-num {
+      font-size: .56rem;
+      letter-spacing: .14em;
+    }
+    .age-banner {
+      margin: 30px 0 20px;
+      justify-content: flex-start;
+      padding-left: 38px;
+    }
+    .age-banner::before { left: 18px; right: 0; }
+    .age-label {
+      max-width: calc(100vw - 72px);
+      padding: 8px 12px;
+      font-size: .68rem;
+      line-height: 1.35;
+      letter-spacing: .13em;
+      text-align: left;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 12px;
+      padding: 0 16px 34px;
+    }
+    .legend-item {
+      justify-content: flex-start;
+      min-width: 0;
+      font-size: .58rem;
+      letter-spacing: .08em;
+      line-height: 1.25;
+    }
+
+    #tl-detail-modal {
+      align-items: stretch;
+      padding: 10px;
+    }
+    .tl-modal-panel {
+      max-width: none;
+      width: 100%;
+      max-height: calc(100dvh - 20px);
+      border-radius: 5px;
+    }
+    .tl-modal-hd {
+      padding: 22px 46px 16px 18px;
+    }
+    .tl-modal-tag {
+      font-size: .58rem;
+      letter-spacing: .16em;
+    }
+    .tl-modal-title {
+      font-size: clamp(1.1rem, 6vw, 1.55rem);
+      overflow-wrap: anywhere;
+    }
+    .tl-modal-deck {
+      font-size: .92rem;
+      line-height: 1.45;
+    }
+    .tl-modal-scroll { padding-bottom: 20px; }
+    .tl-modal-hero {
+      max-width: calc(100% - 24px);
+      max-height: min(34vh, 320px);
+      margin-top: 16px;
+    }
+    .tl-modal-body {
+      padding: 18px 18px 0;
+      font-size: 1rem;
+      line-height: 1.72;
+    }
+    .tl-modal-body blockquote {
+      margin: 18px 0;
+      padding: 13px 15px;
+    }
+    .tl-modal-body ul,
+    .tl-modal-body ol {
+      margin-left: 18px;
+    }
+    .tl-modal-body img {
+      max-height: 320px;
+    }
+    .tl-modal-gallery {
+      grid-template-columns: 1fr;
+      padding: 0 18px;
+      margin-top: 18px;
+    }
+    .tl-modal-gallery img {
+      max-height: min(34vh, 300px);
+    }
+    .tl-modal-source {
+      margin: 20px 18px 0;
+      font-size: .58rem;
+      letter-spacing: .12em;
+    }
+    .tl-modal-close {
+      top: 10px;
+      right: 10px;
+      min-width: 40px;
+      min-height: 40px;
+      font-size: 30px;
+      opacity: .78;
+    }
+    .tl-image-lightbox { padding: 14px; }
+    .tl-image-lightbox-close {
+      top: 8px;
+      right: 10px;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    footer {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .footer-links {
+      gap: 8px;
+    }
+    .footer-links a,
+    .footer-links a:visited {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 36px;
+      padding: 6px 9px;
+      font-size: .58rem;
+      letter-spacing: .1em;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .filter-bar { grid-template-columns: 1fr; }
+    .timeline-wrap { padding-left: 10px; padding-right: 10px; }
+    .event { padding-left: 32px; }
+    .spine, .dot { left: 14px; }
+    .age-banner { padding-left: 32px; }
+    .age-banner::before { left: 14px; }
+    .age-label { max-width: calc(100vw - 56px); }
+    .legend { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -563,7 +796,7 @@
 <div class="filter-bar">
   <span>Filter:</span>
   <button class="filter-btn active" data-filter="all"
-    style="border-color:#c9a84c;color:#c9a84c;"
+    style="border-color:#c9a84c;color:#080c14;background-color:#c9a84c;"
     onclick="setFilter('all',this)">All</button>
   <button class="filter-btn" data-filter="war"
     style="border-color:#b05050;color:#b05050;"
@@ -1522,10 +1755,10 @@ document.querySelectorAll('.event').forEach(ev => {
   });
 })();
 </script>
-<script src="header_bar.js"></script>
+<script src="header_bar.js?v=mobile-chronicles-20260528"></script>
 <script src="ofs-data.js?v=data-refresh-20260526"></script>
 <script src="ofs-sheets.js?v=data-refresh-20260526"></script>
-<script src="ofs-nav.js?v=mobile-profile-card-2-20260528"></script>
+<script src="ofs-nav.js?v=mobile-chronicles-20260528"></script>
 <script>
 OFSSheets.load().then(function() {
   if (window.OFSNav) OFSNav.refresh();
