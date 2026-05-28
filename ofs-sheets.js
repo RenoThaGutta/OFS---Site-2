@@ -17,6 +17,7 @@
   const BANNER_CACHE_KEY   = 'ofs_banner_defs_cache';
   const BANNER_ALIAS_KEY   = 'ofs_banner_rename_aliases';
   const TAVERN_CACHE_KEY   = 'ofs_tavern_sheets_cache';
+  const REFERENCE_CACHE_KEY = 'ofs_reference_sheets_cache';
   const CACHE_TTL_MS       = 5 * 60 * 1000; // 5 minutes
 
   /* ── Column indices ───────────────────────────────── */
@@ -301,14 +302,15 @@
     } catch (e) { /* storage full */ }
   }
 
-  function loadCache() {
+  function loadCache(options) {
+    options = options || {};
     try {
       const raw = global.localStorage.getItem(CACHE_KEY);
       if (!raw) return null;
       const obj = JSON.parse(raw);
       if (!obj || !Array.isArray(obj.players)) return null;
-      if (Date.now() - obj.ts > CACHE_TTL_MS) return null;
-      return obj.players;
+      if (!options.allowStale && Date.now() - obj.ts > CACHE_TTL_MS) return null;
+      return { ts: obj.ts || 0, players: obj.players };
     } catch (e) {
       return null;
     }
@@ -377,6 +379,50 @@
     } catch (e) { return null; }
   }
 
+  function currentReferenceData() {
+    return {
+      shipRegistry: _shipRegistry || [],
+      fleets: _fleets || [],
+      fleetStructure: _fleetStructure || [],
+      shopItems: _shopItems || [],
+      shopPayRules: _shopPayRules || [],
+      ranks: _ranks || [],
+      adminWhitelist: _adminWhitelist || [],
+      bannerDefs: _bannerDefs || []
+    };
+  }
+
+  function applyReferenceData(ref) {
+    ref = ref || {};
+    if (Array.isArray(ref.shipRegistry)) _shipRegistry = ref.shipRegistry;
+    if (Array.isArray(ref.fleets)) _fleets = ref.fleets;
+    if (Array.isArray(ref.fleetStructure)) _fleetStructure = ref.fleetStructure;
+    if (Array.isArray(ref.shopItems)) _shopItems = ref.shopItems;
+    if (Array.isArray(ref.shopPayRules)) _shopPayRules = ref.shopPayRules;
+    if (Array.isArray(ref.ranks)) _ranks = ref.ranks;
+    if (Array.isArray(ref.adminWhitelist)) _adminWhitelist = ref.adminWhitelist;
+    if (Array.isArray(ref.bannerDefs) && ref.bannerDefs.length) _bannerDefs = ref.bannerDefs;
+  }
+
+  function saveReferenceDataCache(ref) {
+    try {
+      global.localStorage.setItem(REFERENCE_CACHE_KEY, JSON.stringify({
+        ts: Date.now(),
+        data: ref || currentReferenceData()
+      }));
+    } catch (e) { /* storage full */ }
+  }
+
+  function loadReferenceDataCache() {
+    try {
+      const raw = global.localStorage.getItem(REFERENCE_CACHE_KEY);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.data) return null;
+      return { ts: obj.ts || 0, data: obj.data };
+    } catch (e) { return null; }
+  }
+
   /* ── Public API ──────────────────────────────────── */
 
   /**
@@ -411,7 +457,12 @@
     let data;
     try {
       const res = await fetch(WORKER_URL + '/data');
-      if (!res.ok) throw new Error('Worker /data ' + res.status);
+      if (!res.ok) {
+        let errBody = null;
+        try { errBody = await res.json(); } catch (e) { errBody = null; }
+        const detail = errBody && (errBody.error || errBody.reason || errBody.message || errBody.detail);
+        throw new Error(detail || ('Worker /data ' + res.status));
+      }
       data = await res.json();
     } catch (err) {
       console.warn('OFSSheets: fetch failed, using cache.', err.message);
@@ -420,7 +471,7 @@
 
     if (!data.ok) {
       console.warn('OFSSheets: Worker error:', data);
-      return _fallbackToCache(data.error || data.reason || 'Worker returned ok:false');
+      return _fallbackToCache(data.error || data.reason || data.message || data.detail || 'Worker returned ok:false');
     }
 
     const raw = buildPlayers(data);
@@ -455,13 +506,18 @@
     _shopPayRules = parseShopPayRules(data.currencyRules || data.currency_rules || data['currency_rules'] || data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
     _ranks = parseRanks(data.ranks || data.Ranks || data['Ranks'] || []);
     _adminWhitelist = parseAdminWhitelist(data.adminWhitelist || data.admin_whitelist || data['White list Admin'] || data.whiteListAdmin || data.white_list_admin || []);
+    saveReferenceDataCache();
 
     // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
     // This is intentionally cached separately from normalized players so quest boards
     // can continue to render the last known good Patrols data during Sheets 429s.
     _tavernData = normalizeTavernData(data);
     saveTavernDataCache(_tavernData);
-    _lastLoadInfo = { source: 'live', ts: Date.now(), message: '' };
+    _lastLoadInfo = data.stale ? {
+      source: 'stale-worker',
+      ts: data.cachedAt || Date.now(),
+      message: data.staleReason || 'Worker served cached sheet data'
+    } : { source: 'live', ts: Date.now(), message: '' };
 
     // Fetch /content for timeline block overrides and banner rename aliases (optional — non-fatal)
     try {
@@ -873,26 +929,41 @@
   function getShopPayRules() { return _shopPayRules || []; }
   function getRanks() { return _ranks || []; }
 
+  function friendlySheetMessage(message) {
+    const raw = String(message || 'Live sheet refresh failed');
+    if (/429|quota|rate.?limit|read requests/i.test(raw)) {
+      return 'OFS records are temporarily busy. Showing last known data where available.';
+    }
+    if (/network|fetch|failed/i.test(raw)) {
+      return 'OFS records could not be refreshed. Showing last known data where available.';
+    }
+    return raw;
+  }
+
   function _fallbackToCache(message) {
+    const friendlyMessage = friendlySheetMessage(message);
+    const cachedRef = loadReferenceDataCache();
     const cachedTavern = loadTavernDataCache();
+    const cached = loadCache({ allowStale: true });
+    if (cachedRef) {
+      applyReferenceData(cachedRef.data);
+    }
     if (cachedTavern) {
       _tavernData = cachedTavern.data;
-      _lastLoadInfo = {
-        source: 'cache',
-        ts: cachedTavern.ts,
-        message: message || 'Live sheet refresh failed'
-      };
-    } else {
-      _lastLoadInfo = {
-        source: 'empty-cache',
-        ts: 0,
-        message: message || 'Live sheet refresh failed and no cached tavern data exists'
-      };
     }
+    _lastLoadInfo = {
+      source: cached || cachedTavern || cachedRef ? 'cache-stale' : 'empty-cache',
+      ts: Math.max(
+        cached ? (cached.ts || 0) : 0,
+        cachedTavern ? (cachedTavern.ts || 0) : 0,
+        cachedRef ? (cachedRef.ts || 0) : 0
+      ),
+      message: friendlyMessage,
+      rawMessage: String(message || '')
+    };
 
-    const cached = loadCache();
-    if (cached && global.OFSData) global.OFSData.savePlayers(cached);
-    return cached || [];
+    if (cached && global.OFSData) global.OFSData.savePlayers(cached.players);
+    return cached ? cached.players : [];
   }
 
   /* ── Write helper ────────────────────────────────────
