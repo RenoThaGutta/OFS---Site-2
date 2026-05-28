@@ -324,10 +324,183 @@
 
     /* ── Responsive ───────────────────────────────────── */
     @media (max-width: 700px) {
-      .banner-body { grid-template-columns: 1fr; gap: 40px; }
-      .banner-hero-content { flex-direction: column; align-items: flex-start; gap: 20px; padding: 0 20px 36px; }
-      .banner-nav-row { padding: 16px 20px; }
-      .banner-hero-name { font-size: 1.7rem; }
+      .banner-hero {
+        min-height: 390px;
+        margin-top: 58px;
+        align-items: flex-end;
+        background-position: center top;
+      }
+      .banner-hero-overlay {
+        background: linear-gradient(to bottom, rgba(7,7,15,.18) 0%, rgba(7,7,15,.78) 54%, var(--bg) 100%);
+      }
+      .banner-hero-content {
+        max-width: none;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 14px;
+        padding: 0 18px 32px;
+      }
+      .banner-hero-medal,
+      .banner-hero-medal-placeholder {
+        width: 92px;
+        height: 92px;
+      }
+      .banner-hero-medal-placeholder { font-size: 2.35rem; }
+      .banner-hero-label {
+        font-size: .58rem;
+        letter-spacing: .16em;
+        margin-bottom: 7px;
+      }
+      .banner-hero-name {
+        font-size: clamp(1.58rem, 9vw, 2.05rem);
+        letter-spacing: .05em;
+        line-height: 1.06;
+        margin-bottom: 10px;
+        overflow-wrap: anywhere;
+      }
+      .banner-hero-desc {
+        max-width: 100%;
+        font-size: .98rem;
+        line-height: 1.52;
+      }
+      .banner-nav-row {
+        padding: 14px 14px 16px;
+        gap: 12px;
+        align-items: stretch;
+      }
+      .banner-back,
+      .banner-arrow-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .banner-arrows {
+        flex: 1;
+        justify-content: flex-end;
+        gap: 8px;
+        min-width: 0;
+      }
+      .banner-arrow-btn {
+        max-width: 46vw;
+        padding: 6px 10px;
+        font-size: .58rem;
+        letter-spacing: .08em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .banner-body {
+        grid-template-columns: 1fr;
+        gap: 34px;
+        padding: 34px 18px 58px;
+      }
+      .section-label {
+        font-size: .56rem;
+        letter-spacing: .16em;
+      }
+      .section-title {
+        font-size: .92rem;
+        line-height: 1.3;
+      }
+      .section-rule { margin-bottom: 16px; }
+      .rank-track::before {
+        left: 13px;
+        top: 20px;
+        bottom: 20px;
+      }
+      .rank-tier {
+        gap: 14px;
+        padding: 13px 0;
+      }
+      .rank-tier-dot {
+        width: 27px;
+        height: 27px;
+        font-size: .54rem;
+      }
+      .rank-tier-dot.master {
+        width: 27px;
+      }
+      .rank-tier-dot.master img {
+        width: 38px;
+        height: 38px;
+      }
+      .rank-tier-name {
+        font-size: .72rem;
+        line-height: 1.35;
+      }
+      .rank-tier-pts {
+        font-size: .64rem;
+        line-height: 1.35;
+      }
+      .member-list { gap: 8px; }
+      .member-card {
+        gap: 10px;
+        padding: 10px 11px;
+        align-items: center;
+      }
+      .member-avatar {
+        width: 34px;
+        height: 34px;
+      }
+      .member-name {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        font-size: .68rem;
+        line-height: 1.3;
+      }
+      .member-rank {
+        font-size: .6rem;
+        line-height: 1.3;
+      }
+      .member-pts {
+        font-size: .54rem;
+        line-height: 1.25;
+        min-width: 58px;
+      }
+      .member-pts span { font-size: .64rem; }
+      .show-more-btn {
+        min-height: 42px;
+        font-size: .7rem;
+      }
+      footer {
+        padding: 32px 12px 30px;
+      }
+      .footer-links {
+        gap: 2px 6px;
+        line-height: 1.8;
+      }
+      .footer-links a { font-size: .56rem; }
+      .footer-copy {
+        font-size: .62rem;
+        line-height: 1.5;
+      }
+      .footer-sc img { height: 38px; }
+    }
+    @media (max-width: 420px) {
+      .banner-hero { min-height: 365px; }
+      .banner-hero-content { padding-left: 14px; padding-right: 14px; }
+      .banner-hero-medal,
+      .banner-hero-medal-placeholder {
+        width: 82px;
+        height: 82px;
+      }
+      .banner-nav-row {
+        flex-direction: column;
+      }
+      .banner-arrows {
+        width: 100%;
+        justify-content: stretch;
+      }
+      .banner-arrow-btn {
+        flex: 1 1 0;
+        max-width: none;
+      }
+      .banner-body { padding-left: 14px; padding-right: 14px; }
+      .member-card {
+        padding: 10px 9px;
+      }
     }
   </style>
 </head>
@@ -402,7 +575,7 @@
 
 <script src="ofs-data.js?v=data-refresh-20260526"></script>
 <script src="ofs-sheets.js?v=data-refresh-20260526"></script>
-<script src="header_bar.js"></script>
+<script src="header_bar.js?v=mobile-banner-20260528"></script>
 <script src="ofs-nav.js?v=mobile-profile-card-2-20260528"></script>
 <script>
 (function(){
