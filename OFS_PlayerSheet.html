@@ -1723,8 +1723,7 @@
       }
       .banner-progress-showcase .bp-medal-end {
         position: static;
-        grid-column: 1 / -1;
-        justify-self: center;
+        display: block;
         width: 54px;
         height: 54px;
         margin: 0 auto 8px;
@@ -4013,7 +4012,8 @@ function render(p) {
         `${tipRows}` +
       `</div>` +
       `<div class="bp-label">${p.activeBanner} — Progress</div>` +
-      `<div class="bp-track">${stepsHTML}${medalImg}</div>` +
+      `${medalImg}` +
+      `<div class="bp-track">${stepsHTML}</div>` +
       `<div class="bp-markers">${markersHTML}</div>` +
       `<div class="bp-pts-label">${ptsLine}</div>`;
 
