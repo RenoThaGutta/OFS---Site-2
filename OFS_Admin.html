@@ -349,18 +349,17 @@
     .fleet-member-rep { min-width:42px; color:var(--gold-lt); border-color:rgba(201,168,76,.42); }
     .fleet-member-banner { color:var(--silver-dim); font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
     .fleet-member-empty { color:var(--text-dim); font-size:.68rem; padding:8px; text-align:center; }
-    .fleet-selected-member { display:none; grid-template-columns:36px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; min-height:58px; padding:7px 9px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; }
+    .fleet-selected-member { display:none; grid-template-columns:36px minmax(0,1fr); gap:8px; align-items:center; width:100%; min-height:58px; padding:7px 9px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; }
     .fleet-member-picker.has-selected .fleet-selected-member { display:grid; }
     .fleet-selected-member:hover { border-color:rgba(201,168,76,.6); background:rgba(201,168,76,.12); }
     .fleet-selected-main { min-width:0; display:grid; gap:3px; }
     .fleet-selected-name { color:#f1f3f8; font-weight:700; font-size:.72rem; line-height:1.15; white-space:normal; overflow:visible; overflow-wrap:anywhere; word-break:normal; }
     .fleet-selected-meta { display:flex; flex-wrap:wrap; gap:4px; align-items:center; min-width:0; }
     .fleet-selected-meta .fleet-member-banner { flex-basis:100%; text-align:left; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.1; }
-    .fleet-selected-actions { display:flex; flex-direction:column; gap:4px; align-self:stretch; justify-content:center; }
-    .fleet-selected-action { border:1px solid rgba(201,168,76,.34); background:rgba(0,0,0,.22); color:var(--gold-dim); border-radius:3px; padding:3px 6px; font-size:.5rem; letter-spacing:.10em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
-    .fleet-selected-action:hover { border-color:rgba(201,168,76,.65); color:var(--gold); background:rgba(201,168,76,.12); }
-    .fleet-selected-clear { color:#d89b8f; border-color:rgba(216,155,143,.35); }
-    .fleet-selected-clear:hover { color:#ffd6cf; border-color:rgba(216,155,143,.68); background:rgba(216,82,65,.12); }
+    .fleet-selected-change { grid-column:2; justify-self:end; margin-top:-2px; border:1px solid rgba(201,168,76,.34); background:rgba(0,0,0,.22); color:var(--gold-dim); border-radius:3px; padding:3px 6px; font-size:.5rem; letter-spacing:.10em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
+    .fleet-selected-change:hover { border-color:rgba(201,168,76,.65); color:var(--gold); background:rgba(201,168,76,.12); }
+    .fleet-member-clear { width:100%; padding:7px 8px; border:1px solid rgba(216,155,143,.36); border-radius:3px; background:rgba(216,82,65,.10); color:#ffd6cf; font-size:.58rem; letter-spacing:.11em; text-transform:uppercase; cursor:pointer; }
+    .fleet-member-clear:hover { border-color:rgba(216,155,143,.72); background:rgba(216,82,65,.16); }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
     @media (max-width: 900px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
@@ -1274,7 +1273,7 @@
       <div id="fleet-structure-panel" class="fleet-missing-panel active">
         <div class="fleet-structure-toolbar">
           <select class="ctrl-input" id="fleet-structure-name" onchange="fleetStructureNameChanged()"></select>
-          <div></div>
+          <button class="cancel-btn" onclick="fleetDeleteCurrentFleet()">Remove Fleet</button>
           <button class="save-btn" onclick="fleetSaveStructureBoard()">Save Structure</button>
         </div>
         <datalist id="fleet-structure-member-options"></datalist>
@@ -3453,6 +3452,26 @@ function fleetStructureNameChanged(){
   }
   renderFleetStructure();
 }
+async function fleetDeleteCurrentFleet(){
+  var sel=document.getElementById('fleet-structure-name');
+  var name=String((sel&&sel.value)||'').trim();
+  if(!name || name==='__new__'){ alert('Select a fleet first.'); return; }
+  if(!window.OFSSheets || !OFSSheets.deleteFleetByName){ alert('Fleet delete helper unavailable.'); return; }
+  var assignmentCount=fleetData().filter(function(f){ return String(f.fleetName||'')===name; }).length;
+  var structureCount=fleetStructureData().filter(function(f){ return String(f.fleetName||'')===name; }).length;
+  var typed=prompt('Remove fleet "'+name+'"? This deletes '+assignmentCount+' Fleet assignment row(s) and '+structureCount+' Fleet Structure row(s). Type the fleet name to confirm:', '');
+  if(String(typed||'').trim()!==name) return;
+  try{
+    await OFSSheets.deleteFleetByName(name);
+    showToast('Fleet removed.');
+    if(OFSSheets.load) await OFSSheets.load({force:true});
+    if(sel) sel.value=FLEET_DEFAULT_NAME;
+    fleetClearForm();
+    renderFleetBuild();
+    renderFleetAdmin();
+    renderFleetStructure();
+  }catch(e){ console.error(e); alert('Fleet remove failed: '+e.message); }
+}
 function fleetStructureRows(name){
   name=name||FLEET_DEFAULT_NAME;
   var map={}, rows=fleetStructureDefaults(name);
@@ -3576,7 +3595,7 @@ function fleetStructureSelectedCardHtml(p,i){
     +'<span class="fleet-selected-main">'
     +'<span class="fleet-selected-name" title="'+fleetEsc(p.username||'')+'">'+fleetEsc(p.username||'Unnamed')+'</span>'
     +'<span class="fleet-selected-meta"><span class="fleet-member-rank" title="'+fleetEsc(rank)+'">'+fleetEsc(rank)+'</span><span class="fleet-member-rep">Lvl '+fleetEsc(rep)+'</span><span class="fleet-member-banner" title="'+fleetEsc(banner)+'">'+fleetEsc(banner)+'</span></span>'
-    +'</span><span class="fleet-selected-actions"><button type="button" class="fleet-selected-action" onclick="fleetStructureEditMember('+i+')">Change</button><button type="button" class="fleet-selected-action fleet-selected-clear" onclick="fleetClearStructureSlot('+i+')">Clear</button></span>'
+    +'<button type="button" class="fleet-selected-change" onclick="fleetStructureEditMember('+i+')">Change</button></span>'
     +'</div>';
 }
 function fleetStructureSetSelectedCard(i,p){
@@ -3587,7 +3606,7 @@ function fleetStructureSetSelectedCard(i,p){
 function fleetStructureEditMember(i){
   var picker=document.getElementById('fs-member-picker-'+i), input=document.getElementById('fs-username-'+i);
   if(picker) picker.classList.remove('has-selected');
-  if(input){ input.focus(); input.select(); fleetStructureRenderMemberResults(i); }
+  if(input){ input.value=''; input.focus(); fleetStructureRenderMemberResults(i); }
 }
 function fleetStructureAssignedPlayerIds(exceptIndex){
   var used={};
@@ -3627,9 +3646,11 @@ function fleetStructureRenderMemberResults(i){
   var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), box=document.getElementById('fs-member-results-'+i);
   if(!input || !box) return;
   var pool=fleetStructureMemberPool(row,input.value,i);
+  var uid=(document.getElementById('fs-user-'+i)||{}).value||'';
   fleetStructureCloseMemberPickers(box.id);
-  if(!pool.length){ box.innerHTML='<div class="fleet-member-empty">'+fleetStructureRankEmptyText(row)+'</div>'; }
-  else { box.innerHTML=pool.map(function(p){ return fleetPlayerOptionHtml(p,i); }).join(''); }
+  var clearHtml=uid ? '<button type="button" class="fleet-member-clear" onclick="fleetClearStructureSlot('+i+',true)">Clear current seat</button>' : '';
+  if(!pool.length){ box.innerHTML=clearHtml+'<div class="fleet-member-empty">'+fleetStructureRankEmptyText(row)+'</div>'; }
+  else { box.innerHTML=clearHtml+pool.map(function(p){ return fleetPlayerOptionHtml(p,i); }).join(''); }
   box.classList.add('open');
 }
 function fleetStructureCloseMemberPickers(except){
@@ -3713,9 +3734,13 @@ async function fleetSaveStructureBoard(){
     renderFleetStructure();
   } catch(e){ console.error(e); alert('Fleet Structure save failed: '+e.message); }
 }
-async function fleetClearStructureSlot(i){
+async function fleetClearStructureSlot(i,keepOpen){
   document.getElementById('fs-username-'+i).value=''; document.getElementById('fs-user-'+i).value='';
   fleetStructureSetSelectedCard(i,null);
+  if(keepOpen){
+    var input=document.getElementById('fs-username-'+i);
+    if(input){ input.focus(); fleetStructureRenderMemberResults(i); }
+  }
 }
 
 var FLEET_MISSING_SHIP=null;

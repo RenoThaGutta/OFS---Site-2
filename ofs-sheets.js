@@ -1246,6 +1246,22 @@
     return _apiPost('/write', { op: 'deleteRow', sheet: 'Fleets', keyCol: 0, keyVal: id });
   }
 
+  async function deleteFleetByName(name) {
+    name = String(name || '').trim();
+    if (!name) return { ok: false, reason: 'Missing fleet name' };
+    const assignments = _fleets.filter(function (row) { return String(row.fleetName || '') === name; });
+    const structureRows = _fleetStructure.filter(function (row) { return String(row.fleetName || '') === name; });
+    for (const row of assignments) {
+      if (row.id) await _apiPost('/write', { op: 'deleteRow', sheet: 'Fleets', keyCol: 0, keyVal: row.id });
+    }
+    for (let i = 0; i < structureRows.length; i++) {
+      await _apiPost('/write', { op: 'deleteRow', sheet: 'Fleet Structure', keyCol: 0, keyVal: name });
+    }
+    _fleets = _fleets.filter(function (row) { return String(row.fleetName || '') !== name; });
+    _fleetStructure = _fleetStructure.filter(function (row) { return String(row.fleetName || '') !== name; });
+    return { ok: true, assignmentsDeleted: assignments.length, structureDeleted: structureRows.length };
+  }
+
   function fleetStructureRow(item) {
     return [
       item.fleetName || '', item.section || '', item.slotLabel || '',
@@ -1372,6 +1388,7 @@
     deleteShipRegistryShip,
     saveFleetAssignments,
     deleteFleetAssignment,
+    deleteFleetByName,
     saveFleetStructureSlot,
     deleteFleetStructureSlot,
     saveShopItem,
