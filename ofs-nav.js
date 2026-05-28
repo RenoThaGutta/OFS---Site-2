@@ -89,13 +89,15 @@
     '@media(max-width:720px){',
     '  .nav-user-zone{position:static;left:auto;top:auto;bottom:auto;transform:none;flex:1 1 auto;min-width:0;margin-left:12px;margin-right:10px;}',
     '  .nav-login-btn{width:100%;box-sizing:border-box;justify-content:center;padding:8px 10px;font-size:.58rem;letter-spacing:.1em;}',
-    '  .nav-user-card{width:100%;max-width:none;min-width:0;box-sizing:border-box;padding:4px 8px 4px 5px;gap:7px;}',
-    '  .nav-user-avatar{width:28px;height:28px;}',
-    '  .nav-user-info{min-width:0;flex:1 1 auto;}',
-    '  .nav-user-name-row{gap:8px;min-width:0;}',
-    '  .nav-user-name{max-width:none;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:.62rem;}',
-    '  .nav-user-chips,.nuc-lvl-inline{display:none;}',
-    '  .nav-user-signout{width:20px;height:20px;margin-left:0;}',
+    '  .nav-user-card{width:100%;max-width:none;min-width:0;min-height:50px;box-sizing:border-box;padding:5px 8px 5px 6px;gap:8px;}',
+    '  .nav-user-avatar{width:36px;height:36px;}',
+    '  .nav-user-info{min-width:0;flex:1 1 auto;gap:4px;}',
+    '  .nav-user-name-row{gap:6px;min-width:0;align-items:center;}',
+    '  .nav-user-name{max-width:none;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:.68rem;}',
+    '  .nuc-lvl-inline{display:inline-block;font-size:.44rem;letter-spacing:.07em;max-width:64px;overflow:hidden;text-overflow:ellipsis;color:var(--gold-lt);}',
+    '  .nav-user-chips{display:flex;gap:3px;flex-wrap:nowrap;min-width:0;overflow:hidden;}',
+    '  .nuc-chip{font-size:.42rem;letter-spacing:.045em;padding:1px 4px;line-height:1.25;max-width:33%;overflow:hidden;text-overflow:ellipsis;}',
+    '  .nav-user-signout{width:20px;height:20px;margin-left:0;font-size:.7rem;}',
     '}',
   ].join('');
 
@@ -191,7 +193,7 @@
         var lvlLabel = document.createElement('span');
         lvlLabel.className = 'nuc-lvl-inline';
         lvlLabel.title = 'Reputation Level';
-        lvlLabel.textContent = 'Reputation Lvl ' + lvl;
+        lvlLabel.textContent = 'Rep Lvl ' + lvl;
         nameRow.appendChild(lvlLabel);
       }
     }
@@ -229,7 +231,7 @@
         var pathChip = document.createElement('span');
         pathChip.className = 'nuc-chip nuc-path';
         pathChip.title = banner;
-        pathChip.textContent = bannerTitle;
+        pathChip.textContent = (banner ? banner.replace(/^The\s+/i, '') + ' · ' : '') + bannerTitle;
         chips.appendChild(pathChip);
       }
 
