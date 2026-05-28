@@ -349,14 +349,18 @@
     .fleet-member-rep { min-width:42px; color:var(--gold-lt); border-color:rgba(201,168,76,.42); }
     .fleet-member-banner { color:var(--silver-dim); font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
     .fleet-member-empty { color:var(--text-dim); font-size:.68rem; padding:8px; text-align:center; }
-    .fleet-selected-member { display:none; grid-template-columns:36px minmax(0,1fr); gap:8px; align-items:center; width:100%; min-height:58px; padding:7px 9px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; cursor:pointer; }
+    .fleet-selected-member { display:none; grid-template-columns:36px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; min-height:58px; padding:7px 9px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; }
     .fleet-member-picker.has-selected .fleet-selected-member { display:grid; }
     .fleet-selected-member:hover { border-color:rgba(201,168,76,.6); background:rgba(201,168,76,.12); }
     .fleet-selected-main { min-width:0; display:grid; gap:3px; }
     .fleet-selected-name { color:#f1f3f8; font-weight:700; font-size:.72rem; line-height:1.15; white-space:normal; overflow:visible; overflow-wrap:anywhere; word-break:normal; }
     .fleet-selected-meta { display:flex; flex-wrap:wrap; gap:4px; align-items:center; min-width:0; }
     .fleet-selected-meta .fleet-member-banner { flex-basis:100%; text-align:left; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.1; }
-    .fleet-selected-change { grid-column:2; justify-self:end; margin-top:-2px; color:var(--gold-dim); font-size:.5rem; letter-spacing:.10em; text-transform:uppercase; white-space:nowrap; }
+    .fleet-selected-actions { display:flex; flex-direction:column; gap:4px; align-self:stretch; justify-content:center; }
+    .fleet-selected-action { border:1px solid rgba(201,168,76,.34); background:rgba(0,0,0,.22); color:var(--gold-dim); border-radius:3px; padding:3px 6px; font-size:.5rem; letter-spacing:.10em; text-transform:uppercase; white-space:nowrap; cursor:pointer; }
+    .fleet-selected-action:hover { border-color:rgba(201,168,76,.65); color:var(--gold); background:rgba(201,168,76,.12); }
+    .fleet-selected-clear { color:#d89b8f; border-color:rgba(216,155,143,.35); }
+    .fleet-selected-clear:hover { color:#ffd6cf; border-color:rgba(216,155,143,.68); background:rgba(216,82,65,.12); }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
     @media (max-width: 900px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
@@ -3565,15 +3569,15 @@ function fleetStructureSelectedPlayer(row){
   return fleetFindPlayer(row&&row.userId) || fleetFindPlayer(row&&row.username);
 }
 function fleetStructureSelectedCardHtml(p,i){
-  if(!p) return '<button type="button" id="fs-member-card-'+i+'" class="fleet-selected-member" onclick="fleetStructureEditMember('+i+')"></button>';
+  if(!p) return '<div id="fs-member-card-'+i+'" class="fleet-selected-member"></div>';
   var rank=fleetPlayerRankText(p), rep=fleetPlayerRep(p), banner=String((p&&p.activeBanner)||'Unassigned').trim()||'Unassigned';
-  return '<button type="button" id="fs-member-card-'+i+'" class="fleet-selected-member" onclick="fleetStructureEditMember('+i+')" title="Change assignment">'
+  return '<div id="fs-member-card-'+i+'" class="fleet-selected-member" title="Assigned member">'
     +fleetPlayerAvatar(p)
     +'<span class="fleet-selected-main">'
     +'<span class="fleet-selected-name" title="'+fleetEsc(p.username||'')+'">'+fleetEsc(p.username||'Unnamed')+'</span>'
     +'<span class="fleet-selected-meta"><span class="fleet-member-rank" title="'+fleetEsc(rank)+'">'+fleetEsc(rank)+'</span><span class="fleet-member-rep">Lvl '+fleetEsc(rep)+'</span><span class="fleet-member-banner" title="'+fleetEsc(banner)+'">'+fleetEsc(banner)+'</span></span>'
-    +'</span><span class="fleet-selected-change">Change</span>'
-    +'</button>';
+    +'</span><span class="fleet-selected-actions"><button type="button" class="fleet-selected-action" onclick="fleetStructureEditMember('+i+')">Change</button><button type="button" class="fleet-selected-action fleet-selected-clear" onclick="fleetClearStructureSlot('+i+')">Clear</button></span>'
+    +'</div>';
 }
 function fleetStructureSetSelectedCard(i,p){
   var picker=document.getElementById('fs-member-picker-'+i), card=document.getElementById('fs-member-card-'+i);
