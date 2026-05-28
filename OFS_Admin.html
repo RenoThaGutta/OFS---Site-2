@@ -193,6 +193,27 @@
     .badge-gold   { background: rgba(201,168,76,.15); color: var(--gold); border: 1px solid rgba(201,168,76,.3); }
     .badge-silver { background: rgba(176,184,200,.1);  color: var(--silver); border: 1px solid rgba(176,184,200,.2); }
     .badge-dim    { background: rgba(255,255,255,.05); color: var(--text-dim); border: 1px solid var(--b-dim); }
+    .badge-locked { background: rgba(201,168,76,.12); color: var(--gold-lt); border: 1px solid rgba(201,168,76,.42); }
+    .permission-note { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.025); color: var(--silver-dim); font-size: .84rem; line-height: 1.55; }
+    .permission-note strong { color: var(--gold-lt); }
+    .permission-table-wrap { overflow-x: auto; border: 1px solid var(--b-dim); border-radius: 4px; background: rgba(255,255,255,.018); }
+    .permission-table { min-width: 1120px; }
+    .permission-table th, .permission-table td { text-align: center; }
+    .permission-table th:first-child, .permission-table td:first-child, .permission-table th:nth-child(2), .permission-table td:nth-child(2) { text-align: left; }
+    .permission-table td:first-child { color: var(--gold-lt); font-weight: 600; }
+    .permission-full-cell { white-space: nowrap; }
+    .perm-toggle { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .perm-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+    .perm-toggle span { width: 42px; height: 22px; border-radius: 999px; border: 1px solid var(--b-dim); background: rgba(255,255,255,.04); position: relative; transition: all .18s ease; }
+    .perm-toggle span::after { content: ''; position: absolute; width: 16px; height: 16px; left: 3px; top: 2px; border-radius: 50%; background: var(--silver-dim); transition: all .18s ease; }
+    .perm-toggle input:checked + span { border-color: rgba(201,168,76,.68); background: rgba(201,168,76,.18); box-shadow: 0 0 12px rgba(201,168,76,.08); }
+    .perm-toggle input:checked + span::after { left: 21px; background: var(--gold-lt); }
+    .perm-toggle input:disabled + span { opacity: .45; cursor: not-allowed; }
+    .permission-actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:16px; }
+    .permission-status { color: var(--silver-dim); font-size:.78rem; margin-right:auto; }
+    .permission-status.ok { color: var(--success); }
+    .permission-status.err { color: var(--danger); }
+    .nav-tab[hidden], .tab-panel[hidden] { display: none !important; }
     .edit-btn {
       background: transparent; border: 1px solid var(--b-dim); border-radius: 3px;
       padding: 5px 12px; color: var(--silver-dim); font-size: .7rem;
@@ -299,8 +320,8 @@
     .fleet-structure-group h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.64rem; letter-spacing:.14em; text-transform:uppercase; margin:0 0 8px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
     .fleet-house-desc { color:var(--silver-dim); font-size:.68rem; line-height:1.28; min-height:2.4em; margin:-2px 0 8px; }
     .fleet-structure-section { color:var(--silver-dim); font-size:.55rem; letter-spacing:.12em; text-transform:uppercase; }
-    .fleet-structure-slot { display:grid; grid-template-columns:minmax(130px,.75fr) minmax(170px,1fr); gap:8px; align-items:center; border:1px solid rgba(176,184,200,.13); background:rgba(255,255,255,.025); border-radius:3px; padding:7px; margin-bottom:6px; }
-    .fleet-structure-slot.commander-slot { grid-template-columns:minmax(120px,.82fr) minmax(160px,1fr); }
+    .fleet-structure-slot { display:grid; grid-template-columns:minmax(96px,.52fr) minmax(210px,1.48fr); gap:8px; align-items:center; border:1px solid rgba(176,184,200,.13); background:rgba(255,255,255,.025); border-radius:3px; padding:7px; margin-bottom:6px; }
+    .fleet-structure-slot.commander-slot { grid-template-columns:minmax(96px,.54fr) minmax(205px,1.46fr); }
     .fleet-structure-slot:last-child { margin-bottom:0; }
     .fleet-structure-slot.empty { border-color:rgba(176,184,200,.18); opacity:.86; }
     .fleet-structure-slot.house-lord-slot { border-color:rgba(201,168,76,.26); background:rgba(201,168,76,.055); }
@@ -321,20 +342,21 @@
     .fleet-member-results.open { display:grid; gap:4px; }
     .fleet-member-option { display:grid; grid-template-columns:34px minmax(150px,1fr) 104px 58px minmax(110px,.7fr); gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 8px; border:1px solid transparent; border-radius:3px; background:rgba(255,255,255,.018); color:var(--text); text-align:left; cursor:pointer; }
     .fleet-member-option:hover, .fleet-member-option.active { border-color:rgba(201,168,76,.48); background:rgba(201,168,76,.075); }
-    .fleet-member-avatar { width:28px; height:28px; border-radius:50%; border:1px solid rgba(201,168,76,.5); background:rgba(201,168,76,.12); color:var(--gold-lt); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.72rem; overflow:hidden; }
+    .fleet-member-avatar { width:32px; height:32px; border-radius:50%; border:1px solid rgba(201,168,76,.5); background:rgba(201,168,76,.12); color:var(--gold-lt); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:.72rem; overflow:hidden; flex:0 0 32px; }
     .fleet-member-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
     .fleet-member-name { color:#f1f3f8; font-weight:700; font-size:.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .fleet-member-rank, .fleet-member-rep { display:inline-flex; align-items:center; justify-content:center; min-width:52px; border:1px solid rgba(201,168,76,.25); background:rgba(201,168,76,.08); color:var(--silver); padding:3px 6px; border-radius:2px; font-size:.57rem; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; }
     .fleet-member-rep { min-width:42px; color:var(--gold-lt); border-color:rgba(201,168,76,.42); }
     .fleet-member-banner { color:var(--silver-dim); font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-align:right; }
     .fleet-member-empty { color:var(--text-dim); font-size:.68rem; padding:8px; text-align:center; }
-    .fleet-selected-member { display:none; grid-template-columns:34px minmax(0,1fr) auto; gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 8px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; cursor:pointer; }
+    .fleet-selected-member { display:none; grid-template-columns:36px minmax(0,1fr); gap:8px; align-items:center; width:100%; min-height:58px; padding:7px 9px; border:1px solid rgba(201,168,76,.34); border-radius:3px; background:linear-gradient(90deg, rgba(201,168,76,.10), rgba(255,255,255,.025)); color:var(--text); text-align:left; cursor:pointer; }
     .fleet-member-picker.has-selected .fleet-selected-member { display:grid; }
     .fleet-selected-member:hover { border-color:rgba(201,168,76,.6); background:rgba(201,168,76,.12); }
     .fleet-selected-main { min-width:0; display:grid; gap:3px; }
-    .fleet-selected-name { color:#f1f3f8; font-weight:700; font-size:.74rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .fleet-selected-meta { display:flex; flex-wrap:wrap; gap:5px; align-items:center; min-width:0; }
-    .fleet-selected-change { color:var(--gold-dim); font-size:.54rem; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; }
+    .fleet-selected-name { color:#f1f3f8; font-weight:700; font-size:.72rem; line-height:1.15; white-space:normal; overflow:visible; overflow-wrap:anywhere; word-break:normal; }
+    .fleet-selected-meta { display:flex; flex-wrap:wrap; gap:4px; align-items:center; min-width:0; }
+    .fleet-selected-meta .fleet-member-banner { flex-basis:100%; text-align:left; white-space:normal; overflow:visible; text-overflow:clip; line-height:1.1; }
+    .fleet-selected-change { grid-column:2; justify-self:end; margin-top:-2px; color:var(--gold-dim); font-size:.5rem; letter-spacing:.10em; text-transform:uppercase; white-space:nowrap; }
     .fleet-structure-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:10px; }
     .fleet-structure-empty-slot { border-color:rgba(176,184,200,.18); background:rgba(255,255,255,.018); }
     @media (max-width: 900px) { .fleet-tier-row.three, .fleet-tier-row.houses { grid-template-columns:1fr; } .fleet-tier-row.two { grid-template-columns:1fr; } }
@@ -1170,6 +1192,7 @@
       <div class="nav-tab"        data-tab="audit">Audit Log</div>
       <div class="nav-tab"        data-tab="pages">Pages</div>
       <div class="nav-tab"        data-tab="tavern">Tavern</div>
+      <div class="nav-tab"        data-tab="permissions">Permissions</div>
     </div>
     <a href="OFS_Home.html" class="nav-back">← Site</a>
     <div class="nav-logout" onclick="logout()">Logout</div>
@@ -1520,6 +1543,42 @@
             <tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:24px">Loading…</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ── Permissions ── -->
+    <div class="tab-panel" id="tab-permissions">
+      <div class="sec-head"><h2>Permissions</h2><div class="sec-line"></div></div>
+      <div class="permission-note">
+        <strong>White list Admin</strong> remains the gate for entering the Admin portal. This page only limits which admin sections an already-whitelisted admin can use. <strong>Full</strong> is visible here but locked and must be managed directly on the Sheet.
+      </div>
+      <div class="controls">
+        <input class="ctrl-input" id="perm-search" placeholder="Search admin name or Discord ID…" oninput="renderPermissions()">
+        <button class="ctrl-btn" onclick="renderPermissions()">Refresh</button>
+      </div>
+      <div class="permission-table-wrap">
+        <table class="data-table permission-table" id="permissions-table">
+          <thead><tr>
+            <th>Name</th>
+            <th>Discord ID</th>
+            <th>Full</th>
+            <th>Roster</th>
+            <th>Banners</th>
+            <th>Fleet</th>
+            <th>Shop</th>
+            <th>Quest Review</th>
+            <th>Audit Log</th>
+            <th>Pages</th>
+            <th>Tavern</th>
+          </tr></thead>
+          <tbody id="permissions-tbody">
+            <tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:24px">Loading permissions…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="permission-actions">
+        <div id="permission-status" class="permission-status"></div>
+        <button class="save-btn" onclick="savePermissions()">Save Permissions</button>
       </div>
     </div>
 
@@ -2229,6 +2288,26 @@
 ══════════════════════════════════════════════════════════ */
 const SESSION_KEY = 'ofs_discord_session';
 let currentAdmin = '';
+let currentAdminId = '';
+let currentAdminPerms = null;
+let currentAdminLegacyAccess = false;
+let PERMISSION_ROWS = [];
+let PERMISSION_DIRTY = {};
+const ADMIN_TAB_PERMISSION_MAP = {
+  roster: 'roster',
+  banners: 'banners',
+  fleet: 'fleet',
+  shop: 'shop',
+  quests: 'questReview',
+  audit: 'auditLog',
+  pages: 'pages',
+  tavern: 'tavern',
+  permissions: 'full'
+};
+const PERMISSION_COLUMNS = [
+  ['roster','Roster'], ['banners','Banners'], ['fleet','Fleet'], ['shop','Shop'],
+  ['questReview','Quest Review'], ['auditLog','Audit Log'], ['pages','Pages'], ['tavern','Tavern']
+];
 
 function getStoredSession() {
   let raw = null;
@@ -2248,15 +2327,105 @@ function clearStoredSession() {
   try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
 }
 
-function grantAccess(name) {
-  currentAdmin = name || 'Admin';
+function truthyPerm(value) {
+  return /^(x|yes|true|1|y)$/i.test(String(value || '').trim()) || value === true;
+}
+
+function normalizeAdminPermissions(raw) {
+  raw = raw || {};
+  return {
+    full: truthyPerm(raw.full || raw.Full || raw.isFullAdmin),
+    roster: truthyPerm(raw.roster || raw.Roster),
+    banners: truthyPerm(raw.banners || raw.Banners),
+    fleet: truthyPerm(raw.fleet || raw.Fleet),
+    shop: truthyPerm(raw.shop || raw.Shop),
+    questReview: truthyPerm(raw.questReview || raw['Quest Review'] || raw.quests || raw.Quests),
+    auditLog: truthyPerm(raw.auditLog || raw['Audit Log'] || raw.audit || raw.Audit),
+    pages: truthyPerm(raw.pages || raw.Pages),
+    tavern: truthyPerm(raw.tavern || raw.Tavern)
+  };
+}
+
+function currentAdminHas(tab) {
+  var key = ADMIN_TAB_PERMISSION_MAP[tab] || tab;
+  var perms = currentAdminPerms || {};
+  if (key === 'full') return !!perms.full;
+  if (perms.full) return true;
+  if (perms[key]) return true;
+  // Legacy bridge: until the Worker returns admin permissions, do not lock existing admins out.
+  return !!currentAdminLegacyAccess;
+}
+
+function syncCurrentAdminPermissionsFromSheet() {
+  if (!window.OFSSheets || !OFSSheets.getAdminWhitelist || !currentAdminId) return;
+  var rows = OFSSheets.getAdminWhitelist() || [];
+  if (!rows.length) return;
+  var match = rows.find(function (r) { return String(r.discordId) === String(currentAdminId); });
+  if (match) {
+    currentAdminPerms = normalizeAdminPermissions(match);
+    currentAdminLegacyAccess = false;
+  }
+}
+
+function selectAdminTab(tab) {
+  var target = tab || '';
+  if (!target || !currentAdminHas(target)) {
+    var first = Array.from(document.querySelectorAll('.nav-tab')).find(function (t) {
+      return !t.hidden && currentAdminHas(t.dataset.tab);
+    });
+    target = first ? first.dataset.tab : '';
+  }
+  document.querySelectorAll('.nav-tab').forEach(function (x) { x.classList.remove('active'); });
+  document.querySelectorAll('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
+  if (!target) return;
+  var nav = document.querySelector('.nav-tab[data-tab="' + target + '"]');
+  var panel = document.getElementById('tab-' + target);
+  if (nav) nav.classList.add('active');
+  if (panel) panel.classList.add('active');
+  if (target === 'quests') {
+    var activeQr = document.querySelector('#qr-subtabs .tav-stab.active');
+    var k = activeQr ? activeQr.getAttribute('data-qrtab') : 'active';
+    if (k === 'completed') renderQuestCompleted();
+    else if (k === 'active') renderQuestActive();
+    else renderQuestReview();
+  }
+  if (target === 'banners') { renderBannerPop(); renderBanManageList(); }
+  if (target === 'fleet') renderFleetAdmin();
+  if (target === 'shop') renderShopAdmin();
+  if (target === 'audit') renderAudit();
+  if (target === 'permissions') renderPermissions();
+}
+
+function applyAdminPermissions() {
+  syncCurrentAdminPermissionsFromSheet();
+  document.querySelectorAll('.nav-tab').forEach(function (tab) {
+    tab.hidden = !currentAdminHas(tab.dataset.tab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(function (panel) {
+    var key = String(panel.id || '').replace(/^tab-/, '');
+    panel.hidden = !currentAdminHas(key);
+  });
+  var active = document.querySelector('.nav-tab.active');
+  if (!active || active.hidden || !currentAdminHas(active.dataset.tab)) {
+    selectAdminTab();
+  }
+}
+
+function grantAccess(session) {
+  session = session || {};
+  currentAdmin = session.username || session.name || 'Admin';
+  currentAdminId = String(session.id || '');
+  var rawPerms = session.adminPerms || session.permissions || null;
+  var hasExplicitPerms = !!(session.isFullAdmin || session.full || (rawPerms && Object.keys(rawPerms).length));
+  currentAdminPerms = normalizeAdminPermissions(hasExplicitPerms ? Object.assign({}, rawPerms || {}, { isFullAdmin: session.isFullAdmin, full: session.full || (rawPerms && rawPerms.full) }) : {});
+  currentAdminLegacyAccess = !!(session.isAdmin && !hasExplicitPerms);
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('app').classList.add('visible');
   document.getElementById('roster-tbody').innerHTML =
     '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:24px">Loading roster…</td></tr>';
   OFSSheets.load()
-    .then(() => renderAll())
-    .catch(() => renderAll());
+    .then(() => { applyAdminPermissions(); renderAll(); })
+    .catch(() => { applyAdminPermissions(); renderAll(); });
 }
 
 // On load: check for a Discord session — must be an admin to enter
@@ -2264,7 +2433,7 @@ function grantAccess(name) {
   try {
     const s = getStoredSession();
     if (s && s.id && s.token && s.isAdmin) {
-      grantAccess(s.username || 'Admin');
+      grantAccess(s);
     } else if (s && s.id) {
       // Logged in via Discord but not on the admin whitelist
       document.getElementById('auth-login').style.display = 'none';
@@ -2276,6 +2445,9 @@ function grantAccess(name) {
 function logout() {
   clearStoredSession();
   currentAdmin = '';
+  currentAdminId = '';
+  currentAdminPerms = null;
+  currentAdminLegacyAccess = false;
   location.replace('OFS_Home.html');
 }
 
@@ -2779,29 +2951,14 @@ document.addEventListener('click', function (e) {
 ══════════════════════════════════════════════════════════ */
 document.querySelectorAll('.nav-tab').forEach(t=>{
   t.addEventListener('click',()=>{
-    document.querySelectorAll('.nav-tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(x=>x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById('tab-'+t.dataset.tab).classList.add('active');
-    if(t.dataset.tab==='quests'){
-      var activeQr = document.querySelector('#qr-subtabs .tav-stab.active');
-      var k = activeQr ? activeQr.getAttribute('data-qrtab') : 'active';
-      if (k === 'completed') renderQuestCompleted();
-      else if (k === 'active') renderQuestActive();
-      else renderQuestReview();
-    }
-    if(t.dataset.tab==='banners'){
-      renderBannerPop();
-      renderBanManageList();
-    }
-    if(t.dataset.tab==='fleet') renderFleetAdmin();
-    if(t.dataset.tab==='shop') renderShopAdmin();
-    if(t.dataset.tab==='audit')        renderAudit();
+    if (!currentAdminHas(t.dataset.tab)) return;
+    selectAdminTab(t.dataset.tab);
   });
 });
 
 
 function renderAll(){
+  applyAdminPermissions();
   // Sync BANNER_NAMES from sheet if available
   const defs = window.OFSSheets && OFSSheets.getBannerDefs ? OFSSheets.getBannerDefs() : [];
   if(defs.length) BANNER_NAMES = defs.map(d=>d.name);
@@ -2810,8 +2967,82 @@ function renderAll(){
   renderBanManageList();
   seedFleetForm();
   renderShopAdmin();
+  renderPermissions();
   // Pre-seed tavern data so it's ready when the tab opens
   if(window._tavSeedFromSheet) window._tavSeedFromSheet();
+}
+
+/* ══════════════════════════════════════════════════════════
+   PERMISSIONS
+══════════════════════════════════════════════════════════ */
+function permEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function permissionsSourceRows(){
+  return (window.OFSSheets && OFSSheets.getAdminWhitelist) ? (OFSSheets.getAdminWhitelist() || []) : [];
+}
+function renderPermissions(){
+  var tb=document.getElementById('permissions-tbody');
+  if(!tb) return;
+  if(!currentAdminHas('permissions')){
+    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:24px">Permissions is restricted to Full admins.</td></tr>';
+    return;
+  }
+  var rows=permissionsSourceRows();
+  var q=((document.getElementById('perm-search')||{}).value||'').toLowerCase().trim();
+  if(q) rows=rows.filter(function(r){ return String(r.name+' '+r.discordId).toLowerCase().indexOf(q)>=0; });
+  PERMISSION_ROWS=rows.map(function(r){ return Object.assign({}, r, PERMISSION_DIRTY[r.discordId] || {}); });
+  if(!PERMISSION_ROWS.length){
+    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:24px">No White list Admin permission rows are available yet. Worker /data must expose the tab before this table can render live rows.</td></tr>';
+    return;
+  }
+  tb.innerHTML=PERMISSION_ROWS.map(function(r,i){
+    var cells=PERMISSION_COLUMNS.map(function(col){
+      var key=col[0], label=col[1];
+      return '<td><label class="perm-toggle" title="'+permEsc(label)+' access"><input type="checkbox" data-perm-row="'+i+'" data-perm-key="'+key+'" '+(r[key]?'checked':'')+' onchange="permissionChanged(this)"><span></span></label></td>';
+    }).join('');
+    return '<tr>'+
+      '<td>'+permEsc(r.name||'Unnamed')+'</td>'+
+      '<td style="color:var(--silver-dim);font-family:monospace">'+permEsc(r.discordId||'')+'</td>'+
+      '<td class="permission-full-cell">'+(r.full?'<span class="badge badge-locked">Full · Locked</span>':'<span class="badge badge-dim">No</span>')+'</td>'+cells+
+      '</tr>';
+  }).join('');
+}
+function permissionChanged(input){
+  var idx=Number(input.getAttribute('data-perm-row'));
+  var key=input.getAttribute('data-perm-key');
+  var row=PERMISSION_ROWS[idx];
+  if(!row || !key) return;
+  if(!PERMISSION_DIRTY[row.discordId]) PERMISSION_DIRTY[row.discordId]={};
+  PERMISSION_DIRTY[row.discordId][key]=!!input.checked;
+  row[key]=!!input.checked;
+  var status=document.getElementById('permission-status');
+  if(status){ status.className='permission-status'; status.textContent='Unsaved permission changes.'; }
+}
+async function savePermissions(){
+  if(!currentAdminHas('permissions')) return alert('Permissions is restricted to Full admins.');
+  if(!window.OFSSheets || !OFSSheets.saveAdminPermissions) return alert('Permission write helper unavailable.');
+  var ids=Object.keys(PERMISSION_DIRTY);
+  var status=document.getElementById('permission-status');
+  if(!ids.length){ if(status){ status.className='permission-status'; status.textContent='No changes to save.'; } return; }
+  if(status){ status.className='permission-status'; status.textContent='Saving permissions…'; }
+  try{
+    var source=permissionsSourceRows();
+    for(var i=0;i<ids.length;i++){
+      var base=source.find(function(r){ return String(r.discordId)===String(ids[i]); });
+      if(!base) continue;
+      var item=Object.assign({}, base, PERMISSION_DIRTY[ids[i]] || {});
+      item.full=base.full; // Full is Sheet-managed and never changed by this page.
+      await OFSSheets.saveAdminPermissions(item);
+    }
+    PERMISSION_DIRTY={};
+    if(OFSSheets.load) await OFSSheets.load({force:true});
+    syncCurrentAdminPermissionsFromSheet();
+    applyAdminPermissions();
+    renderPermissions();
+    if(status){ status.className='permission-status ok'; status.textContent='Permissions saved. Full remained locked.'; }
+  }catch(err){
+    console.error('Permission save failed', err);
+    if(status){ status.className='permission-status err'; status.textContent='Save failed: '+(err&&err.message?err.message:err); }
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
