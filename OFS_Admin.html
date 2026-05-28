@@ -1496,11 +1496,7 @@
     <!-- ── Permissions ── -->
     <div class="tab-panel" id="tab-permissions">
       <div class="sec-head"><h2>Permissions</h2><div class="sec-line"></div></div>
-      <div class="permission-note">
-        <strong>White list Admin</strong> remains the gate for entering the Admin portal. This page only limits which admin sections an already-whitelisted admin can use. <strong>Full</strong> is visible here but locked and must be managed directly on the Sheet.
-      </div>
       <div class="controls">
-        <input class="ctrl-input" id="perm-search" placeholder="Search admin name or Discord ID…" oninput="renderPermissions()">
         <button class="ctrl-btn" onclick="loadPermissionsBackend()">Refresh</button>
       </div>
       <div class="permission-table-wrap">
@@ -3040,8 +3036,6 @@ function renderPermissions(){
     return;
   }
   var rows=permissionsSourceRows();
-  var q=((document.getElementById('perm-search')||{}).value||'').toLowerCase().trim();
-  if(q) rows=rows.filter(function(r){ return String(r.name+' '+r.discordId).toLowerCase().indexOf(q)>=0; });
   PERMISSION_ROWS=rows.map(function(r){ return Object.assign({}, r, PERMISSION_DIRTY[r.discordId] || {}); });
   if(!PERMISSION_ROWS.length){
     tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:24px">No White list Admin permission rows are available yet. Try Refresh, then confirm the backend can read the White list Admin sheet.</td></tr>';
