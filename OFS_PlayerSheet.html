@@ -1626,12 +1626,272 @@
       .banners-grid { grid-template-columns: repeat(3, 1fr); }
     }
     @media (max-width: 700px) {
-      .identity { flex-direction: column; text-align: center; }
+      .wrap {
+        max-width: 100%;
+        padding: 74px 14px 46px;
+      }
+      .page-breadcrumb {
+        gap: 8px;
+        padding-bottom: 16px;
+        margin-bottom: 22px;
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+      .page-breadcrumb::-webkit-scrollbar { display: none; }
+      .page-breadcrumb a,
+      .page-breadcrumb .current {
+        flex-shrink: 0;
+        font-size: .64rem;
+        letter-spacing: .1em;
+      }
+      .identity {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 16px;
+        padding: 24px 16px 22px;
+        margin-bottom: 30px;
+      }
+      .identity-bg::after {
+        background: linear-gradient(180deg, rgba(14,14,28,.94) 20%, rgba(14,14,28,.76));
+      }
+      .avatar {
+        width: 92px;
+        height: 92px;
+        font-size: 2.05rem;
+      }
       .ident-divider { display: none; }
-      .banner-progress { margin-left: 0; min-width: unset; max-width: unset; width: 100%; }
-      .profile-edit-btn { margin-left: auto; margin-right: auto; }
-      .banners-grid { grid-template-columns: repeat(2, 1fr); }
-      .stats-grid   { grid-template-columns: repeat(2, 1fr); }
+      .ident-info { width: 100%; }
+      .ident-username {
+        font-size: clamp(1.35rem, 8vw, 1.85rem);
+        letter-spacing: .05em;
+        line-height: 1.08;
+        overflow-wrap: anywhere;
+      }
+      .ident-rank {
+        font-size: .74rem;
+        letter-spacing: .1em;
+        line-height: 1.35;
+      }
+      .ident-banner {
+        justify-content: center;
+        flex-wrap: wrap;
+        row-gap: 4px;
+      }
+      .ident-ship { font-size: .88rem; }
+      .profile-edit-btn {
+        width: 100%;
+        min-height: 42px;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      .rep-block {
+        margin-top: 14px;
+        padding-top: 14px;
+      }
+      .rep-header {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 6px 10px;
+        text-align: left;
+      }
+      .rep-xp-label {
+        grid-column: 1 / -1;
+        margin-left: 0;
+      }
+      .banner-progress-showcase {
+        margin: -16px 0 28px;
+        padding: 15px 14px 16px;
+        overflow: hidden;
+      }
+      .banner-progress-showcase .banner-progress {
+        width: 100%;
+        padding-right: 54px;
+      }
+      .banner-progress-showcase .bp-label {
+        white-space: normal;
+        font-size: .6rem;
+        letter-spacing: .15em;
+        line-height: 1.35;
+      }
+      .banner-progress-showcase .bp-track { gap: 4px; }
+      .banner-progress-showcase .bp-medal-end {
+        width: 46px;
+        height: 46px;
+        right: 0;
+      }
+      .banner-progress-showcase .bp-marker { font-size: .5rem; }
+      .banner-progress-showcase .bp-tooltip,
+      .banner-progress:hover .bp-tooltip { display: none; }
+      .profile-record {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin: -14px 0 34px;
+      }
+      .profile-bio-card,
+      .profile-ship-card {
+        padding: 18px 16px;
+      }
+      .profile-bio-card { padding-bottom: 48px; }
+      .profile-bio-actions {
+        right: 16px;
+        bottom: 12px;
+      }
+      .profile-ship-image-frame {
+        min-height: 132px;
+      }
+      .profile-ship-img { max-height: 170px; }
+      .quests-row,
+      .led-quests-row,
+      .quest-history-all { grid-template-columns: 1fr; }
+      .quest-card,
+      .quest-card.has-img {
+        grid-template-columns: 1fr;
+        padding: 15px 16px;
+      }
+      .quest-card-img,
+      .quest-card-label,
+      .quest-card-body,
+      .quest-card.has-img .quest-card-img,
+      .quest-card.has-img .quest-card-label,
+      .quest-card.has-img .quest-card-body {
+        grid-column: 1;
+        grid-row: auto;
+      }
+      .quest-card-img {
+        width: 100%;
+        height: 118px;
+      }
+      .quest-card-label {
+        margin-bottom: 8px;
+        white-space: normal;
+      }
+      .quest-section-footer,
+      .quest-history-pager {
+        justify-content: center;
+        margin-top: -22px;
+        margin-bottom: 34px;
+      }
+      .quest-history-toggle,
+      .quest-history-page-btn {
+        min-height: 40px;
+        padding: 0 8px;
+      }
+      .sec-head {
+        gap: 10px;
+        margin-bottom: 16px;
+      }
+      .sec-head h2 {
+        white-space: normal;
+        font-size: .68rem;
+        letter-spacing: .15em;
+        line-height: 1.3;
+      }
+      .stats-section { margin-bottom: 40px; }
+      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .stat-card {
+        padding: 14px 12px;
+        min-width: 0;
+      }
+      .stat-card:hover,
+      .banner-card:hover {
+        transform: none;
+        box-shadow: none;
+      }
+      .stat-lbl {
+        font-size: .55rem;
+        letter-spacing: .12em;
+        line-height: 1.25;
+      }
+      .stat-val { font-size: 1.45rem; }
+      .banners-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .banner-card { padding: 16px 10px 14px; }
+      .medal-wrap { width: 84px; height: 84px; }
+      .medal-wrap img { width: 84px; height: 84px; }
+      .medal-locked { width: 78px; height: 78px; }
+      .banner-name { font-size: .58rem; letter-spacing: .1em; }
+      .banner-title { font-size: .78rem; }
+      .prog-labels { font-size: .5rem; }
+      .profile-modal-overlay {
+        align-items: stretch;
+        padding: 10px;
+      }
+      .profile-modal {
+        width: 100%;
+        max-height: calc(100vh - 20px);
+        padding: 16px 14px;
+      }
+      .profile-modal-head { gap: 10px; }
+      .profile-modal-title {
+        font-size: .76rem;
+        letter-spacing: .14em;
+      }
+      .profile-editor-toolbar button,
+      .profile-editor-toolbar input[type="color"] {
+        min-height: 38px;
+      }
+      .profile-rich-editor {
+        min-height: 190px;
+        max-height: 38vh;
+      }
+      .profile-ship-brand-pills {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        scrollbar-width: thin;
+      }
+      .profile-ship-brand-pill { flex: 0 0 auto; }
+      .profile-ship-menu { max-height: 210px; }
+      .profile-ship-option { padding: 12px 10px; }
+      .profile-modal-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      .profile-save-status {
+        grid-column: 1 / -1;
+        margin-right: 0;
+      }
+      .profile-modal-btn {
+        min-height: 42px;
+        width: 100%;
+      }
+      #banner-preview-overlay { padding: 10px; }
+      .banner-preview-close {
+        top: 10px;
+        right: 10px;
+      }
+      .site-footer {
+        margin-top: 42px;
+        padding: 32px 10px 18px;
+      }
+      .footer-glory {
+        font-size: .62rem;
+        letter-spacing: .16em;
+        line-height: 1.55;
+      }
+      .footer-links { gap: 2px 4px; }
+      .footer-links a { padding: 6px 8px; }
+    }
+
+    @media (max-width: 420px) {
+      .wrap { padding-left: 10px; padding-right: 10px; }
+      .identity { padding-left: 12px; padding-right: 12px; }
+      .stats-grid,
+      .banners-grid { gap: 8px; }
+      .stat-card { padding: 12px 10px; }
+      .stat-val { font-size: 1.28rem; }
+      .medal-wrap,
+      .medal-wrap img { width: 74px; height: 74px; }
+      .medal-locked { width: 68px; height: 68px; }
+      .banner-progress-showcase .banner-progress { padding-right: 0; }
+      .banner-progress-showcase .bp-medal-end {
+        position: static;
+        transform: none;
+        display: block;
+        margin: 10px auto 0;
+      }
+      .banner-progress-showcase .bp-markers { height: 28px; }
     }
 
     /* ── Banner page iframe overlay ────────────────────── */
@@ -1799,10 +2059,10 @@
   </div>
 </div>
 
-<script src="header_bar.js?v=profile-ship-brand-pills-20260525"></script>
+<script src="header_bar.js?v=mobile-profile-20260528"></script>
 <script src="ofs-data.js?v=data-refresh-20260526"></script>
 <script src="ofs-sheets.js?v=data-refresh-20260526"></script>
-<script src="ofs-nav.js?v=data-refresh-20260526"></script>
+<script src="ofs-nav.js?v=mobile-profile-20260528"></script>
 <script>
 /* ═══════════════════════════════════════════════════════
    STAR FIELD

@@ -429,9 +429,64 @@
       .card-grid { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 540px) {
-      .card-grid { grid-template-columns: 1fr; }
-      .controls-inner { gap: 8px; }
-      .ctrl-select { font-size: .74rem; }
+      .page { padding-top: 60px; }
+      .page-header {
+        padding: 34px 16px 26px;
+        flex-direction: column;
+        gap: 18px;
+        align-items: stretch;
+      }
+      .header-label { font-size: .58rem; letter-spacing: .22em; line-height: 1.45; }
+      .header-title { font-size: 1.62rem; line-height: 1.25; letter-spacing: .08em; margin-bottom: 10px; }
+      .header-sub { font-size: .98rem; line-height: 1.5; }
+      .header-count { font-size: .62rem; line-height: 1.45; }
+      .page-view-toggle { width: 100%; margin-top: 0; }
+      .pvt-btn { flex: 1; min-height: 42px; padding: 10px 8px; font-size: .58rem; line-height: 1.25; }
+      .controls-bar { top: 60px; padding: 10px 14px; }
+      .controls-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .ctrl-search { grid-column: 1 / -1; min-width: 0; width: 100%; min-height: 42px; font-size: .82rem; }
+      .ctrl-select { min-width: 0; width: 100%; min-height: 40px; font-size: .72rem; padding: 8px 9px; }
+      .controls-right { grid-column: 1 / -1; width: 100%; margin-left: 0; justify-content: space-between; }
+      .view-btn { flex: 1; min-height: 38px; }
+      .roster-content { padding: 20px 14px 54px; }
+      .card-grid { grid-template-columns: 1fr; gap: 14px; }
+      .player-card:hover { transform: none; }
+      .card-identity { padding: 17px 16px 12px; gap: 13px; }
+      .card-avatar { width: 52px; height: 52px; font-size: 1.22rem; }
+      .card-username { font-size: .92rem; line-height: 1.35; }
+      .card-rank { font-size: .54rem; line-height: 1.35; }
+      .card-rep { padding: 0 16px 13px; gap: 8px; }
+      .rep-label { font-size: .56rem; }
+      .card-divider { margin: 0 16px; }
+      .card-banner { padding: 11px 16px; flex-wrap: wrap; align-items: flex-start; }
+      .banner-pill { font-size: .58rem; line-height: 1.35; }
+      .banner-rank-title { font-size: .8rem; }
+      .card-stats { padding: 0 16px 16px; grid-template-columns: repeat(2, 1fr); gap: 10px 6px; }
+      .stat-item { padding: 7px 4px; background: rgba(255,255,255,.018); border: 1px solid rgba(201,168,76,.06); border-radius: 3px; }
+      .stat-val { font-size: .82rem; }
+      .stat-lbl { font-size: .55rem; }
+      .card-footer { padding: 10px 16px; flex-direction: column; align-items: flex-start; gap: 4px; }
+      .role-path-tag,
+      .banner-pts-tag { line-height: 1.45; }
+      .roster-table-wrap { max-width: 100%; border-radius: 3px; }
+      .roster-table { min-width: 860px; }
+      .lb-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 16px; }
+      .lb-tab { min-height: 38px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px 6px; font-size: .56rem; line-height: 1.25; }
+      .lb-row { height: auto; min-height: 72px; }
+      .lb-row:hover .lb-flip-inner { transform: none; }
+      .lb-flip-inner { min-height: 72px; }
+      .lb-flip-front { position: relative; min-height: 72px; padding: 12px; gap: 10px; }
+      .lb-flip-back { display: none; }
+      .lb-rank { width: 28px; font-size: 1rem; }
+      .lb-name { font-size: .86rem; line-height: 1.35; }
+      .lb-sub { font-size: .68rem; }
+      .lb-val { font-size: .92rem; }
+      .lb-bar-bg { max-width: 70px; }
+      .empty-state { padding: 56px 18px; font-size: 1rem; line-height: 1.55; }
+      footer { padding: 30px 18px 24px; }
+      .footer-glory { font-size: .6rem; line-height: 1.55; letter-spacing: .16em; }
+      .footer-links { gap: 10px 14px; }
+      .footer-links a { font-size: .58rem; padding: 4px 6px; }
     }
   </style>
 </head>
@@ -555,10 +610,10 @@
   </div>
 </footer>
 
-<script src="header_bar.js"></script>
+<script src="header_bar.js?v=mobile-tavern-20260528"></script>
 <script src="ofs-data.js?v=data-refresh-20260526"></script>
 <script src="ofs-sheets.js?v=data-refresh-20260526"></script>
-<script src="ofs-nav.js?v=data-refresh-20260526"></script>
+<script src="ofs-nav.js?v=mobile-tavern-20260528"></script>
 <script>
 /* ── Star field ─────────────────────────────────────────────── */
 (function(){

@@ -109,11 +109,47 @@
       'position:relative;z-index:1;transition:color .2s;' +
     '}' +
     '.nav-dd-card:hover .nav-dd-name{color:#c9a84c;}' +
+    '.nav-mobile-toggle{' +
+      'display:none;align-items:center;justify-content:center;gap:5px;' +
+      'width:42px;height:38px;border:1px solid rgba(201,168,76,.28);border-radius:3px;' +
+      'background:rgba(201,168,76,.06);color:#c9a84c;cursor:pointer;' +
+      'transition:border-color .2s,background .2s;' +
+    '}' +
+    '.nav-mobile-toggle:hover{border-color:rgba(201,168,76,.55);background:rgba(201,168,76,.12);}' +
+    '.nav-mobile-toggle span{' +
+      'display:block;width:18px;height:2px;border-radius:2px;background:#c9a84c;' +
+      'box-shadow:0 6px 0 #c9a84c,0 -6px 0 #c9a84c;' +
+    '}' +
     '@media(max-width:860px){' +
       '#main-nav{padding:0 20px;}' +
       '.nav-logo span{display:none;}' +
       '.nav-links a{padding:6px 9px;font-size:10.5px;}' +
       '.nav-dd-panel{width:240px;left:auto;right:0;transform:none;}' +
+    '}' +
+    '@media(max-width:720px){' +
+      '#main-nav{height:60px;padding:0 16px;}' +
+      '.nav-logo img{height:34px;}' +
+      '.nav-mobile-toggle{display:flex;}' +
+      '.nav-links{' +
+        'display:none;position:absolute;top:60px;left:0;right:0;max-height:calc(100vh - 60px);overflow:auto;' +
+        'padding:10px 14px 18px;margin:0;flex-direction:column;gap:6px;' +
+        'background:rgba(7,7,15,.98);border-bottom:1px solid rgba(201,168,76,.28);' +
+        'box-shadow:0 18px 48px rgba(0,0,0,.72);' +
+      '}' +
+      '#main-nav.nav-open .nav-links{display:flex;}' +
+      '.nav-links li{width:100%;}' +
+      '.nav-links a{' +
+        'width:100%;box-sizing:border-box;padding:13px 14px;font-size:11px;letter-spacing:.16em;' +
+        'border-color:rgba(201,168,76,.12);background:rgba(255,255,255,.015);' +
+      '}' +
+      '.nav-dd-wrap{position:static;}' +
+      '.nav-dd-panel{' +
+        'position:static;width:100%;grid-template-columns:1fr;gap:6px;margin-top:6px;padding:6px;' +
+        'box-shadow:none;background:rgba(10,10,22,.82);transform:none;' +
+      '}' +
+      '.nav-dd-card{min-height:46px;padding:10px 12px;}' +
+      '.nav-dd-medal{width:24px;height:24px;}' +
+      '.nav-dd-name{font-size:10px;}' +
     '}';
 
   function injectCSS() {
@@ -193,9 +229,28 @@
       ul.appendChild(li);
     });
 
+    /* Mobile menu toggle — hidden on desktop by CSS */
+    var mobileToggle = document.createElement('button');
+    mobileToggle.type = 'button';
+    mobileToggle.className = 'nav-mobile-toggle';
+    mobileToggle.setAttribute('aria-label', 'Open navigation menu');
+    mobileToggle.setAttribute('aria-expanded', 'false');
+    mobileToggle.innerHTML = '<span aria-hidden="true"></span>';
+    mobileToggle.addEventListener('click', function () {
+      var open = nav.classList.toggle('nav-open');
+      mobileToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      mobileToggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+      if (!open) {
+        document.querySelectorAll('#main-nav .nav-dd-panel.open').forEach(function (panel) {
+          panel.classList.remove('open');
+        });
+      }
+    });
+
     /* Replace nav contents */
     nav.innerHTML = '';
     nav.appendChild(logo);
+    nav.appendChild(mobileToggle);
     nav.appendChild(ul);
 
     /* Populate data dropdowns */
@@ -210,7 +265,13 @@
 
     /* Close dropdown when clicking outside */
     document.addEventListener('click', function (e) {
-      if (!e.target.closest('.nav-dd-wrap')) {
+      if (!e.target.closest('#main-nav')) {
+        nav.classList.remove('nav-open');
+        mobileToggle.setAttribute('aria-expanded', 'false');
+        mobileToggle.setAttribute('aria-label', 'Open navigation menu');
+        if (bannerPanel) bannerPanel.classList.remove('open');
+        if (fleetPanel) fleetPanel.classList.remove('open');
+      } else if (!e.target.closest('.nav-dd-wrap')) {
         if (bannerPanel) bannerPanel.classList.remove('open');
         if (fleetPanel) fleetPanel.classList.remove('open');
       }

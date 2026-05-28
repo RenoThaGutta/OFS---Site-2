@@ -86,6 +86,17 @@
     '  transition:color .2s;flex-shrink:0;',
     '}',
     '.nav-user-signout:hover{color:var(--gold);}',
+    '@media(max-width:720px){',
+    '  .nav-user-zone{position:static;left:auto;top:auto;bottom:auto;transform:none;margin-left:auto;margin-right:10px;}',
+    '  .nav-login-btn{padding:8px 10px;font-size:.58rem;letter-spacing:.1em;}',
+    '  .nav-user-card{max-width:170px;padding:4px 8px 4px 5px;gap:7px;}',
+    '  .nav-user-avatar{width:28px;height:28px;}',
+    '  .nav-user-info{min-width:0;}',
+    '  .nav-user-name-row{gap:8px;}',
+    '  .nav-user-name{max-width:88px;overflow:hidden;text-overflow:ellipsis;font-size:.62rem;}',
+    '  .nav-user-chips,.nuc-lvl-inline{display:none;}',
+    '  .nav-user-signout{width:20px;height:20px;margin-left:0;}',
+    '}',
   ].join('');
 
   function injectStyles() {
@@ -285,7 +296,10 @@
     zone = document.createElement('div');
     zone.className = 'nav-user-zone';
     var navLinks = nav.querySelector('.nav-links');
-    if (navLinks) {
+    var mobileToggle = nav.querySelector('.nav-mobile-toggle');
+    if (mobileToggle) {
+      nav.insertBefore(zone, mobileToggle);
+    } else if (navLinks) {
       nav.insertBefore(zone, navLinks);
     } else {
       nav.appendChild(zone);
