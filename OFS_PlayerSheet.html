@@ -1706,19 +1706,29 @@
       }
       .banner-progress-showcase .banner-progress {
         width: 100%;
-        padding-right: 54px;
+        padding-right: 0;
       }
       .banner-progress-showcase .bp-label {
         white-space: normal;
         font-size: .6rem;
         letter-spacing: .15em;
         line-height: 1.35;
+        text-align: center;
       }
-      .banner-progress-showcase .bp-track { gap: 4px; }
+      .banner-progress-showcase .bp-track {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        align-items: center;
+      }
       .banner-progress-showcase .bp-medal-end {
-        width: 46px;
-        height: 46px;
-        right: 0;
+        position: static;
+        grid-column: 1 / -1;
+        justify-self: center;
+        width: 54px;
+        height: 54px;
+        margin: 0 auto 8px;
+        transform: none;
       }
       .banner-progress-showcase .bp-marker { font-size: .5rem; }
       .banner-progress-showcase .bp-tooltip,
@@ -1892,10 +1902,9 @@
       .medal-locked { width: 68px; height: 68px; }
       .banner-progress-showcase .banner-progress { padding-right: 0; }
       .banner-progress-showcase .bp-medal-end {
-        position: static;
-        transform: none;
-        display: block;
-        margin: 10px auto 0;
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 8px;
       }
       .banner-progress-showcase .bp-markers { height: 28px; }
     }
