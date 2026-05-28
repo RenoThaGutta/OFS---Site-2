@@ -2295,7 +2295,11 @@ const SESSION_KEY = 'ofs_discord_session';
 let currentAdmin = '';
 let currentAdminId = '';
 let currentAdminPerms = null;
+let currentAdminPermsAuthoritative = false;
 let currentAdminLegacyAccess = false;
+let ADMIN_PERMISSION_POLL_TIMER = null;
+let ADMIN_PERMISSION_REFRESHING = null;
+const ADMIN_PERMISSION_POLL_MS = 10000;
 let PERMISSION_ROWS = [];
 let PERMISSION_DIRTY = {};
 let PERMISSION_BACKEND_LOADING = false;
@@ -2364,6 +2368,7 @@ function currentAdminHas(tab) {
 }
 
 function syncCurrentAdminPermissionsFromSheet() {
+  if (currentAdminPermsAuthoritative) return;
   if (!window.OFSSheets || !OFSSheets.getAdminWhitelist || !currentAdminId) return;
   var rows = OFSSheets.getAdminWhitelist() || [];
   if (!rows.length) return;
@@ -2372,6 +2377,64 @@ function syncCurrentAdminPermissionsFromSheet() {
     currentAdminPerms = normalizeAdminPermissions(match);
     currentAdminLegacyAccess = false;
   }
+}
+
+function storeCurrentAdminPermissions(adminData) {
+  adminData = adminData || {};
+  var perms = normalizeAdminPermissions(Object.assign({}, adminData.adminPerms || adminData.permissions || {}, {
+    isFullAdmin: adminData.isFullAdmin,
+    full: adminData.full || (adminData.adminPerms && adminData.adminPerms.full)
+  }));
+  currentAdminPerms = perms;
+  currentAdminPermsAuthoritative = true;
+  currentAdminLegacyAccess = false;
+  try {
+    var session = getStoredSession() || {};
+    session.isAdmin = !!adminData.isAdmin;
+    session.isFullAdmin = !!perms.full;
+    session.adminPerms = perms;
+    if (adminData.userId || adminData.id) session.id = String(adminData.userId || adminData.id);
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch (e) {}
+  } catch (e) {}
+  return perms;
+}
+
+function refreshCurrentAdminPermissions(silent) {
+  if (!currentAdminId || !window.OFSSheets || !OFSSheets.loadCurrentAdminSession) return Promise.resolve(false);
+  if (ADMIN_PERMISSION_REFRESHING) return ADMIN_PERMISSION_REFRESHING;
+  ADMIN_PERMISSION_REFRESHING = OFSSheets.loadCurrentAdminSession()
+    .then(function (res) {
+      var returnedId = String(res.userId || res.id || '');
+      if (returnedId && String(currentAdminId) !== returnedId) throw new Error('Admin session user changed');
+      if (!res.isAdmin) throw new Error('Admin access revoked');
+      storeCurrentAdminPermissions(res);
+      applyAdminPermissions();
+      return true;
+    })
+    .catch(function (err) {
+      if (!silent) console.warn('Admin permission refresh failed', err);
+      return false;
+    })
+    .finally(function () { ADMIN_PERMISSION_REFRESHING = null; });
+  return ADMIN_PERMISSION_REFRESHING;
+}
+
+function startAdminPermissionPolling() {
+  if (ADMIN_PERMISSION_POLL_TIMER) clearInterval(ADMIN_PERMISSION_POLL_TIMER);
+  ADMIN_PERMISSION_POLL_TIMER = setInterval(function () {
+    if (!document.hidden) refreshCurrentAdminPermissions(true);
+  }, ADMIN_PERMISSION_POLL_MS);
+}
+
+window.addEventListener('focus', function () { refreshCurrentAdminPermissions(true); });
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) refreshCurrentAdminPermissions(true);
+});
+
+function stopAdminPermissionPolling() {
+  if (ADMIN_PERMISSION_POLL_TIMER) clearInterval(ADMIN_PERMISSION_POLL_TIMER);
+  ADMIN_PERMISSION_POLL_TIMER = null;
 }
 
 function selectAdminTab(tab) {
@@ -2425,12 +2488,15 @@ function grantAccess(session) {
   var rawPerms = session.adminPerms || session.permissions || null;
   var hasExplicitPerms = !!(session.isFullAdmin || session.full || (rawPerms && Object.keys(rawPerms).length));
   currentAdminPerms = normalizeAdminPermissions(hasExplicitPerms ? Object.assign({}, rawPerms || {}, { isFullAdmin: session.isFullAdmin, full: session.full || (rawPerms && rawPerms.full) }) : {});
+  currentAdminPermsAuthoritative = hasExplicitPerms;
   currentAdminLegacyAccess = false;
   applyAdminPermissions();
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('app').classList.add('visible');
   document.getElementById('roster-tbody').innerHTML =
     '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:24px">Loading roster…</td></tr>';
+  startAdminPermissionPolling();
+  refreshCurrentAdminPermissions(true);
   OFSSheets.load()
     .then(() => { applyAdminPermissions(); renderAll(); applyAdminPermissions(); })
     .catch(() => { applyAdminPermissions(); renderAll(); applyAdminPermissions(); });
@@ -2455,7 +2521,9 @@ function logout() {
   currentAdmin = '';
   currentAdminId = '';
   currentAdminPerms = null;
+  currentAdminPermsAuthoritative = false;
   currentAdminLegacyAccess = false;
+  stopAdminPermissionPolling();
   location.replace('OFS_Home.html');
 }
 
@@ -2958,8 +3026,9 @@ document.addEventListener('click', function (e) {
    TABS
 ══════════════════════════════════════════════════════════ */
 document.querySelectorAll('.nav-tab').forEach(t=>{
-  t.addEventListener('click',()=>{
-    if (!currentAdminHas(t.dataset.tab)) return;
+  t.addEventListener('click', async ()=>{
+    await refreshCurrentAdminPermissions(true);
+    if (!currentAdminHas(t.dataset.tab)) { applyAdminPermissions(); return; }
     selectAdminTab(t.dataset.tab);
   });
 });

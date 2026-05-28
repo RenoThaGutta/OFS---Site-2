@@ -806,6 +806,10 @@
     return _adminWhitelist.slice();
   }
 
+  async function loadCurrentAdminSession() {
+    return _apiGet('/admin/me');
+  }
+
   function parseRanks(rows) {
     if (!rows || !rows.length) return [];
     // Current OFS Ranks sheet: use only A2:A13 for the Shop Min Role dropdown.
@@ -1375,6 +1379,7 @@
     getRanks,
     getAdminWhitelist,
     loadAdminPermissions,
+    loadCurrentAdminSession,
     getBannerDefs,
     getBannerAliases,
     resolveBannerName,
