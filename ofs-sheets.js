@@ -289,6 +289,7 @@
   let _shopItems = [];
   let _shopPayRules = []; // Backed by existing bot sheet: currency_rules
   let _ranks = [];
+  let _adminWhitelist = [];
 
   /* ── Cache ───────────────────────────────────────── */
   function saveCache(players) {
@@ -794,6 +795,17 @@
 
   function getAdminWhitelist() { return _adminWhitelist.slice(); }
 
+  async function loadAdminPermissions() {
+    const data = await _apiGet('/admin/permissions');
+    _adminWhitelist = (data.permissions || []).map(function (row) {
+      return Object.assign({
+        name: '', discordId: '', full: false, roster: false, banners: false, fleet: false,
+        shop: false, questReview: false, auditLog: false, pages: false, tavern: false
+      }, row || {});
+    }).filter(function (row) { return row.discordId; });
+    return _adminWhitelist.slice();
+  }
+
   function parseRanks(rows) {
     if (!rows || !rows.length) return [];
     // Current OFS Ranks sheet: use only A2:A13 for the Shop Min Role dropdown.
@@ -884,14 +896,46 @@
    * responses, or responses that come back with {ok:false}. Every write
    * path goes through here so callers' try/catch actually fires on
    * server-side failures (not just network drops). */
+  function getSessionToken() {
+    let raw = null;
+    try { raw = global.localStorage && global.localStorage.getItem('ofs_discord_session'); } catch (e) { raw = null; }
+    if (!raw) {
+      try { raw = global.sessionStorage && global.sessionStorage.getItem('ofs_discord_session'); } catch (e) { raw = null; }
+    }
+    try {
+      const session = raw ? JSON.parse(raw) : null;
+      return session && session.token ? String(session.token) : '';
+    } catch (e) { return ''; }
+  }
+
+  function authHeaders(extra) {
+    const headers = Object.assign({}, extra || {});
+    const token = getSessionToken();
+    if (token) headers.Authorization = 'Bearer ' + token;
+    return headers;
+  }
+
+  async function _apiGet(path) {
+    const res = await fetch(WORKER_URL + path, {
+      method: 'GET',
+      headers: authHeaders({ 'Accept': 'application/json' })
+    });
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok) throw new Error((data && (data.error || data.reason)) || ('Server ' + res.status));
+    if (!data || !data.ok) throw new Error((data && (data.error || data.reason)) || 'Request rejected');
+    return data;
+  }
+
   async function _apiPost(path, body) {
     const res = await fetch(WORKER_URL + path, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(body),
     });
-    if (!res.ok) throw new Error('Server ' + res.status);
-    const data = await res.json();
+    let data = null;
+    try { data = await res.json(); } catch (e) { data = null; }
+    if (!res.ok) throw new Error((data && (data.error || data.reason)) || ('Server ' + res.status));
     if (!data || !data.ok) throw new Error((data && (data.error || data.reason)) || 'Write rejected');
     return data;
   }
@@ -1273,12 +1317,18 @@
   }
 
   function saveAdminPermissions(item) {
-    return _apiPost('/write', {
-      op: 'overwrite',
-      sheet: 'White list Admin',
-      keyCol: 1,
-      keyVal: String(item.discordId || ''),
-      row: adminPermissionRow(item)
+    return _apiPost('/admin/permissions', {
+      discordId: String(item.discordId || ''),
+      permissions: {
+        roster: !!item.roster,
+        banners: !!item.banners,
+        fleet: !!item.fleet,
+        shop: !!item.shop,
+        questReview: !!item.questReview,
+        auditLog: !!item.auditLog,
+        pages: !!item.pages,
+        tavern: !!item.tavern
+      }
     });
   }
 
@@ -1308,6 +1358,7 @@
     getShopPayRules,
     getRanks,
     getAdminWhitelist,
+    loadAdminPermissions,
     getBannerDefs,
     getBannerAliases,
     resolveBannerName,

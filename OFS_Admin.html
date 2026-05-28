@@ -1554,7 +1554,7 @@
       </div>
       <div class="controls">
         <input class="ctrl-input" id="perm-search" placeholder="Search admin name or Discord ID…" oninput="renderPermissions()">
-        <button class="ctrl-btn" onclick="renderPermissions()">Refresh</button>
+        <button class="ctrl-btn" onclick="loadPermissionsBackend()">Refresh</button>
       </div>
       <div class="permission-table-wrap">
         <table class="data-table permission-table" id="permissions-table">
@@ -2293,6 +2293,8 @@ let currentAdminPerms = null;
 let currentAdminLegacyAccess = false;
 let PERMISSION_ROWS = [];
 let PERMISSION_DIRTY = {};
+let PERMISSION_BACKEND_LOADING = false;
+let PERMISSION_BACKEND_LOADED = false;
 const ADMIN_TAB_PERMISSION_MAP = {
   roster: 'roster',
   banners: 'banners',
@@ -2979,11 +2981,45 @@ function permEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
 function permissionsSourceRows(){
   return (window.OFSSheets && OFSSheets.getAdminWhitelist) ? (OFSSheets.getAdminWhitelist() || []) : [];
 }
+async function loadPermissionsBackend(silent){
+  if(!currentAdminHas('permissions')) return [];
+  if(PERMISSION_BACKEND_LOADING) return permissionsSourceRows();
+  if(!window.OFSSheets || !OFSSheets.loadAdminPermissions){
+    if(!silent) alert('Admin permissions backend helper unavailable.');
+    return permissionsSourceRows();
+  }
+  var status=document.getElementById('permission-status');
+  PERMISSION_BACKEND_LOADING=true;
+  if(status && !silent){ status.className='permission-status'; status.textContent='Loading permissions from backend…'; }
+  try{
+    var rows=await OFSSheets.loadAdminPermissions();
+    PERMISSION_BACKEND_LOADED=true;
+    syncCurrentAdminPermissionsFromSheet();
+    applyAdminPermissions();
+    if(status && !silent){ status.className='permission-status ok'; status.textContent='Permissions loaded from backend.'; }
+    return rows;
+  }catch(err){
+    PERMISSION_BACKEND_LOADED=true;
+    console.error('Permission backend load failed', err);
+    if(status){ status.className='permission-status err'; status.textContent='Permission load failed: '+(err&&err.message?err.message:err); }
+    return permissionsSourceRows();
+  }finally{
+    PERMISSION_BACKEND_LOADING=false;
+    renderPermissions();
+  }
+}
 function renderPermissions(){
   var tb=document.getElementById('permissions-tbody');
   if(!tb) return;
   if(!currentAdminHas('permissions')){
     tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:24px">Permissions is restricted to Full admins.</td></tr>';
+    return;
+  }
+  if(!PERMISSION_BACKEND_LOADED && !PERMISSION_BACKEND_LOADING && window.OFSSheets && OFSSheets.loadAdminPermissions){
+    loadPermissionsBackend(true);
+  }
+  if(PERMISSION_BACKEND_LOADING){
+    tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:24px">Loading permissions from backend…</td></tr>';
     return;
   }
   var rows=permissionsSourceRows();
@@ -3034,7 +3070,8 @@ async function savePermissions(){
       await OFSSheets.saveAdminPermissions(item);
     }
     PERMISSION_DIRTY={};
-    if(OFSSheets.load) await OFSSheets.load({force:true});
+    if(OFSSheets.loadAdminPermissions) await OFSSheets.loadAdminPermissions();
+    PERMISSION_BACKEND_LOADED=true;
     syncCurrentAdminPermissionsFromSheet();
     applyAdminPermissions();
     renderPermissions();
