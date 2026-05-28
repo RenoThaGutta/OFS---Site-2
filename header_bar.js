@@ -25,7 +25,7 @@
     'The Fang','The Forager','The Guardian','The Healer',
     'The Merchant','The Privateer','The Talon'
   ];
-  var FALLBACK_FLEETS = ['1st Fleet','2nd Fleet','3rd Fleet'];
+  var FALLBACK_FLEETS = ['1st Fleet'];
 
   /* ── Canonical nav CSS (hardcoded px — immune to font-size inheritance) ── */
   var CSS =
@@ -281,10 +281,18 @@
 
   function populateFleetDropdown(panel) {
     var fleets = null;
-    if (window.OFSSheets && OFSSheets.getFleets) {
-      var rows = OFSSheets.getFleets() || [];
+    if (window.OFSSheets) {
       var names = {};
-      rows.forEach(function (f) { if (f && f.active !== false && f.fleetName) names[f.fleetName] = true; });
+      if (OFSSheets.getFleets) {
+        (OFSSheets.getFleets() || []).forEach(function (f) {
+          if (f && f.active !== false && f.fleetName) names[f.fleetName] = true;
+        });
+      }
+      if (OFSSheets.getFleetStructure) {
+        (OFSSheets.getFleetStructure() || []).forEach(function (f) {
+          if (f && f.active !== false && f.fleetName) names[f.fleetName] = true;
+        });
+      }
       fleets = Object.keys(names).sort();
       if (!fleets.length) fleets = null;
     }
@@ -311,6 +319,10 @@
     }
     injectCSS();
     buildNav();
+    window.addEventListener('ofs:sheets-loaded', function () {
+      if (_ddPanel) populateBannerDropdown(_ddPanel);
+      if (_fleetPanel) populateFleetDropdown(_fleetPanel);
+    });
   }
 
   if (document.readyState === 'loading') {
