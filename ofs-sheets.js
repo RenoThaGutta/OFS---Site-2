@@ -1275,8 +1275,17 @@
     ];
   }
 
+  function fleetStructureWriteKey(item) {
+    return [item.fleetName || '', item.section || '', item.slotLabel || ''].join('|');
+  }
+
   function saveFleetStructureSlot(item) {
-    return _apiPost('/write', { op: 'overwrite', sheet: 'Fleet Structure', keyCol: 2, keyVal: item.slotLabel, row: fleetStructureRow(item) });
+    return _apiPost('/write', { op: 'overwrite', sheet: 'Fleet Structure', keyCol: 2, keyVal: item.slotLabel, row: fleetStructureRow(item), match: { fleetName: item.fleetName || '', section: item.section || '', slotLabel: item.slotLabel || '' } });
+  }
+
+  function saveFleetStructureRows(items) {
+    const rows = (items || []).map(function (item) { return { key: fleetStructureWriteKey(item), match: { fleetName: item.fleetName || '', section: item.section || '', slotLabel: item.slotLabel || '' }, row: fleetStructureRow(item) }; });
+    return _apiPost('/admin/fleet-structure', { rows: rows });
   }
 
   function deleteFleetStructureSlot(slotLabel) {
@@ -1395,6 +1404,7 @@
     deleteFleetAssignment,
     deleteFleetByName,
     saveFleetStructureSlot,
+    saveFleetStructureRows,
     deleteFleetStructureSlot,
     saveShopItem,
     deleteShopItem,

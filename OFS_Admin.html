@@ -3740,24 +3740,47 @@ function fleetReadStructureSlot(i, slotLabel){
   else if(fleetStructureRequiredRank(FLEET_STRUCTURE_RENDER_ROWS[i]||{}) || p){ userId=''; }
   return { fleetName:(document.getElementById('fs-fleet-'+i)||{}).value||FLEET_DEFAULT_NAME, section:(document.getElementById('fs-section-'+i)||{}).value||'', slotLabel:slotLabel, userId:String(userId||'').trim(), username:String(username||'').trim(), title:((document.getElementById('fs-title-'+i)||{}).value||'').trim(), house:((document.getElementById('fs-house-'+i)||{}).value||'').trim(), banner:((document.getElementById('fs-banner-'+i)||{}).value||'').trim(), sortOrder:Number((document.getElementById('fs-sort-'+i)||{}).value)||0, active:((document.getElementById('fs-active-'+i)||{}).value||'TRUE')!=='FALSE', notes:((document.getElementById('fs-notes-'+i)||{}).value||'').trim() };
 }
+function fleetStructureComparable(row){
+  return {
+    fleetName:String(row&&row.fleetName||''),
+    section:String(row&&row.section||''),
+    slotLabel:String(row&&row.slotLabel||''),
+    userId:String(row&&row.userId||''),
+    username:String(row&&row.username||''),
+    title:String(row&&row.title||''),
+    house:String(row&&row.house||''),
+    banner:String(row&&row.banner||''),
+    sortOrder:Number(row&&row.sortOrder)||0,
+    active:row&&row.active===false?false:true,
+    notes:String(row&&row.notes||'')
+  };
+}
+function fleetStructureRowChanged(next, prev){
+  var a=fleetStructureComparable(next), b=fleetStructureComparable(prev||{});
+  return Object.keys(a).some(function(k){ return a[k]!==b[k]; });
+}
 async function fleetSaveStructureSlot(i, slotLabel){
   if(!window.OFSSheets || !OFSSheets.saveFleetStructureSlot){ alert('Fleet Structure write helper unavailable.'); return; }
   var item=fleetReadStructureSlot(i, slotLabel);
   if(item.userId && fleetStructurePlayerUsedElsewhere(fleetFindPlayer(item.userId),i)){ alert('That member is already assigned to another Fleet Structure slot. Clear that slot first.'); return; }
+  if(!fleetStructureRowChanged(item, FLEET_STRUCTURE_RENDER_ROWS[i])){ showToast('No Fleet Structure change to save.'); return; }
   try{ await OFSSheets.saveFleetStructureSlot(item); alert('Fleet Structure slot saved.'); if(OFSSheets.load) await OFSSheets.load({force:true}); renderFleetStructure(); }
   catch(e){ console.error(e); alert('Fleet Structure save failed: '+e.message); }
 }
 async function fleetSaveStructureBoard(){
-  if(!window.OFSSheets || !OFSSheets.saveFleetStructureSlot){ alert('Fleet Structure write helper unavailable.'); return; }
+  if(!window.OFSSheets || (!OFSSheets.saveFleetStructureSlot && !OFSSheets.saveFleetStructureRows)){ alert('Fleet Structure write helper unavailable.'); return; }
   var q=((document.getElementById('fleet-structure-filter')&&document.getElementById('fleet-structure-filter').value)||'').trim();
   if(q){ alert('Clear the Fleet Structure filter before saving the full command board.'); return; }
   if(!FLEET_STRUCTURE_RENDER_ROWS.length) renderFleetStructure();
   var rows=FLEET_STRUCTURE_RENDER_ROWS.map(function(row,i){return fleetReadStructureSlot(i,row.slotLabel);});
   var duplicates=fleetStructureDuplicateRows(rows);
   if(duplicates.length){ alert('Each member can only hold one Fleet Structure slot. Duplicate assignment: '+duplicates[0]); return; }
+  var changed=rows.filter(function(row,i){ return fleetStructureRowChanged(row, FLEET_STRUCTURE_RENDER_ROWS[i]); });
+  if(!changed.length){ showToast('No Fleet Structure changes to save.'); return; }
   try{
-    for(var i=0;i<rows.length;i++) await OFSSheets.saveFleetStructureSlot(rows[i]);
-    showToast('Fleet Structure saved.');
+    if(OFSSheets.saveFleetStructureRows) await OFSSheets.saveFleetStructureRows(changed);
+    else { for(var i=0;i<changed.length;i++) await OFSSheets.saveFleetStructureSlot(changed[i]); }
+    showToast('Fleet Structure saved ('+changed.length+' changed slot'+(changed.length===1?'':'s')+').');
     if(OFSSheets.load) await OFSSheets.load({force:true});
     renderFleetStructure();
   } catch(e){ console.error(e); alert('Fleet Structure save failed: '+e.message); }
