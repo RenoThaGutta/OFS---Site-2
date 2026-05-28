@@ -2357,8 +2357,8 @@ function currentAdminHas(tab) {
   if (key === 'full') return !!perms.full;
   if (perms.full) return true;
   if (perms[key]) return true;
-  // Legacy bridge: until the Worker returns admin permissions, do not lock existing admins out.
-  return !!currentAdminLegacyAccess;
+  // Permissions are security-sensitive: never grant broad access while backend/session permissions are missing.
+  return false;
 }
 
 function syncCurrentAdminPermissionsFromSheet() {
@@ -2423,14 +2423,15 @@ function grantAccess(session) {
   var rawPerms = session.adminPerms || session.permissions || null;
   var hasExplicitPerms = !!(session.isFullAdmin || session.full || (rawPerms && Object.keys(rawPerms).length));
   currentAdminPerms = normalizeAdminPermissions(hasExplicitPerms ? Object.assign({}, rawPerms || {}, { isFullAdmin: session.isFullAdmin, full: session.full || (rawPerms && rawPerms.full) }) : {});
-  currentAdminLegacyAccess = !!(session.isAdmin && !hasExplicitPerms);
+  currentAdminLegacyAccess = false;
+  applyAdminPermissions();
   document.getElementById('login-overlay').style.display = 'none';
   document.getElementById('app').classList.add('visible');
   document.getElementById('roster-tbody').innerHTML =
     '<tr><td colspan="9" style="text-align:center;color:var(--text-dim);padding:24px">Loading roster…</td></tr>';
   OFSSheets.load()
-    .then(() => { applyAdminPermissions(); renderAll(); })
-    .catch(() => { applyAdminPermissions(); renderAll(); });
+    .then(() => { applyAdminPermissions(); renderAll(); applyAdminPermissions(); })
+    .catch(() => { applyAdminPermissions(); renderAll(); applyAdminPermissions(); });
 }
 
 // On load: check for a Discord session — must be an admin to enter
