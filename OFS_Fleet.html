@@ -26,7 +26,64 @@
     .seat-group,.house-card{min-width:0;border:1px solid rgba(176,184,200,.14);background:rgba(7,7,15,.62);border-radius:4px;padding:10px}.house-card{background:linear-gradient(180deg,rgba(201,168,76,.068),rgba(7,7,15,.62));border-color:rgba(201,168,76,.25)}.house-card h3{display:flex;justify-content:space-between;gap:8px;align-items:center;font-family:Cinzel,serif;color:var(--gold);font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;margin-bottom:6px}.house-desc{color:var(--muted);font-size:.71rem;line-height:1.35;min-height:2.8em;margin-bottom:9px}.house-count{color:var(--muted);font-size:.58rem;letter-spacing:.12em;white-space:nowrap}.seat-card{border:1px solid rgba(176,184,200,.14);background:rgba(255,255,255,.025);border-radius:4px;padding:9px;margin-bottom:8px}.seat-card:last-child{margin-bottom:0}.seat-card.assigned{border-color:rgba(201,168,76,.32);background:linear-gradient(90deg,rgba(201,168,76,.10),rgba(255,255,255,.026))}.seat-title{font-family:Cinzel,serif;color:var(--gold-lt);font-size:.64rem;letter-spacing:.10em;text-transform:uppercase;line-height:1.2}.seat-meta{color:var(--muted);font-size:.68rem;line-height:1.25;margin-top:3px}.member-card{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;align-items:center;margin-top:9px}.avatar{width:44px;height:44px;border-radius:50%;border:1px solid rgba(201,168,76,.52);background:rgba(201,168,76,.12);color:var(--gold-lt);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover;display:block}.member-name{color:#f2f1ea;font-weight:700;font-size:.86rem;line-height:1.16;overflow-wrap:anywhere}.member-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.tag{display:inline-flex;align-items:center;border:1px solid rgba(201,168,76,.24);background:rgba(201,168,76,.08);color:var(--silver);border-radius:2px;padding:3px 6px;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase}.tag.gold{color:var(--gold-lt);border-color:rgba(201,168,76,.46)}.empty-seat{color:var(--muted);font-family:'Crimson Text',serif;font-style:italic;margin-top:8px;font-size:.92rem}.empty{border:1px solid var(--b-dim);background:rgba(255,255,255,.025);padding:22px;color:var(--muted);text-align:center;border-radius:4px}
     .asset-section{margin-top:26px}.asset-head{display:flex;align-items:center;gap:14px;margin-bottom:14px}.asset-head h2{font-family:Cinzel,serif;color:var(--gold);font-size:.9rem;letter-spacing:.18em;text-transform:uppercase}.asset-line{height:1px;flex:1;background:linear-gradient(to right,var(--gold-dim),transparent)}.ship-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}.ship-card{border:1px solid var(--b-dim);background:var(--bg-card);border-radius:4px;overflow:hidden;min-height:286px}.ship-img{height:132px;background:var(--bg-card2);background-size:cover;background-position:center;border-bottom:1px solid var(--b-dim);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}.ship-body{padding:13px}.ship-member{color:var(--gold-lt);font-weight:700}.ship-name{font-family:Cinzel,serif;color:var(--silver);font-size:.78rem;letter-spacing:.10em;text-transform:uppercase;margin-top:5px}.ship-meta{color:var(--muted);font-size:.72rem;line-height:1.38;margin-top:8px}.site-footer{margin-top:42px;color:var(--muted);font-size:.72rem;text-align:center;letter-spacing:.12em;text-transform:uppercase}
     @media (max-width:980px){.fleet-story{grid-template-columns:1fr}.fleet-tier-row.three,.fleet-tier-row.two,.fleet-tier-row.houses{grid-template-columns:1fr}.hero{padding:30px 26px}.wrap{padding-left:18px;padding-right:18px}}
-    @media (max-width:620px){.fleet-stats{grid-template-columns:1fr}.fleet-tier-head{display:block}.fleet-tier-meta{text-align:left;margin-top:5px}.fleet-name{font-size:1.05rem}}
+    @media (max-width:620px){
+      .wrap{padding:92px 12px 54px}
+      .hero{padding:24px 18px;margin-bottom:20px;border-radius:5px}
+      .eyebrow{font-size:.62rem;letter-spacing:.18em;margin-bottom:10px}
+      .hero h1{font-size:clamp(1.62rem,10vw,2.15rem);letter-spacing:.07em;line-height:1.05}
+      .hero p{font-size:.98rem;line-height:1.5}
+      .hero-mark{font-size:.58rem;letter-spacing:.12em;line-height:1.45}
+      .fleet-tabs{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:18px}
+      .fleet-tab{width:100%;min-height:42px;padding:10px 12px;font-size:.66rem;letter-spacing:.12em;text-align:center}
+      .fleet-story{gap:12px;margin-bottom:18px}
+      .story-card{padding:15px 14px}
+      .story-card h2,.stat-card strong{font-size:.72rem;line-height:1.35}
+      .story-card p{font-size:.96rem;line-height:1.45}
+      .fleet-stats{grid-template-columns:1fr;gap:8px}
+      .stat-card{padding:12px 13px}
+      .stat-card span{font-size:1.32rem}
+      .fleet-command-board{gap:10px}
+      .fleet-crown{padding:14px 12px}
+      .fleet-name{font-size:1.02rem;letter-spacing:.12em;line-height:1.2}
+      .fleet-sub{font-size:.62rem;line-height:1.35}
+      .fleet-tier{padding:10px;border-radius:5px}
+      .house-leadership-tier{margin-bottom:18px}
+      .fleet-tier-head{display:block;margin-bottom:9px;padding-bottom:7px}
+      .fleet-tier-title{font-size:.66rem;letter-spacing:.13em;line-height:1.35}
+      .fleet-tier-meta{text-align:left;margin-top:5px;font-size:.55rem;line-height:1.35}
+      .fleet-tier-row{gap:8px}
+      .seat-group,.house-card{padding:9px}
+      .house-card h3{display:block;font-size:.66rem;line-height:1.35}
+      .house-count{display:block;margin-top:3px;font-size:.55rem}
+      .house-desc{min-height:0;font-size:.66rem;margin-bottom:8px}
+      .seat-card{padding:9px 8px;margin-bottom:7px}
+      .seat-title{font-size:.6rem;line-height:1.35}
+      .seat-meta{font-size:.63rem;line-height:1.35}
+      .member-card{grid-template-columns:38px minmax(0,1fr);gap:8px;margin-top:8px}
+      .avatar{width:38px;height:38px;font-size:.72rem}
+      .member-name{font-size:.8rem;line-height:1.25}
+      .member-tags{gap:4px}
+      .tag{font-size:.52rem;line-height:1.2;padding:3px 5px;letter-spacing:.06em}
+      .empty-seat{font-size:.62rem;line-height:1.35}
+      .asset-section{margin-top:22px}
+      .asset-head{gap:9px;margin-bottom:12px}
+      .asset-head h2{font-size:.72rem;letter-spacing:.14em;line-height:1.35}
+      .ship-grid{grid-template-columns:1fr;gap:10px}
+      .ship-card{min-height:0}
+      .ship-img{height:120px;font-size:.62rem}
+      .ship-body{padding:12px}
+      .ship-member{font-size:.9rem;line-height:1.25}
+      .ship-name{font-size:.68rem;line-height:1.35}
+      .ship-meta{font-size:.68rem}
+      .site-footer{margin-top:34px;font-size:.62rem;line-height:1.5}
+    }
+    @media (max-width:420px){
+      .wrap{padding-left:10px;padding-right:10px}
+      .hero{padding:22px 14px}
+      .fleet-tier{padding:9px 8px}
+      .seat-group,.house-card{padding:8px}
+      .fleet-tab{font-size:.62rem}
+    }
   </style>
 </head>
 <body>
@@ -45,7 +102,7 @@
 </main>
 <script src="ofs-data.js?v=data-refresh-20260526"></script>
 <script src="ofs-sheets.js?v=data-refresh-20260526"></script>
-<script src="header_bar.js"></script>
+<script src="header_bar.js?v=mobile-fleet-20260528"></script>
 <script>
 (function(){const cv=document.getElementById('starfield'),cx=cv.getContext('2d');let st=[];function resize(){cv.width=innerWidth;cv.height=innerHeight;st=[];const n=Math.floor(cv.width*cv.height/4200);for(let i=0;i<n;i++)st.push({x:Math.random()*cv.width,y:Math.random()*cv.height,r:Math.random()*1+.2,a:Math.random()*.5+.1,s:Math.random()*.0004+.0001});}function draw(t){cx.clearRect(0,0,cv.width,cv.height);for(const s of st){const p=Math.sin(t*s.s*900+s.x*.01)*.18+.82;cx.beginPath();cx.arc(s.x,s.y,s.r,0,Math.PI*2);cx.fillStyle=`rgba(190,210,255,${(s.a*p).toFixed(3)})`;cx.fill();}requestAnimationFrame(draw);}resize();addEventListener('resize',resize);requestAnimationFrame(draw);})();
 function esc(s){var el=document.createElement('span');el.textContent=s==null?'':String(s);return el.innerHTML;}
