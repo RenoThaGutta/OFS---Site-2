@@ -72,7 +72,7 @@
     '  padding:2px 7px;border-radius:2px;white-space:nowrap;line-height:1.4;',
     '}',
     '.nuc-rank{color:var(--gold-lt);border:1px solid var(--b-gold);}',
-    '.nuc-role{color:var(--silver);border:1px solid var(--b-dim);}',
+    '.nuc-role,.nuc-banner{color:var(--silver);border:1px solid var(--b-dim);}',
     '.nuc-path{color:var(--gold);border:1px solid var(--b-gold);background:rgba(201,168,76,.06);}',
     '.nav-user-name-row{display:flex;align-items:baseline;gap:16px;}',
     '.nuc-lvl-inline{font-family:"Cinzel",serif;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--silver);white-space:nowrap;margin-left:auto;}',
@@ -95,8 +95,8 @@
     '  .nav-user-name-row{gap:6px;min-width:0;align-items:center;}',
     '  .nav-user-name{max-width:none;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:.68rem;}',
     '  .nuc-lvl-inline{display:inline-block;font-size:.44rem;letter-spacing:.07em;max-width:64px;overflow:hidden;text-overflow:ellipsis;color:var(--gold-lt);}',
-    '  .nav-user-chips{display:flex;gap:3px;flex-wrap:nowrap;min-width:0;overflow:hidden;}',
-    '  .nuc-chip{font-size:.42rem;letter-spacing:.045em;padding:1px 4px;line-height:1.25;max-width:33%;overflow:hidden;text-overflow:ellipsis;}',
+    '  .nav-user-chips{display:flex;gap:3px;flex-wrap:nowrap;min-width:0;overflow:visible;}',
+    '  .nuc-chip{flex:0 0 auto;font-size:.40rem;letter-spacing:.035em;padding:1px 4px;line-height:1.25;max-width:none;overflow:visible;text-overflow:clip;}',
     '  .nav-user-signout{width:20px;height:20px;margin-left:0;font-size:.7rem;}',
     '}',
   ].join('');
@@ -211,15 +211,17 @@
       rankChip.textContent = player.rank || 'Commoner';
       chips.appendChild(rankChip);
 
-      // Role Path chip
-      var roleChip = document.createElement('span');
-      roleChip.className = 'nuc-chip nuc-role';
-      roleChip.title = 'Role Path';
-      roleChip.textContent = player.rolePath || 'No role path';
-      chips.appendChild(roleChip);
-
-      // Banner sub-rank chip
+      // Banner chip
       var banner = player.activeBanner;
+      if (banner) {
+        var bannerChip = document.createElement('span');
+        bannerChip.className = 'nuc-chip nuc-banner';
+        bannerChip.title = 'Banner';
+        bannerChip.textContent = banner;
+        chips.appendChild(bannerChip);
+      }
+
+      // Banner rank chip
       var bannerData = player.banners && player.banners[banner];
       var pts = (bannerData && bannerData.p) || 0;
       var medal = (bannerData && bannerData.m) || false;
@@ -230,8 +232,8 @@
       if (bannerTitle) {
         var pathChip = document.createElement('span');
         pathChip.className = 'nuc-chip nuc-path';
-        pathChip.title = banner;
-        pathChip.textContent = (banner ? banner.replace(/^The\s+/i, '') + ' · ' : '') + bannerTitle;
+        pathChip.title = 'Banner Rank';
+        pathChip.textContent = bannerTitle;
         chips.appendChild(pathChip);
       }
 
