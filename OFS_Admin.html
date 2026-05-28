@@ -244,13 +244,17 @@
     .shop-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:.74rem; letter-spacing:.16em; text-transform:uppercase; margin-bottom:14px; }
     .shop-field-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
     .shop-results, .shop-list { display:grid; gap:8px; max-height:480px; overflow:auto; }
-    .shop-result-row, .shop-item-row { display:grid; grid-template-columns:52px 1fr auto; gap:10px; align-items:center; padding:10px 12px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:3px; }
+    .shop-result-row, .shop-item-row { display:grid; grid-template-columns:52px minmax(0,1fr) auto; gap:10px; align-items:center; padding:10px 12px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:3px; }
+    .shop-result-row { grid-template-columns:96px minmax(0,1fr) 118px; align-items:start; min-height:94px; }
     .shop-result-row img, .shop-item-row img { width:52px; height:42px; object-fit:cover; border:1px solid var(--b-dim); border-radius:3px; background:var(--bg-card2); }
-    .shop-result-title, .shop-item-title { color:var(--gold-lt); font-weight:600; font-size:.88rem; }
+    .shop-result-row img { width:96px; height:74px; object-fit:contain; }
+    .shop-result-img-placeholder { width:96px; height:74px; display:flex; align-items:center; justify-content:center; border:1px solid var(--b-dim); border-radius:3px; background:rgba(7,7,15,.72); color:var(--silver-dim); font-size:.56rem; letter-spacing:.10em; text-transform:uppercase; text-align:center; }
+    .shop-result-title, .shop-item-title { color:var(--gold-lt); font-weight:600; font-size:.88rem; overflow-wrap:anywhere; line-height:1.18; }
     .shop-result-meta, .shop-item-meta { color:var(--silver-dim); font-size:.74rem; margin-top:3px; }
     .shop-result-badges { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
     .shop-result-badge { border:1px solid rgba(201,168,76,.26); color:var(--silver); background:rgba(201,168,76,.055); border-radius:999px; padding:2px 7px; font-size:.62rem; line-height:1.35; }
     .shop-result-row.importing { border-color:var(--b-gold); background:rgba(201,168,76,.08); }
+    .shop-result-row .edit-btn { width:100%; min-width:0; padding-left:8px; padding-right:8px; }
     .shop-item-picker { display:flex; gap:10px; overflow-x:auto; padding:10px; margin:0 0 14px; border:1px solid var(--b-dim); background:rgba(201,168,76,.035); border-radius:4px; }
     .shop-pick-card { flex:0 0 138px; min-height:142px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:4px; padding:8px; cursor:pointer; transition:border-color .18s, background .18s, transform .18s; }
     .shop-pick-card:hover, .shop-pick-card.active { border-color:var(--b-gold); background:rgba(201,168,76,.08); transform:translateY(-1px); }
@@ -4264,6 +4268,7 @@ document.addEventListener('click', function(e){
    SHOP ADMIN
 ══════════════════════════════════════════════════════════ */
 var SHOP_SC_RESULTS=[];
+var SHOP_SC_DETAIL_CACHE={};
 var SHOP_SELECTED_ITEM_ID='';
 function shopEsc(s){ var el=document.createElement('span'); el.textContent=s==null?'':String(s); return el.innerHTML; }
 function shopSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-'+Date.now()); }
@@ -4351,6 +4356,14 @@ function shopSCMeta(item){
   item = item || {};
   return [item.type_label||item.item_type_label||item.type, item.sub_type_label||item.sub_type, item.classification_label||item.classification, shopSCManufacturer(item)].filter(Boolean).join(' / ') || 'Item';
 }
+function shopSCImage(item){
+  item = shopUnwrapSCPayload(item);
+  if(item.imageUrl) return item.imageUrl;
+  if(item.image_url) return item.image_url;
+  if(item.image) return item.image;
+  if(Array.isArray(item.images) && item.images.length) return item.images[0].original_url || item.images[0].thumbnail_url || '';
+  return '';
+}
 function normalizeSCItem(raw){
   var data=shopUnwrapSCPayload(raw);
   var desc=data && data.description;
@@ -4376,6 +4389,31 @@ function normalizeSCItem(raw){
 }
 
 async function shopFetchJson(url){ var res=await fetch(url,{cache:'no-store'}); if(!res.ok) throw new Error('Search failed: '+res.status); return res.json(); }
+async function shopFetchSCItemDetail(slug){
+  if(!slug) return null;
+  if(SHOP_SC_DETAIL_CACHE[slug]) return SHOP_SC_DETAIL_CACHE[slug];
+  var data;
+  try { data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/items/'+encodeURIComponent(slug)); }
+  catch(e){ data=await shopFetchJson('https://api.star-citizen.wiki/api/items/'+encodeURIComponent(slug)); }
+  SHOP_SC_DETAIL_CACHE[slug]=data;
+  return data;
+}
+async function shopHydrateSCResult(i){
+  var r=SHOP_SC_RESULTS[i]; if(!r) return;
+  var slug=shopSCItemId(r) || shopSlug(r.name);
+  try{
+    var data=await shopFetchSCItemDetail(slug);
+    var detail=shopUnwrapSCPayload(data);
+    SHOP_SC_RESULTS[i]=Object.assign({}, r, {_detail:data});
+    var img=shopSCImage(detail);
+    var ph=document.getElementById('shop-sc-result-img-'+i);
+    if(ph && img){ ph.outerHTML='<img id="shop-sc-result-img-'+i+'" src="'+shopEsc(img)+'" alt="" onerror="this.outerHTML=\'<div class=&quot;shop-result-img-placeholder&quot;>No image</div>\'">'; }
+    else if(ph && ph.classList && ph.classList.contains('shop-result-img-placeholder')){ ph.textContent='No image'; }
+  }catch(e){
+    var ph=document.getElementById('shop-sc-result-img-'+i);
+    if(ph && ph.classList && ph.classList.contains('shop-result-img-placeholder')) ph.textContent='No image';
+  }
+}
 async function shopSearchSC(categoryChanged){
   var q=(document.getElementById('shop-sc-query').value||'').trim();
   var cat=(document.getElementById('shop-sc-category')&&document.getElementById('shop-sc-category').value)||'all';
@@ -4394,8 +4432,11 @@ async function shopSearchSC(categoryChanged){
     box.innerHTML=SHOP_SC_RESULTS.map(function(r,i){
       var meta=shopSCMeta(r);
       var badges=[r.classification_label||r.classification, r.item_type_label||r.type_label||r.type, shopSCManufacturer(r)].filter(Boolean).slice(0,3);
-      return '<div class="shop-result-row" id="shop-sc-result-'+i+'"><img alt="" style="display:none"><div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(meta)+'</div><div class="shop-result-badges">'+badges.map(function(b){ return '<span class="shop-result-badge">'+shopEsc(b)+'</span>'; }).join('')+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use Item</button></div>';
+      var img=shopSCImage(r);
+      var imgHtml=img ? '<img id="shop-sc-result-img-'+i+'" src="'+shopEsc(img)+'" alt="" onerror="this.outerHTML=\'<div class=&quot;shop-result-img-placeholder&quot;>No image</div>\'">' : '<div id="shop-sc-result-img-'+i+'" class="shop-result-img-placeholder">Checking image…</div>';
+      return '<div class="shop-result-row" id="shop-sc-result-'+i+'">'+imgHtml+'<div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(meta)+'</div><div class="shop-result-badges">'+badges.map(function(b){ return '<span class="shop-result-badge">'+shopEsc(b)+'</span>'; }).join('')+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use Item</button></div>';
     }).join('');
+    SHOP_SC_RESULTS.slice(0,12).forEach(function(_, i){ shopHydrateSCResult(i); });
   }catch(e){ console.error(e); box.innerHTML='<div class="tav-list-empty">Search failed: '+shopEsc(e.message)+'</div>'; }
 }
 
@@ -4405,9 +4446,7 @@ async function shopUseSCResult(i){
   if(row) row.classList.add('importing');
   try{
     var slug=shopSCItemId(r) || shopSlug(r.name);
-    var data;
-    try { data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/items/'+encodeURIComponent(slug)); }
-    catch(e){ data=await shopFetchJson('https://api.star-citizen.wiki/api/items/'+encodeURIComponent(slug)); }
+    var data=r._detail || await shopFetchSCItemDetail(slug);
     var item=normalizeSCItem(data);
     if(!item.itemId) item.itemId=slug;
     if(!item.id) item.id=item.itemId;
