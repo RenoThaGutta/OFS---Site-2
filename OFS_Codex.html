@@ -541,6 +541,258 @@ html, body {
 /* Keep z-index override for Codex split-pane layout */
 #main-nav { z-index: 300; }
 
+/* ── Mobile codex pass: responsive-only, desktop base untouched ── */
+@media (max-width: 720px) {
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    font-size: 15px;
+  }
+  .layout {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    margin-top: 58px;
+  }
+  .sidebar {
+    position: sticky;
+    top: 58px;
+    z-index: 120;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    max-height: 42vh;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line-lt);
+    background: rgba(6,10,16,.96);
+    box-shadow: 0 12px 28px rgba(0,0,0,.36);
+  }
+  .sidebar-header {
+    display: grid;
+    grid-template-columns: 42px minmax(0,1fr);
+    grid-template-areas: 'logo title' 'logo sub';
+    align-items: center;
+    column-gap: 10px;
+    text-align: left;
+    padding: 10px 14px;
+  }
+  .sidebar-logo {
+    grid-area: logo;
+    width: 42px;
+    height: 42px;
+    margin: 0;
+  }
+  .sidebar-title {
+    grid-area: title;
+    font-size: 10px;
+    letter-spacing: .15em;
+    line-height: 1.25;
+  }
+  .sidebar-sub {
+    grid-area: sub;
+    font-size: 8px;
+    letter-spacing: .16em;
+    margin-top: 1px;
+  }
+  .nav-section {
+    padding: 9px 0 3px;
+  }
+  .nav-section-label {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: rgba(6,10,16,.96);
+    padding: 6px 14px 5px;
+    font-size: 7px;
+    letter-spacing: .2em;
+  }
+  .nav-link {
+    min-height: 36px;
+    padding: 8px 14px;
+    gap: 8px;
+    font-size: 9px;
+    line-height: 1.25;
+  }
+  .nav-num {
+    min-width: 22px;
+    font-size: 8px;
+  }
+  .content {
+    height: auto;
+    overflow: visible;
+  }
+  .page {
+    width: 100%;
+    max-width: none;
+    padding: 0 18px 54px;
+  }
+  .codex-header {
+    padding: 34px 0 30px;
+  }
+  .codex-header img {
+    width: 82px;
+    height: 82px;
+    margin-bottom: 14px;
+  }
+  .codex-header h1 {
+    font-size: clamp(1.35rem, 8vw, 1.9rem);
+    letter-spacing: .1em;
+    line-height: 1.12;
+  }
+  .codex-header .subtitle {
+    font-size: 9px;
+    letter-spacing: .2em;
+    line-height: 1.45;
+  }
+  .codex-header .motto {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .section {
+    padding: 36px 0 26px;
+    scroll-margin-top: 258px;
+  }
+  .article-eyebrow {
+    font-size: 8px;
+    letter-spacing: .24em;
+  }
+  .article-numeral {
+    font-size: clamp(2rem, 16vw, 3rem);
+  }
+  .article-title {
+    font-size: clamp(.98rem, 5vw, 1.18rem);
+    line-height: 1.35;
+    letter-spacing: .055em;
+    margin-bottom: 16px;
+  }
+  .article-body,
+  .rank-detail-body {
+    font-size: 15px;
+    line-height: 1.72;
+  }
+  .article-body p,
+  .rank-detail-body p {
+    margin-bottom: 12px;
+  }
+  .tier-list {
+    padding-left: 14px;
+    margin: 12px 0;
+  }
+  .tier-list li {
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .divider {
+    gap: 9px;
+    margin: 24px 0;
+    font-size: 10px;
+    letter-spacing: .2em;
+  }
+  .banners-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .banner-card {
+    padding: 14px 15px;
+  }
+  .banner-name {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .banner-role {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .oath-block {
+    padding: 18px 16px;
+    margin: 16px 0;
+  }
+  .oath-line {
+    display: block;
+    margin-bottom: 16px;
+  }
+  .oath-speaker {
+    min-width: 0;
+    margin-bottom: 5px;
+    font-size: 9px;
+    line-height: 1.35;
+  }
+  .oath-text {
+    font-size: 14.5px;
+    line-height: 1.6;
+  }
+  .rank-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    font-size: 13px;
+  }
+  .rank-table th,
+  .rank-table td {
+    padding: 9px 10px;
+  }
+  .rank-detail {
+    padding: 16px 14px;
+    margin: 22px 0;
+  }
+  .rank-detail-header {
+    display: block;
+  }
+  .rank-detail-num {
+    display: block;
+    margin-bottom: 4px;
+  }
+  .rank-detail-name {
+    display: block;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .intro-block {
+    padding: 28px 0 8px;
+  }
+  .intro-block p {
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .two-col {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .doctrine-card {
+    padding: 16px 14px;
+  }
+  .doctrine-card-title {
+    font-size: 11px;
+    line-height: 1.35;
+  }
+  .doctrine-card li {
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .codex-footer {
+    padding: 34px 0 42px;
+  }
+  .codex-footer p {
+    font-size: 8px;
+    letter-spacing: .14em;
+    line-height: 1.8;
+  }
+}
+@media (max-width: 420px) {
+  .page { padding-left: 14px; padding-right: 14px; }
+  .sidebar { max-height: 46vh; }
+  .section { scroll-margin-top: 276px; }
+  .nav-link { padding-left: 12px; padding-right: 12px; }
+  .codex-header h1 { letter-spacing: .075em; }
+  .article-title { letter-spacing: .04em; }
+  .rank-table { font-size: 12px; }
+}
+
 </style>
 </head>
 <body>
@@ -1123,10 +1375,16 @@ html, body {
 function codexNav(id, link) {
   const el = document.getElementById(id);
   if (!el) return;
-  const container = document.getElementById('mainContent');
-  const cRect = container.getBoundingClientRect();
-  const eRect = el.getBoundingClientRect();
-  container.scrollTo({ top: container.scrollTop + (eRect.top - cRect.top) - 32, behavior: 'smooth' });
+  const isMobileCodex = window.matchMedia && window.matchMedia('(max-width: 720px)').matches;
+  if (isMobileCodex) {
+    const top = el.getBoundingClientRect().top + window.pageYOffset - 112;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  } else {
+    const container = document.getElementById('mainContent');
+    const cRect = container.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    container.scrollTo({ top: container.scrollTop + (eRect.top - cRect.top) - 32, behavior: 'smooth' });
+  }
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
   if (link) link.classList.add('active');
 }
@@ -1191,7 +1449,7 @@ content.addEventListener('scroll', () => {
   });
 })();
 </script>
-<script src="header_bar.js"></script>
+<script src="header_bar.js?v=mobile-codex-20260528"></script>
 <script src="ofs-data.js?v=data-refresh-20260526"></script>
 <script src="ofs-sheets.js?v=data-refresh-20260526"></script>
 <script src="ofs-nav.js?v=mobile-profile-card-2-20260528"></script>
