@@ -24,7 +24,7 @@
 
   /* ── CSS ─────────────────────────────────────────────── */
   var CSS = [
-    '.nav-user-zone{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;}',
+    '.nav-user-zone{position:static;left:auto;top:auto;bottom:auto;transform:none;display:flex;align-items:center;justify-content:center;justify-self:center;min-width:0;max-width:100%;}',
 
     /* Login button */
     '.nav-login-btn{',
@@ -42,6 +42,7 @@
     /* Player card wrapper */
     '.nav-user-card{',
     '  display:flex;align-items:center;gap:10px;',
+    '  max-width:340px;min-width:0;box-sizing:border-box;',
     '  padding:5px 12px 5px 6px;',
     '  border:1px solid var(--b-gold);border-radius:4px;',
     '  background:rgba(201,168,76,.04);',
@@ -59,17 +60,17 @@
     '}',
 
     /* Text block */
-    '.nav-user-info{display:flex;flex-direction:column;gap:3px;}',
+    '.nav-user-info{display:flex;flex-direction:column;gap:3px;min-width:0;}',
     '.nav-user-name{',
     '  font-family:"Cinzel",serif;font-size:.72rem;letter-spacing:.1em;',
-    '  color:var(--gold);line-height:1;white-space:nowrap;',
+    '  color:var(--gold);line-height:1;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis;',
     '}',
 
     /* Chips row */
-    '.nav-user-chips{display:flex;gap:5px;flex-wrap:nowrap;}',
+    '.nav-user-chips{display:flex;gap:5px;flex-wrap:nowrap;min-width:0;overflow:hidden;}',
     '.nuc-chip{',
     '  font-family:"Cinzel",serif;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;',
-    '  padding:2px 7px;border-radius:2px;white-space:nowrap;line-height:1.4;',
+    '  padding:2px 7px;border-radius:2px;white-space:nowrap;line-height:1.4;min-width:0;max-width:96px;overflow:hidden;text-overflow:ellipsis;',
     '}',
     '.nuc-rank{color:var(--gold-lt);border:1px solid var(--b-gold);}',
     '.nuc-role,.nuc-banner{color:var(--silver);border:1px solid var(--b-dim);}',
@@ -86,8 +87,13 @@
     '  transition:color .2s;flex-shrink:0;',
     '}',
     '.nav-user-signout:hover{color:var(--gold);}',
-    '@media(max-width:720px){',
-    '  .nav-user-zone{position:static;left:auto;top:auto;bottom:auto;transform:none;flex:1 1 auto;min-width:0;margin-left:12px;margin-right:10px;}',
+    '@media(max-width:1320px){',
+    '  .nav-user-card{max-width:300px;gap:8px;padding-right:9px;}',
+    '  .nuc-chip{max-width:78px;padding-left:5px;padding-right:5px;}',
+    '  .nav-user-name-row{gap:8px;}',
+    '}',
+    '@media(max-width:980px){',
+    '  .nav-user-zone{position:static;left:auto;top:auto;bottom:auto;transform:none;flex:1 1 auto;min-width:0;margin-left:12px;margin-right:10px;justify-self:stretch;}',
     '  .nav-login-btn{width:100%;box-sizing:border-box;justify-content:center;padding:8px 10px;font-size:.58rem;letter-spacing:.1em;}',
     '  .nav-user-card{width:100%;max-width:none;min-width:0;min-height:50px;box-sizing:border-box;padding:5px 8px 5px 6px;gap:8px;}',
     '  .nav-user-avatar{width:36px;height:36px;}',

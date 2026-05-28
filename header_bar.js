@@ -36,12 +36,12 @@
       'backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);' +
       'border-bottom:1px solid rgba(201,168,76,.28);' +
       'padding:0 40px;' +
-      'display:flex;align-items:center;justify-content:space-between;' +
+      'display:grid;grid-template-columns:auto minmax(150px,1fr) auto;align-items:center;gap:18px;' +
       'transition:background .3s;' +
     '}' +
     '.nav-logo{' +
       'display:flex;align-items:center;gap:12px;' +
-      'text-decoration:none;flex-shrink:0;' +
+      'text-decoration:none;min-width:0;' +
     '}' +
     '.nav-logo img{' +
       'height:36px;width:auto;display:block;' +
@@ -53,7 +53,7 @@
       'color:#c9a84c;white-space:nowrap;' +
     '}' +
     '.nav-links{' +
-      'display:flex;gap:2px;list-style:none;margin:0;padding:0;flex-shrink:0;' +
+      'display:flex;gap:2px;list-style:none;margin:0;padding:0;justify-self:end;min-width:0;' +
     '}' +
     '.nav-links li{margin:0;padding:0;}' +
     '.nav-links a{' +
@@ -120,16 +120,15 @@
       'display:block;width:18px;height:2px;border-radius:2px;background:#c9a84c;' +
       'box-shadow:0 6px 0 #c9a84c,0 -6px 0 #c9a84c;' +
     '}' +
-    '@media(max-width:860px){' +
-      '#main-nav{padding:0 20px;}' +
+    '@media(max-width:1320px){' +
+      '#main-nav{padding:0 30px;gap:14px;}' +
       '.nav-logo span{display:none;}' +
-      '.nav-links a{padding:6px 9px;font-size:10.5px;}' +
-      '.nav-dd-panel{width:240px;left:auto;right:0;transform:none;}' +
+      '.nav-links a{padding:7px 11px;font-size:11px;letter-spacing:.11em;}' +
     '}' +
-    '@media(max-width:720px){' +
-      '#main-nav{height:60px;padding:0 16px;}' +
+    '@media(max-width:980px){' +
+      '#main-nav{height:60px;padding:0 16px;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;}' +
       '.nav-logo img{height:34px;}' +
-      '.nav-mobile-toggle{display:flex;}' +
+      '.nav-mobile-toggle{display:flex;justify-self:end;}' +
       '.nav-links{' +
         'display:none;position:absolute;top:60px;left:0;right:0;max-height:calc(100vh - 60px);overflow:auto;' +
         'padding:10px 14px 18px;margin:0;flex-direction:column;gap:6px;' +
