@@ -171,6 +171,9 @@
         trigger.addEventListener('click', function (e) {
           e.preventDefault();
           var isOpen = ddPanel.classList.contains('open');
+          document.querySelectorAll('#main-nav .nav-dd-panel.open').forEach(function (panel) {
+            if (panel !== ddPanel) panel.classList.remove('open');
+          });
           ddPanel.classList.toggle('open', !isOpen);
         });
 
