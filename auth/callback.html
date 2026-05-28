@@ -127,7 +127,9 @@
             username:  data.username,
             avatarUrl: data.avatarUrl,
             token:     data.token,
-            isAdmin:   data.isAdmin || false
+            isAdmin:   data.isAdmin || false,
+            isFullAdmin: data.isFullAdmin || data.full || false,
+            adminPerms: data.adminPerms || data.permissions || {}
           });
           showSuccess(data.username, safeRedirectTarget(state));
         } else {

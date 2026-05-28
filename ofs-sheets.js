@@ -453,6 +453,7 @@
     _shopItems = parseShopItems(data.itemList || data.item_list || data['Item List'] || data.shopItems || data.shop_items || data['Shop Items'] || []);
     _shopPayRules = parseShopPayRules(data.currencyRules || data.currency_rules || data['currency_rules'] || data.shopPayRules || data.shop_pay_rules || data['Shop Pay Rules'] || []);
     _ranks = parseRanks(data.ranks || data.Ranks || data['Ranks'] || []);
+    _adminWhitelist = parseAdminWhitelist(data.adminWhitelist || data.admin_whitelist || data['White list Admin'] || data.whiteListAdmin || data.white_list_admin || []);
 
     // Cache tavern data for OFS_TavernHall.html and admin quest queues to consume.
     // This is intentionally cached separately from normalized players so quest boards
@@ -694,6 +695,104 @@
       };
     }).filter(function (item) { return item.id && item.name && String(item.id).toLowerCase() !== 'item id'; });
   }
+
+
+  function truthyFlag(value) {
+    return /^(x|yes|true|1|y)$/i.test(String(value || '').trim());
+  }
+
+  function normalizePermissionKey(label) {
+    return String(label || '')
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function parseAdminWhitelist(rows) {
+    rows = Array.isArray(rows) ? rows : [];
+    if (!rows.length) return [];
+    var headerRowIndex = -1;
+    var header = [];
+    for (var r = 0; r < Math.min(rows.length, 8); r++) {
+      var candidate = rows[r] || [];
+      var normalized = candidate.map(normalizePermissionKey);
+      if (normalized.indexOf('discord id') >= 0 && normalized.indexOf('full') >= 0) {
+        headerRowIndex = r;
+        header = candidate;
+        break;
+      }
+    }
+    if (headerRowIndex < 0) {
+      headerRowIndex = 0;
+      header = rows[0] || [];
+    }
+    var index = {};
+    header.forEach(function (label, i) {
+      var key = normalizePermissionKey(label);
+      if (key) index[key] = i;
+    });
+    var defaults = {
+      name: 0,
+      discordId: index['discord id'] != null ? index['discord id'] : 1,
+      full: index.full != null ? index.full : 2,
+      roster: index.roster != null ? index.roster : 4,
+      banners: index.banners != null ? index.banners : 5,
+      fleet: index.fleet != null ? index.fleet : 6,
+      shop: index.shop != null ? index.shop : 7,
+      questReview: index['quest review'] != null ? index['quest review'] : 8,
+      auditLog: index['audit log'] != null ? index['audit log'] : 9,
+      pages: index.pages != null ? index.pages : 10,
+      tavern: index.tavern != null ? index.tavern : 11
+    };
+    return rows.slice(headerRowIndex + 1).map(function (row) {
+      row = Array.isArray(row) ? row : [];
+      var item = {
+        name: String(row[defaults.name] || '').trim(),
+        discordId: String(row[defaults.discordId] || '').trim(),
+        full: truthyFlag(row[defaults.full]),
+        roster: truthyFlag(row[defaults.roster]),
+        banners: truthyFlag(row[defaults.banners]),
+        fleet: truthyFlag(row[defaults.fleet]),
+        shop: truthyFlag(row[defaults.shop]),
+        questReview: truthyFlag(row[defaults.questReview]),
+        auditLog: truthyFlag(row[defaults.auditLog]),
+        pages: truthyFlag(row[defaults.pages]),
+        tavern: truthyFlag(row[defaults.tavern]),
+        _row: row.slice(),
+        _columns: defaults
+      };
+      return item;
+    }).filter(function (item) { return item.discordId; });
+  }
+
+  function adminPermissionRow(item) {
+    var existing = (_adminWhitelist || []).find(function (row) {
+      return String(row.discordId) === String(item.discordId);
+    });
+    var cols = (existing && existing._columns) || {
+      name: 0, discordId: 1, full: 2, roster: 4, banners: 5, fleet: 6, shop: 7,
+      questReview: 8, auditLog: 9, pages: 10, tavern: 11
+    };
+    var source = existing && existing._row ? existing._row.slice() : [];
+    var needed = Math.max(cols.name, cols.discordId, cols.full, cols.roster, cols.banners, cols.fleet, cols.shop, cols.questReview, cols.auditLog, cols.pages, cols.tavern);
+    while (source.length <= needed) source.push('');
+    source[cols.name] = existing ? existing.name : (item.name || '');
+    source[cols.discordId] = existing ? existing.discordId : (item.discordId || '');
+    // Full is intentionally preserved from the sheet/current row. The website must not edit it.
+    source[cols.full] = existing && existing.full ? 'X' : (source[cols.full] || '');
+    source[cols.roster] = item.roster ? 'X' : '';
+    source[cols.banners] = item.banners ? 'X' : '';
+    source[cols.fleet] = item.fleet ? 'X' : '';
+    source[cols.shop] = item.shop ? 'X' : '';
+    source[cols.questReview] = item.questReview ? 'X' : '';
+    source[cols.auditLog] = item.auditLog ? 'X' : '';
+    source[cols.pages] = item.pages ? 'X' : '';
+    source[cols.tavern] = item.tavern ? 'X' : '';
+    return source;
+  }
+
+  function getAdminWhitelist() { return _adminWhitelist.slice(); }
 
   function parseRanks(rows) {
     if (!rows || !rows.length) return [];
@@ -1173,6 +1272,16 @@
     return _apiPost('/write', { op: 'deleteRow', sheet: 'currency_rules', keyCol: 0, keyVal: id });
   }
 
+  function saveAdminPermissions(item) {
+    return _apiPost('/write', {
+      op: 'overwrite',
+      sheet: 'White list Admin',
+      keyCol: 1,
+      keyVal: String(item.discordId || ''),
+      row: adminPermissionRow(item)
+    });
+  }
+
   /** Return the cached timeline block overrides keyed by original block title/id. */
   function getTimelineBlocks() {
     return _timelineBlocks;
@@ -1198,6 +1307,7 @@
     getShopItems,
     getShopPayRules,
     getRanks,
+    getAdminWhitelist,
     getBannerDefs,
     getBannerAliases,
     resolveBannerName,
@@ -1217,6 +1327,7 @@
     deleteShopItem,
     saveShopPayRule,
     deleteShopPayRule,
+    saveAdminPermissions,
     appendStatAdjustment,
     updateWallet,
     appendBankLog,
