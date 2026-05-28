@@ -3499,7 +3499,7 @@ function fleetPlayerRankMatchesSlot(p,row){
 }
 function fleetStructureRankEmptyText(row){
   var required=fleetStructureRequiredRank(row);
-  return required ? ('No '+required.replace(/\b\w/g,function(c){return c.toUpperCase();})+' ranked members found.') : 'No matching members found.';
+  return required ? ('No available '+required.replace(/\b\w/g,function(c){return c.toUpperCase();})+' ranked members found.') : 'No available matching members found.';
 }
 function fleetPlayerRep(p){
   try{ if(typeof calcRep==='function'){ var rep=calcRep(Number(p&&p.reputationXP)||0); return rep&&rep.lvl ? rep.lvl : 1; } }catch(e){}
@@ -3548,9 +3548,35 @@ function fleetStructureEditMember(i){
   if(picker) picker.classList.remove('has-selected');
   if(input){ input.focus(); input.select(); fleetStructureRenderMemberResults(i); }
 }
-function fleetStructureMemberPool(row, query){
+function fleetStructureAssignedPlayerIds(exceptIndex){
+  var used={};
+  for(var idx=0; idx<FLEET_STRUCTURE_RENDER_ROWS.length; idx++){
+    if(idx===exceptIndex) continue;
+    var uid=(document.getElementById('fs-user-'+idx)||{}).value||'';
+    var username=(document.getElementById('fs-username-'+idx)||{}).value||'';
+    var p=fleetFindPlayer(uid)||fleetFindPlayer(username);
+    if(p && p.id) used[String(p.id)]=idx;
+  }
+  return used;
+}
+function fleetStructurePlayerUsedElsewhere(p,i){
+  if(!p || !p.id) return false;
+  return fleetStructureAssignedPlayerIds(i)[String(p.id)]!==undefined;
+}
+function fleetStructureDuplicateRows(rows){
+  var seen={}, dup=[];
+  rows.forEach(function(row){
+    if(!row || !row.userId) return;
+    var key=String(row.userId);
+    if(seen[key]) dup.push(row.username || key);
+    else seen[key]=row;
+  });
+  return dup;
+}
+function fleetStructureMemberPool(row, query, i){
   query=String(query||'').toLowerCase().trim();
-  var pool=PLAYERS.slice().filter(function(p){ return fleetPlayerRankMatchesSlot(p,row); });
+  var used=fleetStructureAssignedPlayerIds(i);
+  var pool=PLAYERS.slice().filter(function(p){ return fleetPlayerRankMatchesSlot(p,row) && !Object.prototype.hasOwnProperty.call(used,String(p.id||'')); });
   if(query){
     pool=pool.filter(function(p){ return [p.username,p.id,p.rank,p.activeBanner].join(' ').toLowerCase().indexOf(query)!==-1; });
   }
@@ -3559,7 +3585,7 @@ function fleetStructureMemberPool(row, query){
 function fleetStructureRenderMemberResults(i){
   var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), box=document.getElementById('fs-member-results-'+i);
   if(!input || !box) return;
-  var pool=fleetStructureMemberPool(row,input.value);
+  var pool=fleetStructureMemberPool(row,input.value,i);
   fleetStructureCloseMemberPickers(box.id);
   if(!pool.length){ box.innerHTML='<div class="fleet-member-empty">'+fleetStructureRankEmptyText(row)+'</div>'; }
   else { box.innerHTML=pool.map(function(p){ return fleetPlayerOptionHtml(p,i); }).join(''); }
@@ -3572,12 +3598,13 @@ function fleetStructureMemberKey(e,i){
   if(e.key==='Escape'){ fleetStructureCloseMemberPickers(); return; }
   if(e.key==='Enter'){
     e.preventDefault();
-    var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), pool=fleetStructureMemberPool(row,input&&input.value);
+    var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{}, input=document.getElementById('fs-username-'+i), pool=fleetStructureMemberPool(row,input&&input.value,i);
     if(pool.length) fleetStructureSelectMember(i,pool[0].id||'');
   }
 }
 function fleetStructureSelectMember(i,userId){
   var p=fleetFindPlayer(userId); if(!p) return;
+  if(fleetStructurePlayerUsedElsewhere(p,i)){ alert('That member is already assigned to another Fleet Structure slot. Clear that slot first.'); return; }
   var input=document.getElementById('fs-username-'+i), uid=document.getElementById('fs-user-'+i);
   if(input) input.value=p.username||'';
   if(uid) uid.value=p.id||'';
@@ -3609,7 +3636,7 @@ function fleetStructureMemberChanged(i){
   var username=(document.getElementById('fs-username-'+i)||{}).value||'';
   var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{};
   var p=fleetFindPlayer(username);
-  var valid=(p && fleetPlayerRankMatchesSlot(p,row));
+  var valid=(p && fleetPlayerRankMatchesSlot(p,row) && !fleetStructurePlayerUsedElsewhere(p,i));
   var uid=document.getElementById('fs-user-'+i);
   if(uid) uid.value=valid ? (p.id||'') : '';
   fleetStructureSetSelectedCard(i,valid ? p : null);
@@ -3620,12 +3647,13 @@ function fleetReadStructureSlot(i, slotLabel){
   var userId=(document.getElementById('fs-user-'+i)||{}).value||'';
   var p=fleetFindPlayer(username)||fleetFindPlayer(userId);
   if(p && fleetPlayerRankMatchesSlot(p,FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ username=p.username||username; userId=p.id||userId; }
-  else if(fleetStructureRequiredRank(FLEET_STRUCTURE_RENDER_ROWS[i]||{})){ userId=''; }
+  else if(fleetStructureRequiredRank(FLEET_STRUCTURE_RENDER_ROWS[i]||{}) || p){ userId=''; }
   return { fleetName:(document.getElementById('fs-fleet-'+i)||{}).value||FLEET_DEFAULT_NAME, section:(document.getElementById('fs-section-'+i)||{}).value||'', slotLabel:slotLabel, userId:String(userId||'').trim(), username:String(username||'').trim(), title:((document.getElementById('fs-title-'+i)||{}).value||'').trim(), house:((document.getElementById('fs-house-'+i)||{}).value||'').trim(), banner:((document.getElementById('fs-banner-'+i)||{}).value||'').trim(), sortOrder:Number((document.getElementById('fs-sort-'+i)||{}).value)||0, active:((document.getElementById('fs-active-'+i)||{}).value||'TRUE')!=='FALSE', notes:((document.getElementById('fs-notes-'+i)||{}).value||'').trim() };
 }
 async function fleetSaveStructureSlot(i, slotLabel){
   if(!window.OFSSheets || !OFSSheets.saveFleetStructureSlot){ alert('Fleet Structure write helper unavailable.'); return; }
   var item=fleetReadStructureSlot(i, slotLabel);
+  if(item.userId && fleetStructurePlayerUsedElsewhere(fleetFindPlayer(item.userId),i)){ alert('That member is already assigned to another Fleet Structure slot. Clear that slot first.'); return; }
   try{ await OFSSheets.saveFleetStructureSlot(item); alert('Fleet Structure slot saved.'); if(OFSSheets.load) await OFSSheets.load({force:true}); renderFleetStructure(); }
   catch(e){ console.error(e); alert('Fleet Structure save failed: '+e.message); }
 }
@@ -3635,6 +3663,8 @@ async function fleetSaveStructureBoard(){
   if(q){ alert('Clear the Fleet Structure filter before saving the full command board.'); return; }
   if(!FLEET_STRUCTURE_RENDER_ROWS.length) renderFleetStructure();
   var rows=FLEET_STRUCTURE_RENDER_ROWS.map(function(row,i){return fleetReadStructureSlot(i,row.slotLabel);});
+  var duplicates=fleetStructureDuplicateRows(rows);
+  if(duplicates.length){ alert('Each member can only hold one Fleet Structure slot. Duplicate assignment: '+duplicates[0]); return; }
   try{
     for(var i=0;i<rows.length;i++) await OFSSheets.saveFleetStructureSlot(rows[i]);
     showToast('Fleet Structure saved.');
