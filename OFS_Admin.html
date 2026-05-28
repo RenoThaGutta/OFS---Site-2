@@ -3506,16 +3506,16 @@ function renderFleetStructure(){
 }
 function fleetStructureBoard(rows){
   function bySection(name){ return rows.filter(function(r){return (r.section||'')===name;}); }
-  function houseLeader(house){ return rows.filter(function(r){return (r.section||'')==='House Leadership' && (r.house||'')===house;}); }
   var name=(document.getElementById('fleet-structure-name')&&document.getElementById('fleet-structure-name').value)||FLEET_DEFAULT_NAME;
   var html='<div class="fleet-command-board">';
   html+='<section class="fleet-tier fleet-fleet-crown"><div class="fleet-fleet-name">'+fleetEsc(name)+'</div><div class="fleet-fleet-sub">Fleet Command Structure</div></section>';
   html+=fleetTier('Tier I — Senior Command','3 Lord Commander seats','three',fleetStructureSeatGroups(bySection('Senior Command')));
-  html+=fleetTier('Tier II — Command Support','2 Custodes seats','two',fleetStructureSeatGroups(bySection('Custodes')));
-  html+='<section class="fleet-tier"><div class="fleet-tier-head"><div class="fleet-tier-title">Tier III — Houses & Banner Command</div><div class="fleet-tier-meta">3 Houses / 12 Commander Slots</div></div><div class="fleet-tier-row houses">'
-    +fleetHouseCard('Dominion','Combat, security, fleet warfare, and military operations',houseLeader('Dominion'),bySection('Dominion Commanders'))
-    +fleetHouseCard('Provision','Mining, cargo, salvage, logistics, industry, and supply',houseLeader('Provision'),bySection('Provision Commanders'))
-    +fleetHouseCard('Arcanum','Medical, science, exploration, and specialist support',houseLeader('Arcanum'),bySection('Arcanum Commanders'))
+  html+=fleetTier('Tier II — House Leadership','3 House Lord seats','three',fleetStructureSeatGroups(bySection('House Leadership')));
+  html+=fleetTier('Tier III — Command Support','2 Custodes seats','two',fleetStructureSeatGroups(bySection('Custodes')));
+  html+='<section class="fleet-tier"><div class="fleet-tier-head"><div class="fleet-tier-title">Tier IV — Houses & Banner Command</div><div class="fleet-tier-meta">3 Houses / 12 Commander Slots</div></div><div class="fleet-tier-row houses">'
+    +fleetHouseCard('Dominion','Combat, security, fleet warfare, and military operations',bySection('Dominion Commanders'))
+    +fleetHouseCard('Provision','Mining, cargo, salvage, logistics, industry, and supply',bySection('Provision Commanders'))
+    +fleetHouseCard('Arcanum','Medical, science, exploration, and specialist support',bySection('Arcanum Commanders'))
     +'</div></section>';
   html+='</div>';
   return html;
@@ -3535,11 +3535,9 @@ function fleetStructureGroup(title, meta, rows, extraClass){
   return '<section class="fleet-structure-group '+fleetEsc(extraClass||'')+'"><h4><span>'+fleetEsc(title)+'</span><span class="fleet-structure-section">'+fleetEsc(meta||'')+'</span></h4>'
     +ids.map(function(i){return fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i);}).join('')+'</section>';
 }
-function fleetHouseCard(house, desc, leaderRows, commanderRows){
-  var leaderIds=leaderRows.map(function(r){return FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);}).filter(function(i){return i>=0;});
+function fleetHouseCard(house, desc, commanderRows){
   var commanderIds=commanderRows.map(function(r){return FLEET_STRUCTURE_RENDER_ROWS.indexOf(r);}).filter(function(i){return i>=0;});
   return '<section class="fleet-structure-group house-card"><h4><span>House of '+fleetEsc(house)+'</span><span class="fleet-structure-section">4 Commanders</span></h4><div class="fleet-house-desc">'+fleetEsc(desc)+'</div>'
-    +leaderIds.map(function(i){return fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i, 'house-lord-slot');}).join('')
     +commanderIds.map(function(i){return fleetStructureSlot(FLEET_STRUCTURE_RENDER_ROWS[i], i, 'commander-slot');}).join('')
     +'</section>';
 }
