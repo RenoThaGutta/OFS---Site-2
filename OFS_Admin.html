@@ -248,6 +248,9 @@
     .shop-result-row img, .shop-item-row img { width:52px; height:42px; object-fit:cover; border:1px solid var(--b-dim); border-radius:3px; background:var(--bg-card2); }
     .shop-result-title, .shop-item-title { color:var(--gold-lt); font-weight:600; font-size:.88rem; }
     .shop-result-meta, .shop-item-meta { color:var(--silver-dim); font-size:.74rem; margin-top:3px; }
+    .shop-result-badges { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+    .shop-result-badge { border:1px solid rgba(201,168,76,.26); color:var(--silver); background:rgba(201,168,76,.055); border-radius:999px; padding:2px 7px; font-size:.62rem; line-height:1.35; }
+    .shop-result-row.importing { border-color:var(--b-gold); background:rgba(201,168,76,.08); }
     .shop-item-picker { display:flex; gap:10px; overflow-x:auto; padding:10px; margin:0 0 14px; border:1px solid var(--b-dim); background:rgba(201,168,76,.035); border-radius:4px; }
     .shop-pick-card { flex:0 0 138px; min-height:142px; border:1px solid var(--b-dim); background:rgba(255,255,255,.025); border-radius:4px; padding:8px; cursor:pointer; transition:border-color .18s, background .18s, transform .18s; }
     .shop-pick-card:hover, .shop-pick-card.active { border-color:var(--b-gold); background:rgba(201,168,76,.08); transform:translateY(-1px); }
@@ -4328,24 +4331,47 @@ document.addEventListener('click', function(e){
   if(tab==='items') renderShopItems(); else renderShopRules();
 });
 
+function shopUnwrapSCPayload(raw){
+  var data = raw && raw.ok && raw.data ? raw.data : raw;
+  // Worker detail route returns { ok:true, data:{ data:{...item...} } } while direct Wiki returns { data:{...item...} }.
+  if(data && data.data && !Array.isArray(data.data) && (data.data.name || data.data.slug || data.data.uuid)) data = data.data;
+  return data || {};
+}
+function shopSCItemId(data){
+  data = data || {};
+  var fromApi = String(data.api_url || data.link || '').split('/').filter(Boolean).pop() || '';
+  return String(data.slug || fromApi || data.uuid || data.class_name || shopSlug(data.name || 'sc-item')).replace(/^shop-/, '').trim();
+}
+function shopSCManufacturer(data){
+  data = data || {};
+  if(data.manufacturer && typeof data.manufacturer === 'object') return data.manufacturer.name || data.manufacturer.code || '';
+  return data.manufacturer || data.manufacturer_description || '';
+}
+function shopSCMeta(item){
+  item = item || {};
+  return [item.type_label||item.item_type_label||item.type, item.sub_type_label||item.sub_type, item.classification_label||item.classification, shopSCManufacturer(item)].filter(Boolean).join(' / ') || 'Item';
+}
 function normalizeSCItem(raw){
-  var data=raw && raw.data ? raw.data : raw;
+  var data=shopUnwrapSCPayload(raw);
   var desc=data && data.description;
   if(desc && typeof desc==='object') desc=desc.en_EN || Object.values(desc)[0] || '';
   var img='';
   if(data && Array.isArray(data.images) && data.images.length){ img=data.images[0].original_url || data.images[0].thumbnail_url || ''; }
-  var category=(data&&((data.type_label)||(data.item_type_label)||(data.type)||(data.classification_label)||(data.classification)))||'';
+  var category=[data&&((data.type_label)||(data.item_type_label)||(data.type)), data&&((data.sub_type_label)||(data.sub_type)), data&&((data.classification_label)||(data.classification))].filter(Boolean).join(' / ');
+  var manufacturer=shopSCManufacturer(data);
+  var itemId=shopSCItemId(data);
   return {
-    id: '', itemId:'',
+    id: itemId, itemId:itemId,
     name: (data&&data.name)||'',
     imageUrl: img,
     rollBuyInAmount:'', canAuction:'Y', tradeable:'Y', marketValue:'',
     description: desc || '', enabled:true, active:true,
     priceGold:0, priceSilver:0, priceCopper:0, stock:0,
-    category: category,
-    type: category,
+    category: category || (data&&((data.type_label)||(data.item_type_label)||(data.type)||(data.classification_label)||(data.classification))) || '',
+    type: (data&&((data.type_label)||(data.item_type_label)||(data.type)))||'',
     classification: (data&&((data.classification_label)||(data.classification)))||'',
-    notes:'Imported from Star Citizen Wiki'
+    manufacturer: manufacturer,
+    notes:'Imported from Star Citizen Wiki'+(manufacturer?' · '+manufacturer:'')
   };
 }
 
@@ -4365,21 +4391,33 @@ async function shopSearchSC(categoryChanged){
     groups.forEach(function(g){ if((g.type==='items'||g.label==='Items') && Array.isArray(g.results)) results=results.concat(g.results); });
     SHOP_SC_RESULTS=results.filter(function(r){ return shopItemMatchesCategory({name:r.name,type:r.type_label||r.item_type_label||r.type,subType:r.sub_type_label||r.sub_type,classification:r.classification_label||r.classification}, cat); }).slice(0,30);
     if(!SHOP_SC_RESULTS.length){ box.innerHTML='<div class="tav-list-empty">No '+shopEsc(SHOP_CATEGORY_LABELS[cat]||'')+' Star Citizen items found for this search.</div>'; return; }
-    box.innerHTML=SHOP_SC_RESULTS.map(function(r,i){ var meta=[r.type_label||r.item_type_label||r.type,r.sub_type_label||r.sub_type,r.classification_label||r.classification].filter(Boolean).join(' / ')||'Item'; return '<div class="shop-result-row"><img alt="" style="display:none"><div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(meta)+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use Item</button></div>'; }).join('');
+    box.innerHTML=SHOP_SC_RESULTS.map(function(r,i){
+      var meta=shopSCMeta(r);
+      var badges=[r.classification_label||r.classification, r.item_type_label||r.type_label||r.type, shopSCManufacturer(r)].filter(Boolean).slice(0,3);
+      return '<div class="shop-result-row" id="shop-sc-result-'+i+'"><img alt="" style="display:none"><div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(meta)+'</div><div class="shop-result-badges">'+badges.map(function(b){ return '<span class="shop-result-badge">'+shopEsc(b)+'</span>'; }).join('')+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use Item</button></div>';
+    }).join('');
   }catch(e){ console.error(e); box.innerHTML='<div class="tav-list-empty">Search failed: '+shopEsc(e.message)+'</div>'; }
 }
 
 async function shopUseSCResult(i){
   var r=SHOP_SC_RESULTS[i]; if(!r) return;
+  var row=document.getElementById('shop-sc-result-'+i);
+  if(row) row.classList.add('importing');
   try{
-    var slug=(r.api_url||'').split('/').pop() || r.slug || shopSlug(r.name);
+    var slug=shopSCItemId(r) || shopSlug(r.name);
     var data;
     try { data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/items/'+encodeURIComponent(slug)); }
     catch(e){ data=await shopFetchJson('https://api.star-citizen.wiki/api/items/'+encodeURIComponent(slug)); }
-    shopSetItemForm(normalizeSCItem(data));
+    var item=normalizeSCItem(data);
+    if(!item.itemId) item.itemId=slug;
+    if(!item.id) item.id=item.itemId;
+    shopSetItemForm(item);
   }catch(e){
     console.error(e);
-    shopSetItemForm({ id:'', itemId:'', name:r.name||'', imageUrl:'', rollBuyInAmount:'', canAuction:'Y', tradeable:'Y', marketValue:'', description:'', enabled:true, active:true, priceGold:0, priceSilver:0, priceCopper:0, stock:0, category:r.item_type_label||r.classification_label||r.classification||'', notes:'Imported from Star Citizen Wiki' });
+    var fallbackId=shopSCItemId(r) || shopSlug(r.name);
+    shopSetItemForm({ id:fallbackId, itemId:fallbackId, name:r.name||'', imageUrl:'', rollBuyInAmount:'', canAuction:'Y', tradeable:'Y', marketValue:'', description:'', enabled:true, active:true, priceGold:0, priceSilver:0, priceCopper:0, stock:0, category:[r.item_type_label||r.type_label||r.type,r.classification_label||r.classification].filter(Boolean).join(' / '), notes:'Imported from Star Citizen Wiki' });
+  } finally {
+    if(row) row.classList.remove('importing');
   }
 }
 
