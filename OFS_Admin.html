@@ -336,8 +336,10 @@
     .fleet-member-picker { position:relative; min-width:0; }
     .fleet-member-picker input { padding-right:22px; }
     .fleet-member-picker.has-selected input { display:none; }
+    .fleet-member-picker.has-selected.is-editing input { display:block; margin-top:8px; }
     .fleet-member-picker::after { content:'▾'; position:absolute; right:8px; top:50%; transform:translateY(-50%); color:var(--gold-lt); font-size:.62rem; pointer-events:none; }
     .fleet-member-picker.has-selected::after { display:none; }
+    .fleet-member-picker.has-selected.is-editing::after { display:block; top:auto; bottom:10px; }
     .fleet-member-results { display:none; position:absolute; z-index:700; left:0; top:calc(100% + 5px); width:min(640px, calc(100vw - 40px)); max-height:300px; overflow:auto; border:1px solid rgba(201,168,76,.38); border-radius:4px; background:rgba(7,7,15,.98); box-shadow:0 18px 34px rgba(0,0,0,.56); padding:4px; }
     .fleet-member-results.open { display:grid; gap:4px; }
     .fleet-member-option { display:grid; grid-template-columns:34px minmax(150px,1fr) 104px 58px minmax(110px,.7fr); gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 8px; border:1px solid transparent; border-radius:3px; background:rgba(255,255,255,.018); color:var(--text); text-align:left; cursor:pointer; }
@@ -3602,11 +3604,11 @@ function fleetStructureSelectedCardHtml(p,i){
 function fleetStructureSetSelectedCard(i,p){
   var picker=document.getElementById('fs-member-picker-'+i), card=document.getElementById('fs-member-card-'+i);
   if(card) card.outerHTML=fleetStructureSelectedCardHtml(p,i);
-  if(picker) picker.classList.toggle('has-selected', !!p);
+  if(picker){ picker.classList.toggle('has-selected', !!p); if(p) picker.classList.remove('is-editing'); }
 }
 function fleetStructureEditMember(i){
   var picker=document.getElementById('fs-member-picker-'+i), input=document.getElementById('fs-username-'+i);
-  if(picker) picker.classList.remove('has-selected');
+  if(picker) picker.classList.add('is-editing');
   if(input){ input.value=''; input.focus(); fleetStructureRenderMemberResults(i); }
 }
 function fleetStructureAssignedPlayerIds(exceptIndex){
@@ -3655,7 +3657,13 @@ function fleetStructureRenderMemberResults(i){
   box.classList.add('open');
 }
 function fleetStructureCloseMemberPickers(except){
-  document.querySelectorAll('.fleet-member-results.open').forEach(function(el){ if(el.id!==except) el.classList.remove('open'); });
+  document.querySelectorAll('.fleet-member-results.open').forEach(function(el){
+    if(el.id!==except){
+      el.classList.remove('open');
+      var picker=el.closest&&el.closest('.fleet-member-picker');
+      if(picker) picker.classList.remove('is-editing');
+    }
+  });
 }
 function fleetStructureMemberKey(e,i){
   if(e.key==='Escape'){ fleetStructureCloseMemberPickers(); return; }
@@ -3698,6 +3706,8 @@ function fleetStructureSlot(row,i,extraClass){
 function fleetStructureMemberChanged(i){
   var username=(document.getElementById('fs-username-'+i)||{}).value||'';
   var row=FLEET_STRUCTURE_RENDER_ROWS[i]||{};
+  var picker=document.getElementById('fs-member-picker-'+i);
+  if(picker && picker.classList.contains('is-editing')){ fleetStructureRenderMemberResults(i); return; }
   var p=fleetFindPlayer(username);
   var valid=(p && fleetPlayerRankMatchesSlot(p,row) && !fleetStructurePlayerUsedElsewhere(p,i));
   var uid=document.getElementById('fs-user-'+i);
