@@ -1268,7 +1268,6 @@
       <div class="sec-head"><h2>Fleet</h2><div class="sec-line"></div></div>
       <div class="tav-subtabs" id="fleet-subtabs">
         <button class="shop-stab active" data-fleettab="structure">Structure</button>
-        <button class="shop-stab"        data-fleettab="builder">Fleet Assignments</button>
         <button class="shop-stab"        data-fleettab="missing">Ship Registry</button>
       </div>
 
@@ -1281,63 +1280,6 @@
         <datalist id="fleet-structure-member-options"></datalist>
         <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleet Structure</strong> sheet. Use the fleet dropdown to switch command boards or create a new fleet, assign members directly into the structure, then save.</div>
         <div id="fleet-structure-root" class="fleet-structure-grid"><div class="tav-list-empty">Loading Fleet Structure…</div></div>
-      </div>
-
-      <div id="fleet-builder-panel" class="fleet-missing-panel">
-        <div class="controls">
-          <input class="ctrl-input" id="fleet-filter" placeholder="Filter fleet, member, ship, role…" oninput="renderFleetAdmin()">
-          <button class="add-btn" onclick="fleetNew()">+ New Build</button>
-          <button class="ctrl-btn" onclick="renderFleetAdmin()">Refresh</button>
-        </div>
-        <div class="field-discord-note" style="margin-bottom:14px;">Website source of truth: <strong>Fleets</strong> sheet. Ship choices come from <strong>Ship Registry</strong>. Use the builder below to add multiple members, set role caps, then save the built roster.</div>
-
-        <div class="fleet-admin-layout">
-        <section class="fleet-builder-card">
-          <h4 id="fleet-form-title">Fleet Builder</h4>
-          <div class="field-group fleet-field-grid">
-            <input id="fleet-id" type="hidden">
-            <div class="field-row"><label>Fleet Name</label><input id="fleet-name" placeholder="1st Fleet" oninput="fleetRulesChanged()"></div>
-            <div class="field-row"><label>Member Search</label><input id="fleet-member-search" list="fleet-member-options" placeholder="Type a member name…" oninput="fleetSearchChanged(event)" onkeydown="fleetSearchKey(event)"><datalist id="fleet-member-options"></datalist><input id="fleet-user" type="hidden"></div>
-            <div class="field-row"><label>House</label><input id="fleet-house" placeholder="Auto-filled / optional"></div>
-            <div class="field-row"><label>Banner</label><input id="fleet-banner" placeholder="Defaults from roster"></div>
-            <div class="field-row"><label>Ship Search</label><input id="fleet-ship-search" list="fleet-ship-options" placeholder="Type a ship model…" oninput="fleetShipSearchChanged(event)" onkeydown="fleetShipKey(event)"><datalist id="fleet-ship-options"></datalist><input id="fleet-ship" type="hidden"></div>
-            <div class="field-row"><label>Ship Make</label><input id="fleet-ship-make" placeholder="Auto-filled from registry"></div>
-            <div class="field-row"><label>Ship Image URL</label><input id="fleet-ship-img" placeholder="Auto-filled from registry"></div>
-            <div class="field-row"><label>Position / Role</label><input id="fleet-role" list="fleet-role-options" value="Fighter" placeholder="Fighter, Med Evac, Command…"><datalist id="fleet-role-options"><option>Command</option><option>Fighter</option><option>Med Evac</option><option>Support</option><option>Crew</option><option>Transport</option><option>Recon</option><option>Pilot</option><option>Assigned Vessels</option></datalist></div>
-            <div class="field-row"><label>Sort Order</label><input id="fleet-sort" type="number" value="0"></div>
-            <div class="field-row"><label>Active</label><select id="fleet-active"><option value="TRUE">TRUE</option><option value="FALSE">FALSE</option></select></div>
-            <div class="field-row" style="grid-column:1/-1"><label>Notes</label><input id="fleet-notes" placeholder="Optional display/admin note"></div>
-          </div>
-
-          <div class="fleet-rule-panel">
-            <div class="fleet-rule-head">Fleet Rules / Role Caps</div>
-            <div class="fleet-rule-grid">
-              <label>Fighters <input id="fleet-cap-fighter" type="number" min="0" value="2" oninput="fleetRulesChanged()"></label>
-              <label>Med Evac <input id="fleet-cap-med-evac" type="number" min="0" value="1" oninput="fleetRulesChanged()"></label>
-              <label>Command <input id="fleet-cap-command" type="number" min="0" value="1" oninput="fleetRulesChanged()"></label>
-              <label>Support <input id="fleet-cap-support" type="number" min="0" value="0" oninput="fleetRulesChanged()"></label>
-            </div>
-            <div class="fleet-rule-note" id="fleet-rule-status">Caps warn before save; zero means no cap.</div>
-          </div>
-
-          <div class="fleet-builder-actions">
-            <button class="ctrl-btn" onclick="fleetAddToBuild()">Add Member to Build</button>
-            <button class="cancel-btn" onclick="fleetClearForm()">Clear Form</button>
-            <button class="save-btn" onclick="fleetSaveBuild()">Save Built Roster</button>
-          </div>
-          <div id="fleet-build-list" class="fleet-build-list"><div class="tav-list-empty">No members staged yet.</div></div>
-        </section>
-
-        <section class="fleet-roster-card">
-          <h4>Built Fleet Members</h4>
-          <div id="fleet-admin-roster" class="fleet-admin-roster"><div class="tav-list-empty">Select or build a fleet to preview its roster.</div></div>
-        </section>
-      </div>
-
-        <div class="field-discord-note" style="margin-top:18px;">
-          <strong>Fleets tab header row for A1:Q1:</strong><br>
-          Fleet ID | Fleet Name | User ID | Username | House | Banner | Ship Model | Ship Make | Ship Image URL | Role | Sort Order | Notes | Active | Fighter Cap | Med Evac Cap | Command Cap | Support Cap
-        </div>
       </div>
 
       <div id="fleet-missing-panel" class="fleet-missing-panel">
@@ -3430,7 +3372,11 @@ function fleetEdit(id){
   document.getElementById('fleet-role').value=f.role||'Assigned Vessels'; document.getElementById('fleet-sort').value=f.sortOrder||0; document.getElementById('fleet-notes').value=f.notes; document.getElementById('fleet-active').value=f.active?'TRUE':'FALSE';
   fleetApplyRules(f.fleetName); renderFleetBuild(); renderFleetRosterPreview(f.fleetName);
 }
-function fleetClearForm(){ ['fleet-id','fleet-member-search','fleet-user','fleet-house','fleet-banner','fleet-ship','fleet-ship-search','fleet-ship-make','fleet-ship-img','fleet-notes'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';}); document.getElementById('fleet-sort').value=0; document.getElementById('fleet-active').value='TRUE'; }
+function fleetClearForm(){
+  ['fleet-id','fleet-member-search','fleet-user','fleet-house','fleet-banner','fleet-ship','fleet-ship-search','fleet-ship-make','fleet-ship-img','fleet-notes'].forEach(function(id){var el=document.getElementById(id); if(el) el.value='';});
+  var sort=document.getElementById('fleet-sort'); if(sort) sort.value=0;
+  var active=document.getElementById('fleet-active'); if(active) active.value='TRUE';
+}
 function fleetCurrentItem(){
   var uid=document.getElementById('fleet-user').value, p=PLAYERS.find(function(x){return x.id===uid;});
   var rules=fleetReadRules();
@@ -4312,9 +4258,8 @@ document.addEventListener('click', function(e){
   btn.classList.add('active');
   var tab=btn.getAttribute('data-fleettab');
   document.getElementById('fleet-structure-panel').classList.toggle('active', tab==='structure');
-  document.getElementById('fleet-builder-panel').classList.toggle('active', tab==='builder');
   document.getElementById('fleet-missing-panel').classList.toggle('active', tab==='missing');
-  if(tab==='structure') renderFleetStructure(); else if(tab==='builder') renderFleetAdmin(); else renderFleetShipRegistryList();
+  if(tab==='structure') renderFleetStructure(); else renderFleetShipRegistryList();
 });
 
 /* ══════════════════════════════════════════════════════════
