@@ -1356,11 +1356,21 @@
                 <option value="medical">Medical</option>
                 <option value="mining">Mining</option>
                 <option value="clothing">Clothing</option>
+                <option value="paints">Paints / Liveries</option>
+                <option value="components">Components / Attachments</option>
                 <option value="ship-weapons">Ship Weapons</option>
+              </select>
+              <select class="ctrl-input" id="shop-sc-limit" style="max-width:110px" onchange="shopSearchSC(true)">
+                <option value="4">Load 4</option>
+                <option value="8" selected>Load 8</option>
+                <option value="12">Load 12</option>
               </select>
               <button class="ctrl-btn" onclick="shopSearchSC()">Search</button>
             </div>
             <div id="shop-sc-results" class="shop-results"><div class="tav-list-empty">Search the Star Citizen Wiki API to import item details and images.</div></div>
+            <div id="shop-sc-more-wrap" class="controls" style="display:none; margin-top:10px; justify-content:center">
+              <button class="ctrl-btn" id="shop-sc-more-btn" onclick="shopLoadMoreSC()">Load More</button>
+            </div>
           </section>
 
           <section class="shop-card">
@@ -4292,6 +4302,7 @@ document.addEventListener('click', function(e){
 ══════════════════════════════════════════════════════════ */
 var SHOP_SC_RESULTS=[];
 var SHOP_SC_DETAIL_CACHE={};
+var SHOP_SC_SEARCH_STATE={ q:'', cat:'all', page:0, pageSize:8, total:null, hasMore:false, loading:false };
 var SHOP_SELECTED_ITEM_ID='';
 function shopEsc(s){ var el=document.createElement('span'); el.textContent=s==null?'':String(s); return el.innerHTML; }
 function shopSlug(s){ return String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'') || ('item-'+Date.now()); }
@@ -4327,7 +4338,8 @@ function shopRuleUnitNote(rule){
 }
 
 function shopImageFallback(img){ if(img) img.onerror=function(){ this.style.display='none'; }; }
-const SHOP_CATEGORY_LABELS={all:'All Items',materials:'Materials / Cargo',guns:'Guns',armor:'Armor',food:'Food',drink:'Drink',medical:'Medical',mining:'Mining',clothing:'Clothing','ship-weapons':'Ship Weapons'};
+const SHOP_CATEGORY_LABELS={all:'All Items',materials:'Materials / Cargo',guns:'Guns',armor:'Armor',food:'Food',drink:'Drink',medical:'Medical',mining:'Mining',clothing:'Clothing',paints:'Paints / Liveries',components:'Components / Attachments','ship-weapons':'Ship Weapons'};
+const SHOP_CATEGORY_QUERY={materials:'cargo',guns:'rifle',armor:'armor',food:'food',drink:'drink',medical:'medical',mining:'mining',clothing:'clothing',paints:'paint',components:'component','ship-weapons':'ship weapon'};
 function shopItemCategoryText(item){ return [item.type,item.classification,item.subType,item.itemType,item.manufacturer,item.name].filter(Boolean).join(' ').toLowerCase(); }
 function shopItemMatchesCategory(item, cat){
   cat=cat||'all'; if(cat==='all') return true;
@@ -4340,6 +4352,8 @@ function shopItemMatchesCategory(item, cat){
   if(cat==='medical') return /medical|medpen|hemozal|curelife/.test(txt);
   if(cat==='mining') return /mining|miningmodifier|mining gadget|mining module/.test(txt);
   if(cat==='clothing') return /clothing|shirt|jacket|shoes|gloves|hat|pants/.test(txt);
+  if(cat==='paints') return /paint|livery/.test(txt);
+  if(cat==='components') return /component|attachment|module|cooler|power plant|shield|quantum|radar|scanner|battery|magazine|barrel|optic|suppressor/.test(txt);
   if(cat==='ship-weapons') return /ship\..*(weapon|gun|missile|bomb)|gunturret|bomblauncher|weaponcontrol/.test(txt);
   return true;
 }
@@ -4437,30 +4451,95 @@ async function shopHydrateSCResult(i){
     if(ph && ph.classList && ph.classList.contains('shop-result-img-placeholder')) ph.textContent='No image';
   }
 }
+function shopSCResultMatches(r, cat){
+  return shopItemMatchesCategory({name:r.name,type:r.type_label||r.item_type_label||r.type,subType:r.sub_type_label||r.sub_type,classification:r.classification_label||r.classification,manufacturer:shopSCManufacturer(r)}, cat);
+}
+function shopSCLimit(){
+  var raw=Number((document.getElementById('shop-sc-limit')||{}).value)||8;
+  return Math.max(4, Math.min(12, raw));
+}
+function shopSCSearchTerm(q, cat){
+  q=String(q||'').trim(); cat=cat||'all';
+  if(q) return q;
+  return SHOP_CATEGORY_QUERY[cat] || '';
+}
+function shopSCItemsUrl(q, cat, page, pageSize){
+  var term=shopSCSearchTerm(q, cat);
+  var parts=['filter%5Bquery%5D='+encodeURIComponent(term),'page%5Bsize%5D='+encodeURIComponent(pageSize),'page%5Bnumber%5D='+encodeURIComponent(page)];
+  return 'https://api.star-citizen.wiki/api/items?'+parts.join('&');
+}
+function shopExtractSCResults(data){
+  if(data && Array.isArray(data.data)) return {results:data.data, total:data.meta&&data.meta.total, hasMore:!!(data.links&&data.links.next)};
+  var groups=(data&&data.data&&data.data.data) || (data&&data.data) || [];
+  var results=[];
+  if(Array.isArray(groups)) groups.forEach(function(g){ if((g.type==='items'||g.label==='Items') && Array.isArray(g.results)) results=results.concat(g.results); });
+  return {results:results, total:results.length, hasMore:false};
+}
+function shopRenderSCResults(){
+  var box=document.getElementById('shop-sc-results');
+  var moreWrap=document.getElementById('shop-sc-more-wrap');
+  if(!SHOP_SC_RESULTS.length){
+    box.innerHTML='<div class="tav-list-empty">No '+shopEsc(SHOP_CATEGORY_LABELS[SHOP_SC_SEARCH_STATE.cat]||'')+' Star Citizen items found for this search.</div>';
+    if(moreWrap) moreWrap.style.display='none';
+    return;
+  }
+  var showing=SHOP_SC_RESULTS.length;
+  var total=SHOP_SC_SEARCH_STATE.total;
+  box.innerHTML=SHOP_SC_RESULTS.map(function(r,i){
+    var meta=shopSCMeta(r);
+    var badges=[r.classification_label||r.classification, r.item_type_label||r.type_label||r.type, shopSCManufacturer(r)].filter(Boolean).slice(0,3);
+    var img=shopSCImage(r);
+    var imgHtml=img ? '<img id="shop-sc-result-img-'+i+'" src="'+shopEsc(img)+'" alt="" onerror="this.outerHTML=\'<div class=&quot;shop-result-img-placeholder&quot;>No image</div>\'">' : '<div id="shop-sc-result-img-'+i+'" class="shop-result-img-placeholder">Checking image…</div>';
+    return '<div class="shop-result-row" id="shop-sc-result-'+i+'">'+imgHtml+'<div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(meta)+'</div><div class="shop-result-badges">'+badges.map(function(b){ return '<span class="shop-result-badge">'+shopEsc(b)+'</span>'; }).join('')+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use Item</button></div>';
+  }).join('')+'<div class="field-discord-note" style="text-align:center">Showing '+showing+(total?' of '+total:'')+' result'+(showing===1?'':'s')+'. Load count is capped at 12.</div>';
+  SHOP_SC_RESULTS.slice(Math.max(0, showing-shopSCLimit()), showing).forEach(function(_, idx){ shopHydrateSCResult(Math.max(0, showing-shopSCLimit())+idx); });
+  if(moreWrap) moreWrap.style.display=SHOP_SC_SEARCH_STATE.hasMore ? 'flex' : 'none';
+  var btn=document.getElementById('shop-sc-more-btn');
+  if(btn) btn.disabled=!!SHOP_SC_SEARCH_STATE.loading;
+}
+async function shopLoadMoreSC(){
+  var box=document.getElementById('shop-sc-results');
+  if(SHOP_SC_SEARCH_STATE.loading) return;
+  SHOP_SC_SEARCH_STATE.loading=true;
+  var btn=document.getElementById('shop-sc-more-btn'); if(btn){ btn.disabled=true; btn.textContent='Loading…'; }
+  try{
+    var target=SHOP_SC_SEARCH_STATE.pageSize;
+    var added=0;
+    var attempts=0;
+    var seen={};
+    SHOP_SC_RESULTS.forEach(function(r){ seen[shopSCItemId(r)||shopSlug(r.name)]=true; });
+    while(added<target && attempts<5){
+      attempts++;
+      var nextPage=(SHOP_SC_SEARCH_STATE.page||0)+1;
+      var data;
+      try { data=await shopFetchJson(shopSCItemsUrl(SHOP_SC_SEARCH_STATE.q, SHOP_SC_SEARCH_STATE.cat, nextPage, SHOP_SC_SEARCH_STATE.pageSize)); }
+      catch(e){ if(nextPage!==1) throw e; data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/search?q='+encodeURIComponent(SHOP_SC_SEARCH_STATE.q)+shopSCSearchCategoryParam(SHOP_SC_SEARCH_STATE.cat)); }
+      var pack=shopExtractSCResults(data);
+      var incoming=pack.results.filter(function(r){ return shopSCResultMatches(r, SHOP_SC_SEARCH_STATE.cat); });
+      incoming.forEach(function(r){
+        if(added>=target) return;
+        var id=shopSCItemId(r)||shopSlug(r.name);
+        if(!seen[id]){ seen[id]=true; SHOP_SC_RESULTS.push(r); added++; }
+      });
+      SHOP_SC_SEARCH_STATE.page=nextPage;
+      SHOP_SC_SEARCH_STATE.total=pack.total||SHOP_SC_SEARCH_STATE.total;
+      SHOP_SC_SEARCH_STATE.hasMore=!!pack.hasMore;
+      if(!pack.hasMore) break;
+    }
+    shopRenderSCResults();
+  }catch(e){ console.error(e); if(!SHOP_SC_RESULTS.length) box.innerHTML='<div class="tav-list-empty">Search failed: '+shopEsc(e.message)+'</div>'; }
+  finally{ SHOP_SC_SEARCH_STATE.loading=false; var b=document.getElementById('shop-sc-more-btn'); if(b){ b.disabled=false; b.textContent='Load More'; } }
+}
 async function shopSearchSC(categoryChanged){
   var q=(document.getElementById('shop-sc-query').value||'').trim();
   var cat=(document.getElementById('shop-sc-category')&&document.getElementById('shop-sc-category').value)||'all';
   var box=document.getElementById('shop-sc-results');
-  if(!q){ box.innerHTML='<div class="tav-list-empty">Enter an item name to search, then narrow by item type.</div>'; return; }
+  var moreWrap=document.getElementById('shop-sc-more-wrap'); if(moreWrap) moreWrap.style.display='none';
+  if(!q && cat==='all'){ box.innerHTML='<div class="tav-list-empty">Enter an item name or choose a category filter to search Star Citizen items.</div>'; return; }
+  SHOP_SC_RESULTS=[];
+  SHOP_SC_SEARCH_STATE={ q:q, cat:cat, page:0, pageSize:shopSCLimit(), total:null, hasMore:false, loading:false };
   box.innerHTML='<div class="tav-list-empty">Searching Star Citizen Wiki'+(cat&&cat!=='all'?' — '+shopEsc(SHOP_CATEGORY_LABELS[cat]||cat):'')+'…</div>';
-  try{
-    var data;
-    try { data=await shopFetchJson('https://ofs-api.orderofthefallenstar.workers.dev/sc/search?q='+encodeURIComponent(q)+shopSCSearchCategoryParam(cat)); }
-    catch(e){ data=await shopFetchJson('https://api.star-citizen.wiki/api/search?filter%5Bquery%5D='+encodeURIComponent(q)); }
-    var groups=(data.data&&data.data.data) || data.data || [];
-    var results=[];
-    groups.forEach(function(g){ if((g.type==='items'||g.label==='Items') && Array.isArray(g.results)) results=results.concat(g.results); });
-    SHOP_SC_RESULTS=results.filter(function(r){ return shopItemMatchesCategory({name:r.name,type:r.type_label||r.item_type_label||r.type,subType:r.sub_type_label||r.sub_type,classification:r.classification_label||r.classification}, cat); }).slice(0,30);
-    if(!SHOP_SC_RESULTS.length){ box.innerHTML='<div class="tav-list-empty">No '+shopEsc(SHOP_CATEGORY_LABELS[cat]||'')+' Star Citizen items found for this search.</div>'; return; }
-    box.innerHTML=SHOP_SC_RESULTS.map(function(r,i){
-      var meta=shopSCMeta(r);
-      var badges=[r.classification_label||r.classification, r.item_type_label||r.type_label||r.type, shopSCManufacturer(r)].filter(Boolean).slice(0,3);
-      var img=shopSCImage(r);
-      var imgHtml=img ? '<img id="shop-sc-result-img-'+i+'" src="'+shopEsc(img)+'" alt="" onerror="this.outerHTML=\'<div class=&quot;shop-result-img-placeholder&quot;>No image</div>\'">' : '<div id="shop-sc-result-img-'+i+'" class="shop-result-img-placeholder">Checking image…</div>';
-      return '<div class="shop-result-row" id="shop-sc-result-'+i+'">'+imgHtml+'<div><div class="shop-result-title">'+shopEsc(r.name)+'</div><div class="shop-result-meta">'+shopEsc(meta)+'</div><div class="shop-result-badges">'+badges.map(function(b){ return '<span class="shop-result-badge">'+shopEsc(b)+'</span>'; }).join('')+'</div></div><button class="edit-btn" onclick="shopUseSCResult('+i+')">Use Item</button></div>';
-    }).join('');
-    SHOP_SC_RESULTS.slice(0,12).forEach(function(_, i){ shopHydrateSCResult(i); });
-  }catch(e){ console.error(e); box.innerHTML='<div class="tav-list-empty">Search failed: '+shopEsc(e.message)+'</div>'; }
+  await shopLoadMoreSC();
 }
 
 async function shopUseSCResult(i){
