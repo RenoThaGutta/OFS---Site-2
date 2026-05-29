@@ -24,7 +24,7 @@
 
   /* ── CSS ─────────────────────────────────────────────── */
   var CSS = [
-    '.nav-user-zone{position:static;left:auto;top:auto;bottom:auto;transform:none;display:flex;align-items:center;justify-content:center;justify-self:center;min-width:0;max-width:100%;}',
+    '.nav-user-zone{position:absolute;left:50%;top:0;bottom:0;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;min-width:0;max-width:100%;}',
 
     /* Login button */
     '.nav-login-btn{',
@@ -87,7 +87,7 @@
     '  transition:color .2s;flex-shrink:0;',
     '}',
     '.nav-user-signout:hover{color:var(--gold);}',
-    '@media(max-width:1320px){',
+    '@media(max-width:1500px){',
     '  .nav-user-card{max-width:300px;gap:8px;padding-right:9px;}',
     '  .nuc-chip{max-width:78px;padding-left:5px;padding-right:5px;}',
     '  .nav-user-name-row{gap:8px;}',
@@ -275,6 +275,41 @@
     }
   }
 
+  /* ── Keep desktop profile centered unless it would collide ───────────── */
+  function layoutUserZone() {
+    if (!zone) return;
+    var nav = document.getElementById('main-nav');
+    var logo = nav && nav.querySelector('.nav-logo');
+    var links = nav && nav.querySelector('.nav-links');
+    if (!nav || !logo || !links) return;
+
+    if (window.matchMedia && window.matchMedia('(max-width: 980px)').matches) {
+      zone.style.left = '';
+      zone.style.transform = '';
+      return;
+    }
+
+    var navRect = nav.getBoundingClientRect();
+    var logoRect = logo.getBoundingClientRect();
+    var linksRect = links.getBoundingClientRect();
+    var zoneRect = zone.getBoundingClientRect();
+    var zoneWidth = zoneRect.width || 0;
+    var gap = 16;
+    var idealCenter = navRect.width / 2;
+    var minCenter = (logoRect.right - navRect.left) + gap + (zoneWidth / 2);
+    var maxCenter = (linksRect.left - navRect.left) - gap - (zoneWidth / 2);
+    var center = idealCenter;
+
+    if (maxCenter >= minCenter) {
+      center = Math.max(minCenter, Math.min(idealCenter, maxCenter));
+    } else {
+      center = Math.max(zoneWidth / 2 + gap, Math.min(idealCenter, navRect.width - zoneWidth / 2 - gap));
+    }
+
+    zone.style.left = Math.round(center) + 'px';
+    zone.style.transform = 'translateX(-50%)';
+  }
+
   /* ── Render the zone ─────────────────────────────────── */
   var zone = null;
 
@@ -291,6 +326,8 @@
     }
 
     toggleAdminLink(session);
+    layoutUserZone();
+    setTimeout(layoutUserZone, 60);
   }
 
   /* ── Init ────────────────────────────────────────────── */
@@ -317,6 +354,7 @@
 
     renderZone();
     window.addEventListener('ofs:sheets-loaded', renderZone);
+    window.addEventListener('resize', layoutUserZone);
   }
 
   if (document.readyState === 'loading') {
