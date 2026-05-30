@@ -704,12 +704,16 @@
   function normEvents(rows) {
     if (!rows || rows.length < 2) return [];
     return rows.slice(1).map(function (row) {
+      var activeCell = String(row[12] == null ? 'TRUE' : row[12]).trim().toUpperCase();
       return {
         id: String(row[0] || ''), title: String(row[1] || ''), date: String(row[2] || ''),
         type: String(row[3] || ''), description: String(row[4] || ''),
-        status: String(row[5] || 'upcoming').toLowerCase()
+        status: String(row[5] || 'upcoming').toLowerCase(),
+        image: String(row[6] || ''),
+        link: String(row[7] || ''),
+        active: activeCell !== 'FALSE' && activeCell !== 'NO' && activeCell !== 'N'
       };
-    }).filter(function (e) { return e.title; });
+    }).filter(function (e) { return e.title && e.active !== false; });
   }
 
   function normMedia(rows) {
@@ -1152,6 +1156,7 @@
       html += '</div>';
       if (ev.image)       html += '<img class="event-img" src="' + esc(ev.image) + '" alt="" loading="lazy">';
       if (ev.description) html += '<div class="event-desc">' + esc(ev.description) + '</div>';
+      if (ev.link)        html += '<div class="announce-source"><a href="' + esc(ev.link) + '" target="_blank" rel="noopener">View source in Discord \u2192</a></div>';
       html += '</div>';
     });
     html += '</div>';
@@ -1314,18 +1319,22 @@
       players = (window.OFSData && typeof OFSData.getPlayers === 'function') ? OFSData.getPlayers() : players;
       var tavData = OFSSheets.getTavernData();
 
-      // Admin-managed content: localStorage first, Sheets as fallback
-      var announcements = (localTav.announcements && localTav.announcements.length > 0)
-        ? localTav.announcements
-        : normAnnouncements((tavData && tavData.tavAnnouncements) || []);
+      // Site-facing content: prefer fresh Worker/Sheet data. LocalStorage is only
+      // a fallback so old browser drafts do not hide Discord-approved posts.
+      var sheetAnnouncements = normAnnouncements((tavData && tavData.tavAnnouncements) || []);
+      var announcements = sheetAnnouncements.length > 0
+        ? sheetAnnouncements
+        : (localTav.announcements || []);
 
-      var events = (localTav.events && localTav.events.length > 0)
-        ? localTav.events
-        : normEvents((tavData && tavData.tavEvents) || []);
+      var sheetEvents = normEvents((tavData && tavData.tavEvents) || []);
+      var events = sheetEvents.length > 0
+        ? sheetEvents
+        : (localTav.events || []);
 
-      var mediaItems = (localTav.media && localTav.media.length > 0)
-        ? localTav.media
-        : normMedia((tavData && tavData.tavMedia) || []);
+      var sheetMedia = normMedia((tavData && tavData.tavMedia) || []);
+      var mediaItems = sheetMedia.length > 0
+        ? sheetMedia
+        : (localTav.media || []);
 
       // Quests come from Sheets (tracking data)
       var questRows = (tavData && tavData.quests) || [];
