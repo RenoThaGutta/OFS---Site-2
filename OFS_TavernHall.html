@@ -261,10 +261,11 @@
 
     .announce-list { display: flex; flex-direction: column; }
     .announce-card {
-      padding: 16px 24px; border-bottom: 1px solid var(--b-dim); transition: background .2s;
+      padding: 16px 24px; border-bottom: 1px solid var(--b-dim); transition: background .2s, border-color .2s;
+      cursor: pointer;
     }
     .announce-card:last-child { border-bottom: none; }
-    .announce-card:hover { background: rgba(201,168,76,.03); }
+    .announce-card:hover { background: rgba(201,168,76,.04); }
     .announce-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
     .announce-date   { font-size: .7rem; color: var(--text-dim); }
     .announce-author { font-size: .7rem; color: var(--silver-dim); margin-left: auto; }
@@ -394,9 +395,9 @@
 
     /* ── Events ── */
     .event-list { display: flex; flex-direction: column; }
-    .event-card { padding: 12px 20px; border-bottom: 1px solid var(--b-dim); transition: background .2s; }
+    .event-card { padding: 12px 20px; border-bottom: 1px solid var(--b-dim); transition: background .2s, border-color .2s; cursor: pointer; }
     .event-card:last-child { border-bottom: none; }
-    .event-card:hover { background: rgba(201,168,76,.03); }
+    .event-card:hover { background: rgba(201,168,76,.04); }
     .event-title { font-family: 'Cinzel', serif; font-size: .76rem; letter-spacing: .04em; color: var(--text); margin-bottom: 5px; }
     .event-meta { display: flex; align-items: center; gap: 8px; font-size: .7rem; flex-wrap: wrap; }
     .event-date  { color: var(--text-dim); }
@@ -440,6 +441,115 @@
     .lightbox-close { position: absolute; top: -36px; right: 0; background: none; border: none; color: var(--silver); font-size: 1.4rem; cursor: pointer; line-height: 1; transition: color .2s; }
     .lightbox-close:hover { color: var(--gold); }
     .lightbox-caption { margin-top: 10px; text-align: center; font-size: .8rem; color: var(--text-dim); }
+
+    /* ── Tavern Detail Modal ── */
+    #tavern-detail-modal {
+      display: none;
+      position: fixed; inset: 0; z-index: 9000;
+      align-items: center; justify-content: center;
+      padding: 24px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,.09), transparent 42%), rgba(7,7,15,.9);
+      backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px);
+    }
+    #tavern-detail-modal.open { display: flex; }
+    .tavern-detail-panel {
+      position: relative;
+      width: min(980px, 94vw);
+      max-height: 88vh;
+      background: linear-gradient(180deg, #10101f 0%, #080812 100%);
+      border: 1px solid rgba(201,168,76,.5);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex; flex-direction: column;
+      box-shadow: 0 0 80px rgba(201,168,76,.13), 0 24px 80px rgba(0,0,0,.72);
+      animation: tavern-detail-in .22s ease;
+    }
+    .tavern-detail-panel::before {
+      content: '';
+      position: absolute; left: 0; right: 0; top: 0; height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(201,168,76,.78), transparent);
+      pointer-events: none;
+    }
+    @keyframes tavern-detail-in {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .tavern-detail-head {
+      padding: 28px 58px 22px 30px;
+      border-bottom: 1px solid rgba(201,168,76,.2);
+      background:
+        linear-gradient(90deg, rgba(201,168,76,.08), transparent 64%),
+        radial-gradient(ellipse at top left, rgba(106,170,232,.06), transparent 55%);
+      flex-shrink: 0;
+    }
+    .tavern-detail-kicker {
+      font-family: 'Cinzel', serif;
+      font-size: .62rem; letter-spacing: .24em; text-transform: uppercase;
+      color: var(--gold); opacity: .92; margin-bottom: 8px;
+    }
+    .tavern-detail-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.15rem, 2.6vw, 1.9rem);
+      font-weight: 700;
+      color: var(--gold-lt);
+      line-height: 1.28;
+      letter-spacing: .06em;
+      text-shadow: 0 0 24px rgba(201,168,76,.22);
+    }
+    .tavern-detail-meta {
+      margin-top: 10px;
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      font-size: .76rem; color: var(--silver-dim);
+    }
+    .tavern-detail-scroll { overflow-y: auto; padding: 0 0 28px; }
+    .tavern-detail-hero {
+      display: none;
+      width: auto; max-width: calc(100% - 60px);
+      height: auto; max-height: min(48vh, 520px);
+      object-fit: contain;
+      margin: 26px auto 0;
+      border: 1px solid rgba(201,168,76,.28);
+      border-radius: 4px;
+      box-shadow: 0 16px 34px rgba(0,0,0,.45);
+      background: rgba(0,0,0,.22);
+    }
+    .tavern-detail-hero[src]:not([src='']) { display: block; }
+    .tavern-detail-body {
+      padding: 26px 30px 0;
+      max-width: 850px; margin: 0 auto;
+      font-family: 'Crimson Text', Georgia, serif;
+      font-size: clamp(1rem, 1.35vw, 1.12rem);
+      line-height: 1.86;
+      color: #c5d0dc;
+      white-space: pre-line;
+    }
+    .tavern-detail-body:empty::before {
+      content: 'No additional details were provided.';
+      color: var(--text-dim);
+      font-style: italic;
+    }
+    .tavern-detail-source {
+      display: none;
+      max-width: 850px;
+      margin: 26px auto 0;
+      padding: 14px 30px 0;
+      border-top: 1px solid rgba(201,168,76,.16);
+      font-family: 'Cinzel', serif;
+      font-size: .64rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .tavern-detail-source:not(:empty) { display: block; }
+    .tavern-detail-source a { color: var(--gold); text-decoration: none; }
+    .tavern-detail-source a:hover { color: var(--gold-lt); text-decoration: underline; }
+    .tavern-detail-close {
+      position: absolute; top: 13px; right: 16px;
+      background: transparent; border: none;
+      color: var(--silver); font-size: 28px; line-height: 1;
+      cursor: pointer; opacity: .6; transition: opacity .2s, color .2s;
+      padding: 4px 8px;
+    }
+    .tavern-detail-close:hover { opacity: 1; color: var(--gold-lt); }
 
     /* ── Footer ── */
     footer { position: relative; z-index: 1; border-top: 1px solid var(--b-gold); padding: 32px 40px; text-align: center; }
@@ -626,6 +736,23 @@
     </div>
   </div>
 
+  <!-- Announcement / Event detail modal -->
+  <div id="tavern-detail-modal">
+    <div class="tavern-detail-panel" role="dialog" aria-modal="true" aria-labelledby="tavern-detail-title">
+      <div class="tavern-detail-head">
+        <div class="tavern-detail-kicker" id="tavern-detail-kicker"></div>
+        <div class="tavern-detail-title" id="tavern-detail-title"></div>
+        <div class="tavern-detail-meta" id="tavern-detail-meta"></div>
+      </div>
+      <div class="tavern-detail-scroll">
+        <img class="tavern-detail-hero" id="tavern-detail-hero" alt="">
+        <div class="tavern-detail-body" id="tavern-detail-body"></div>
+        <div class="tavern-detail-source" id="tavern-detail-source"></div>
+      </div>
+      <button class="tavern-detail-close" id="tavern-detail-close" aria-label="Close details">&times;</button>
+    </div>
+  </div>
+
   <!-- Footer -->
   <footer>
     <div class="footer-links">
@@ -802,6 +929,7 @@
   });
 
   var _allAnnouncements = [];
+  var _allEvents = [];
   var _activeCat = 'all';
   document.getElementById('ann-filter-bar').addEventListener('click', function (e) {
     var btn = e.target.closest('.ann-filter-btn');
@@ -827,10 +955,17 @@
   var _lb        = document.getElementById('lightbox');
   var _lbContent = document.getElementById('lightbox-content');
   var _lbCaption = document.getElementById('lightbox-caption');
+  var _detailModal = document.getElementById('tavern-detail-modal');
 
   document.getElementById('lightbox-close').addEventListener('click', closeLightbox);
   _lb.addEventListener('click', function (e) { if (e.target === _lb) closeLightbox(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeLightbox(); });
+  document.getElementById('tavern-detail-close').addEventListener('click', closeTavernDetail);
+  _detailModal.addEventListener('click', function (e) { if (e.target === _detailModal) closeTavernDetail(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (_detailModal.classList.contains('open')) closeTavernDetail();
+    else if (_lb.classList.contains('open')) closeLightbox();
+  });
 
   function openLightboxImage(url, caption) {
     _lbContent.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(caption) + '">';
@@ -841,6 +976,35 @@
     _lbCaption.textContent = caption || ''; _lb.classList.add('open');
   }
   function closeLightbox() { _lb.classList.remove('open'); _lbContent.innerHTML = ''; }
+
+  function closeTavernDetail() { _detailModal.classList.remove('open'); }
+  function openTavernDetail(kind, item) {
+    if (!item) return;
+    var isEvent = kind === 'event';
+    var kicker = isEvent ? 'Tavern Event' : (item.pinned ? 'Pinned Announcement' : 'Tavern Announcement');
+    var meta = [];
+    if (item.category && !isEvent) meta.push(catBadge(item.category));
+    if (item.status && isEvent) {
+      var sc = item.status === 'ongoing' ? 'ongoing' : item.status === 'past' ? 'past' : 'upcoming';
+      var sl = item.status === 'ongoing' ? 'Live' : item.status === 'past' ? 'Ended' : 'Upcoming';
+      meta.push('<span class="event-status ' + sc + '">' + sl + '</span>');
+    }
+    if (item.date) meta.push('<span>' + esc(fmtDate(item.date)) + '</span>');
+    if (item.author && !isEvent) meta.push('<span>— ' + esc(item.author) + '</span>');
+    if (item.type && isEvent) meta.push('<span>' + esc(item.type) + '</span>');
+
+    document.getElementById('tavern-detail-kicker').textContent = kicker;
+    document.getElementById('tavern-detail-title').textContent = item.title || (isEvent ? 'Event' : 'Announcement');
+    document.getElementById('tavern-detail-meta').innerHTML = meta.join('');
+    var hero = document.getElementById('tavern-detail-hero');
+    hero.src = item.image || '';
+    hero.alt = item.title || '';
+    document.getElementById('tavern-detail-body').textContent = isEvent ? (item.description || '') : (item.body || '');
+    document.getElementById('tavern-detail-source').innerHTML = item.link
+      ? '<a href="' + esc(item.link) + '" target="_blank" rel="noopener">View source in Discord \u2192</a>'
+      : '';
+    _detailModal.classList.add('open');
+  }
 
   /* ═══════════════════════════════════════════
      RENDER: STATS BAR
@@ -899,7 +1063,7 @@
       + (a.author ? '<span class="featured-author">— ' + esc(a.author) + '</span>' : '')
       + '</div>';
 
-    var html = '<div class="featured-card">';
+    var html = '<div class="featured-card" data-detail-kind="announcement">';
     if (a.image) {
       // Hero layout: image fills top, eyebrow + title overlaid at bottom
       html += '<div class="featured-hero">';
@@ -918,6 +1082,13 @@
 
     section.innerHTML = html;
     section.style.display = 'block';
+    var card = section.querySelector('.featured-card');
+    if (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('button, a')) return;
+        openTavernDetail('announcement', a);
+      });
+    }
   }
 
   /* ═══════════════════════════════════════════
@@ -952,7 +1123,8 @@
 
     var html = '<div class="announce-list">';
     filtered.forEach(function (a) {
-      html += '<div class="announce-card">';
+      var annIndex = _allAnnouncements.indexOf(a);
+      html += '<div class="announce-card" data-ann-index="' + annIndex + '">';
       html += '<div class="announce-meta">';
       html += catBadge(a.category);
       if (a.date)   html += '<span class="announce-date">' + esc(fmtDate(a.date)) + '</span>';
@@ -966,6 +1138,13 @@
     });
     html += '</div>';
     el.innerHTML = html;
+    el.querySelectorAll('.announce-card[data-ann-index]').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('a, button')) return;
+        var idx = parseInt(card.getAttribute('data-ann-index'), 10);
+        openTavernDetail('announcement', _allAnnouncements[idx]);
+      });
+    });
   }
 
   /* ═══════════════════════════════════════════
@@ -1216,6 +1395,7 @@
   ═══════════════════════════════════════════ */
   function renderEvents(events) {
     var el = document.getElementById('events-list');
+    _allEvents = [];
     if (!events || events.length === 0) { el.innerHTML = '<div class="state-empty">No upcoming events.</div>'; return; }
 
     var statusOrder = { ongoing: 0, upcoming: 1, past: 2 };
@@ -1224,14 +1404,15 @@
                (statusOrder[b.status] != null ? statusOrder[b.status] : 1);
       return so !== 0 ? so : new Date(a.date) - new Date(b.date);
     });
+    _allEvents = items;
 
     var html = '<div class="event-list">';
-    items.forEach(function (ev) {
+    items.forEach(function (ev, eventIndex) {
       var sc   = ev.status === 'ongoing' ? 'ongoing' : ev.status === 'past' ? 'past' : 'upcoming';
       var sl   = ev.status === 'ongoing' ? 'Live'    : ev.status === 'past' ? 'Ended' : 'Upcoming';
       var days = ev.status === 'upcoming' ? daysUntil(ev.date) : null;
 
-      html += '<div class="event-card">';
+      html += '<div class="event-card" data-event-index="' + eventIndex + '">';
       html += '<div class="event-title">' + esc(ev.title) + '</div>';
       html += '<div class="event-meta">';
       if (ev.date) html += '<span class="event-date">' + esc(fmtDate(ev.date)) + '</span>';
@@ -1246,6 +1427,13 @@
     });
     html += '</div>';
     el.innerHTML = html;
+    el.querySelectorAll('.event-card[data-event-index]').forEach(function (card) {
+      card.addEventListener('click', function (e) {
+        if (e.target.closest('a, button')) return;
+        var idx = parseInt(card.getAttribute('data-event-index'), 10);
+        openTavernDetail('event', _allEvents[idx]);
+      });
+    });
   }
 
   /* ═══════════════════════════════════════════
