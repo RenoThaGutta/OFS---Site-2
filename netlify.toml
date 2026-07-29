@@ -6,8 +6,8 @@
 
 [[redirects]]
   from = "/"
-  to   = "/OFS_Home.html"
-  status = 301
+  to   = "/OFS_BlackSeal.html"
+  status = 200
 
 [[redirects]]
   from = "/home"

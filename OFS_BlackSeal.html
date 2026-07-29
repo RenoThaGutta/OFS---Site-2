@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en" style="background:#050507">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>To Whom It May Concern</title>
+  <link rel="icon" type="image/png" href="ofs favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #050507;
+      --ash: #0a0a10;
+      --iron: #15151e;
+      --blood: #621717;
+      --blood-bright: #9f2424;
+      --gold: #c9a84c;
+      --gold-lit: #efd77a;
+      --gold-dim: #6e5a28;
+      --bone: #e4dfd3;
+      --muted: #958d7c;
+      --dim: #585244;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { min-height: 100%; background: var(--void); }
+    body {
+      color: var(--bone);
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 18%, rgba(159,36,36,.26), transparent 28rem),
+        radial-gradient(circle at 50% 55%, rgba(201,168,76,.10), transparent 32rem),
+        linear-gradient(180deg, rgba(5,5,7,.45), rgba(5,5,7,.94)),
+        url('Large Background Image_home.png') center/cover no-repeat;
+      filter: saturate(.8) brightness(.52);
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: .24;
+      background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.02) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at center, black, transparent 78%);
+    }
+
+    .black-seal-page {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: clamp(28px, 5vw, 72px) 20px;
+    }
+
+    .notice {
+      width: min(920px, 100%);
+      padding: clamp(28px, 6vw, 66px);
+      border: 1px solid rgba(201,168,76,.32);
+      background:
+        linear-gradient(180deg, rgba(10,10,16,.90), rgba(5,5,7,.96)),
+        radial-gradient(circle at top, rgba(159,36,36,.14), transparent 24rem);
+      box-shadow:
+        0 0 0 1px rgba(98,23,23,.35) inset,
+        0 28px 90px rgba(0,0,0,.72),
+        0 0 70px rgba(98,23,23,.22);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .notice::before,
+    .notice::after {
+      content: "";
+      position: absolute;
+      left: clamp(22px, 4vw, 42px);
+      right: clamp(22px, 4vw, 42px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(201,168,76,.70), rgba(159,36,36,.55), rgba(201,168,76,.70), transparent);
+    }
+    .notice::before { top: clamp(18px, 4vw, 34px); }
+    .notice::after { bottom: clamp(18px, 4vw, 34px); }
+
+    .sigil {
+      display: inline-grid;
+      place-items: center;
+      width: clamp(118px, 22vw, 184px);
+      height: clamp(118px, 22vw, 184px);
+      margin-bottom: 24px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,.35);
+      background:
+        radial-gradient(circle at center, rgba(98,23,23,.32), rgba(5,5,7,.85) 64%),
+        linear-gradient(135deg, transparent, rgba(201,168,76,.10), transparent);
+      box-shadow:
+        0 0 44px rgba(159,36,36,.30),
+        0 0 80px rgba(201,168,76,.12),
+        inset 0 0 36px rgba(0,0,0,.65);
+      color: var(--gold-lit);
+      font-size: clamp(4rem, 13vw, 7rem);
+      line-height: 1;
+      text-shadow: 0 0 28px rgba(201,168,76,.45), 0 0 42px rgba(159,36,36,.38);
+    }
+
+    .kicker {
+      margin-bottom: 12px;
+      font-family: 'Cinzel', serif;
+      font-size: clamp(.72rem, 1.5vw, .92rem);
+      letter-spacing: .36em;
+      text-transform: uppercase;
+      color: var(--gold-dim);
+    }
+
+    h1 {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.8rem, 5.8vw, 4.4rem);
+      line-height: 1.05;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+      color: var(--gold-lit);
+      text-shadow: 0 0 42px rgba(201,168,76,.36), 0 4px 12px rgba(0,0,0,.9);
+    }
+
+    .divider {
+      width: min(520px, 78%);
+      height: 1px;
+      margin: clamp(24px, 4vw, 38px) auto;
+      background: linear-gradient(90deg, transparent, rgba(98,23,23,.82), rgba(201,168,76,.62), rgba(98,23,23,.82), transparent);
+    }
+
+    .statement {
+      max-width: 760px;
+      margin: 0 auto;
+      display: grid;
+      gap: 18px;
+      font-family: 'Crimson Text', Georgia, serif;
+      font-size: clamp(1.08rem, 2.25vw, 1.42rem);
+      line-height: 1.58;
+      color: rgba(228,223,211,.92);
+    }
+
+    .statement strong {
+      color: var(--gold-lit);
+      font-weight: 600;
+    }
+
+    .warning {
+      margin-top: 4px;
+      padding: 18px clamp(16px, 4vw, 28px);
+      border-top: 1px solid rgba(159,36,36,.45);
+      border-bottom: 1px solid rgba(159,36,36,.45);
+      background: rgba(98,23,23,.13);
+      color: #f1e7d0;
+      font-family: 'Cinzel', serif;
+      font-size: clamp(.92rem, 1.8vw, 1.12rem);
+      letter-spacing: .055em;
+      line-height: 1.7;
+      text-transform: none;
+    }
+
+    .closing {
+      margin-top: 8px;
+      font-family: 'Cinzel', serif;
+      color: var(--gold-lit);
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+
+    .seal-foot {
+      margin-top: clamp(28px, 4vw, 42px);
+      font-family: 'Cinzel', serif;
+      font-size: .72rem;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+
+    @media (max-width: 620px) {
+      .notice { padding: 30px 20px 38px; }
+      h1 { letter-spacing: .08em; }
+      .statement { gap: 16px; }
+      .warning { letter-spacing: .02em; }
+    }
+  </style>
+</head>
+<body>
+  <main class="black-seal-page" aria-labelledby="black-seal-title">
+    <section class="notice" role="document">
+      <div class="sigil" aria-hidden="true">☠</div>
+      <p class="kicker">Black Seal Notice</p>
+      <h1 id="black-seal-title">To Whom It May Concern</h1>
+      <div class="divider" aria-hidden="true"></div>
+
+      <div class="statement">
+        <p>The Order of the Fallen Star community has chosen to continue while cutting out the systems and people who sustained it.</p>
+
+        <p>The bots, tools, records, workflows, and infrastructure behind that community were built, hosted, maintained, and improved through <strong>hundreds of hours</strong> of real labor, personal time, and cost.</p>
+
+        <p>When support was requested to continue that work, the response was not support — it was replacement, replication, and removal.</p>
+
+        <p>This website is no longer operated for that Discord community, nor should it be treated as its property, voice, or archive.</p>
+
+        <p>The work preserved here remains with those who built it.</p>
+
+        <p class="warning">Let this stand as a warning: be careful where you place your trust, your labor, and your loyalty.</p>
+
+        <p class="closing">Support the people who support you.</p>
+
+        <p>That is all.</p>
+      </div>
+
+      <p class="seal-foot">The Black Standard Is Raised</p>
+    </section>
+  </main>
+</body>
+</html>
