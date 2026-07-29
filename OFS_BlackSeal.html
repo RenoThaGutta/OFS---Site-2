@@ -79,60 +79,6 @@
       70% { transform: scale(.72); opacity: .35; }
     }
 
-    .shooting-star {
-      position: absolute;
-      top: 18vh;
-      left: -28vw;
-      width: clamp(160px, 25vw, 340px);
-      height: 2px;
-      border-radius: 999px;
-      background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(239,215,122,.10) 18%,
-        rgba(239,215,122,.64) 62%,
-        rgba(255,247,205,1) 100%);
-      filter: drop-shadow(0 0 10px rgba(239,215,122,.80)) drop-shadow(0 0 22px rgba(159,36,36,.38));
-      transform: rotate(-18deg);
-      animation: fall 5.4s cubic-bezier(.18,.62,.28,1) infinite;
-    }
-
-    .shooting-star::after {
-      content: "";
-      position: absolute;
-      right: -4px;
-      top: 50%;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #fff7cd;
-      box-shadow:
-        0 0 12px rgba(255,247,205,1),
-        0 0 26px rgba(239,215,122,.78),
-        0 0 44px rgba(159,36,36,.45);
-      transform: translateY(-50%);
-    }
-
-    @keyframes fall {
-      0% {
-        transform: translate3d(-20vw, -6vh, 0) rotate(-18deg);
-        opacity: 0;
-      }
-      8% { opacity: 1; }
-      54% { opacity: 1; }
-      68%, 100% {
-        transform: translate3d(150vw, 52vh, 0) rotate(-18deg);
-        opacity: 0;
-      }
-    }
-
-    .shooting-star:nth-of-type(2) {
-      top: 42vh;
-      width: clamp(110px, 18vw, 250px);
-      animation-delay: 2.7s;
-      animation-duration: 6.8s;
-      opacity: .78;
-    }
-
     .vignette {
       position: fixed;
       inset: 0;
@@ -144,16 +90,12 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .shooting-star, .star { animation: none; }
-      .shooting-star { left: 18vw; top: 28vh; opacity: .85; }
-      .shooting-star:nth-of-type(2) { display: none; }
+      .star { animation: none; }
     }
   </style>
 </head>
 <body aria-label="Order of the Fallen Star starfield">
   <div class="sky" aria-hidden="true">
-    <span class="shooting-star"></span>
-    <span class="shooting-star"></span>
     <span class="star" style="--x:12%;--y:18%;--opacity:.42;--speed:3.8s;--delay:.1s"></span>
     <span class="star" style="--x:22%;--y:64%;--opacity:.30;--speed:5.4s;--delay:1.8s"></span>
     <span class="star" style="--x:31%;--y:31%;--opacity:.55;--speed:4.8s;--delay:.7s"></span>
